@@ -1,6 +1,4 @@
 .wp-block-image {
-	width: fit-content;
-
 	&.aligncenter {
 		display: block;
 		margin-left: auto;
@@ -8,20 +6,26 @@
 		text-align: center;
 	}
 
-	&.is-resized {
-		width: min-content;
-
-		// Emulate min-content for Edge and IE11
-		display: -ms-inline-grid;
-		-ms-grid-columns: min-content;
+	// Floats get an extra wrapping aside element, so the figure becomes a child.
+	.alignleft,
+	.alignright {
+		display: table;
+		margin: 0;
 
 		figcaption {
-			-ms-grid-row: 2;
+			display: table-caption;
+			caption-side: bottom;
 		}
+	}
 
-		img {
-			max-width: none;
-		}
+	.alignleft {
+		float: left;
+		margin-right: 1em;
+	}
+
+	.alignright {
+		float: right;
+		margin-left: 1em;
 	}
 
 	// Supply caption styles to images, even if the theme hasn't opted in.
