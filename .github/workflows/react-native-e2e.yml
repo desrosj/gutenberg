@@ -56,6 +56,7 @@ jobs:
             - name: Cache build
               uses: actions/cache@26968a09c0ea4f3e233fdddbafd1166051a095f6 # v2.1.4
               with:
+                  path: ./
                   key: ${{ github.workflow }}-${{ github.sha }}
 
             - name: Restore Gradle cache
@@ -95,6 +96,7 @@ jobs:
             - name: Cache build
               uses: actions/cache@26968a09c0ea4f3e233fdddbafd1166051a095f6 # v2.1.4
               with:
+                  path: ./
                   key: ${{ github.workflow }}-${{ github.sha }}
 
             - name: Prepare build cache key
