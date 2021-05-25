@@ -79,7 +79,7 @@ jobs:
               uses: thedoctor0/zip-release@f216aacfedcd3e76b3b027ab065503438cd00d57 #v0.4.2
               with:
                   filename: '${{ github.sha }}.zip'
-                  exclusions: '*.git*'
+                  exclusions: '*.git* /*node_modules/*'
 
             - uses: actions/upload-artifact@v2
               with:
