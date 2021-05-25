@@ -92,9 +92,13 @@ jobs:
         needs: prepare
 
         steps:
-            - uses: actions/download-artifact@v2
+            - name: Download built plugin
+              uses: actions/download-artifact@v2
               with:
                   name: ${{ github.sha }}
+
+            - name: Unzip artifact
+              run: unzip ${{ github.sha }}.zip .
 
             - name: Use Node.js 14.x
               uses: actions/setup-node@46071b5c7a2e0c34e49c3cb8a0e792e86e18d5ea # v2.1.5
@@ -124,9 +128,13 @@ jobs:
         needs: check-for-artifacts
 
         steps:
-            - uses: actions/download-artifact@v2
+            - name: Download built plugin
+              uses: actions/download-artifact@v2
               with:
                   name: ${{ github.sha }}
+
+            - name: Unzip artifact
+              run: unzip ${{ github.sha }}.zip .
 
             - name: Use Node.js 14.x
               uses: actions/setup-node@46071b5c7a2e0c34e49c3cb8a0e792e86e18d5ea # v2.1.5
@@ -152,9 +160,13 @@ jobs:
         needs: check-for-artifacts
 
         steps:
-            - uses: actions/download-artifact@v2
+            - name: Download built plugin
+              uses: actions/download-artifact@v2
               with:
                   name: ${{ github.sha }}
+
+            - name: Unzip artifact
+              run: unzip ${{ github.sha }}.zip .
 
             - name: Use Node.js 14.x
               uses: actions/setup-node@46071b5c7a2e0c34e49c3cb8a0e792e86e18d5ea # v2.1.5
@@ -180,9 +192,13 @@ jobs:
         needs: check-for-artifacts
 
         steps:
-            - uses: actions/download-artifact@v2
+            - name: Download built plugin
+              uses: actions/download-artifact@v2
               with:
                   name: ${{ github.sha }}
+
+            - name: Unzip artifact
+              run: unzip ${{ github.sha }}.zip .
 
             - name: Use Node.js 14.x
               uses: actions/setup-node@46071b5c7a2e0c34e49c3cb8a0e792e86e18d5ea # v2.1.5
