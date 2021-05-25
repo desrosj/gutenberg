@@ -75,13 +75,16 @@ jobs:
             - name: Build the project
               run: npm run build
 
+            - name: Create zip file
+              uses: thedoctor0/zip-release@f216aacfedcd3e76b3b027ab065503438cd00d57 #v0.4.2
+              with:
+                  filename: '${{ github.sha }}.zip'
+                  exclusions: '*.git*'
+
             - uses: actions/upload-artifact@v2
               with:
                   name: ${{ github.sha }}
-                  path: |
-                      ${{ github.workspace }}
-                      !**node_modules
-                      !.git
+                  path: ${{ github.sha }}.zip
 
     check-for-artifacts:
         name: Check for build artifacts
