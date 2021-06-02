@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
     prime-npm-cache:
-        name: NodeJS ${{ matrix.node }} on ${{ matrix.os }}
+        name: Test NodeJS ${{ matrix.node }} on ${{ matrix.os }}
         runs-on: ${{ matrix.os }}
         if: ${{ github.repository == 'WordPress/gutenberg' || github.event_name == 'pull_request' }}
         strategy:
