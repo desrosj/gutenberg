@@ -45,7 +45,7 @@ function gutenberg_register_template_post_type() {
 		'show_in_admin_bar'     => false,
 		'show_in_rest'          => true,
 		'rest_base'             => 'templates',
-		'rest_controller_class' => 'WP_REST_Templates_Controller',
+		'rest_controller_class' => 'Gutenberg_REST_Templates_Controller',
 		'capability_type'       => array( 'template', 'templates' ),
 		'map_meta_cap'          => true,
 		'supports'              => array(
@@ -177,9 +177,16 @@ add_action( 'save_post_wp_template', 'set_unique_slug_on_create_template' );
 /**
  * Print the skip-link script & styles.
  *
+ * @todo Remove this when WP 5.8 is the minimum required version.
+ *
  * @return void
  */
 function gutenberg_the_skip_link() {
+
+	// Early exit if on WP 5.8+.
+	if ( function_exists( 'the_block_template_skip_link' ) ) {
+		return;
+	}
 
 	// Early exit if not an FSE theme.
 	if ( ! gutenberg_supports_block_templates() ) {
