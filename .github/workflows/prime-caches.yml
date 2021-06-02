@@ -22,6 +22,7 @@ jobs:
   prime-npm-cache:
     name: Prime cache for NPM ${{ matrix.node }}
     runs-on: ubuntu-latest
+    if: ${{ github.repository == 'WordPress/gutenberg' || github.event_name == 'pull_request' }}
     strategy:
       node: [ '14', '12' ]
 
@@ -43,6 +44,5 @@ jobs:
           key: ${{ runner.os }}-node-${{ matrix.node }}-npm-cache-${{ hashFiles('**/package-lock.json') }}
 
       - name: Prime cache
-        uses: actions/cache@26968a09c0ea4f3e233fdddbafd1166051a095f6 # v2.1.4
         if: steps.npm-cache.outputs.cache-hit != 'true'
         run: npm ci
