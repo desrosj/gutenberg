@@ -4,7 +4,7 @@
 name: Prime Caches
 
 on:
-  pull_request:
+    pull_request:
     push:
         branches:
             - trunk
@@ -20,11 +20,12 @@ concurrency:
 
 jobs:
   prime-npm-cache:
-    name: Prime cache for NPM ${{ matrix.node }}
+    name: Prime cache for NodeJS ${{ matrix.node }}
     runs-on: ubuntu-latest
     if: ${{ github.repository == 'WordPress/gutenberg' || github.event_name == 'pull_request' }}
     strategy:
       matrix:
+        fail-fast: false
         node: [ '14', '12' ]
 
     steps:
