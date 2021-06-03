@@ -2,7 +2,8 @@ name: End-to-End Tests
 
 on:
   workflow_run:
-    workflows: [ "Prime Caches" ]
+    workflows:
+      - Prime Caches
     types:
       - completed
 
