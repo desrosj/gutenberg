@@ -1,12 +1,17 @@
 name: Static Analysis (Linting, License, Type checks...)
 
 on:
-    pull_request:
-    push:
-        branches:
-            - trunk
-            - 'release/**'
-            - 'wp/**'
+    workflow_run:
+        workflows: ['Prime Caches']
+        types:
+            - completed
+
+#    pull_request:
+#    push:
+#        branches:
+#            - trunk
+#            - 'release/**'
+#            - 'wp/**'
 
 # Cancels all previous workflow runs for pull requests that have not completed.
 concurrency:

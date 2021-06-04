@@ -3,12 +3,17 @@ name: Unit Tests
 # Since Unit Tests are required to pass for each PR,
 # we cannot disable them for documentation-only changes.
 on:
-    pull_request:
-    push:
-        branches:
-            - trunk
-            - 'release/**'
-            - 'wp/**'
+    workflow_run:
+        workflows: ['Prime Caches']
+        types:
+            - completed
+
+#    pull_request:
+#    push:
+#        branches:
+#            - trunk
+#            - 'release/**'
+#            - 'wp/**'
 
 # Cancels all previous workflow runs for pull requests that have not completed.
 concurrency:
@@ -21,7 +26,7 @@ jobs:
     unit-js:
         name: JavaScript
         runs-on: ubuntu-latest
-        if: ${{ github.repository == 'WordPress/gutenberg' || github.event_name == 'pull_request' }}
+
 
         strategy:
             fail-fast: false
