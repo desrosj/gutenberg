@@ -1,9 +1,14 @@
 name: Performances Tests
 
 on:
-    pull_request:
-    release:
-        types: [published]
+  workflow_run:
+    workflows: [ "Prime Caches" ]
+    types:
+      - completed
+#
+#    pull_request:
+#    release:
+#        types: [published]
 
 # Cancels all previous workflow runs for pull requests that have not completed.
 concurrency:
