@@ -2,9 +2,9 @@ name: React Native E2E Tests (iOS)
 
 on:
     workflow_run:
-      workflows: [ "Prime Caches" ]
-      types:
-        - completed
+        workflows: ['Prime Caches']
+        types:
+            - completed
 
 #    pull_request:
 #    push:

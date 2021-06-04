@@ -1,10 +1,10 @@
 name: Performances Tests
 
 on:
-  workflow_run:
-    workflows: [ "Prime Caches" ]
-    types:
-      - completed
+    workflow_run:
+        workflows: ['Prime Caches']
+        types:
+            - completed
 #
 #    pull_request:
 #    release:

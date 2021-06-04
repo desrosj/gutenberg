@@ -2,9 +2,9 @@ name: Static Analysis (Linting, License, Type checks...)
 
 on:
     workflow_run:
-        workflows: [ "Prime Caches" ]
+        workflows: ['Prime Caches']
         types:
-          - completed
+            - completed
 
 #    pull_request:
 #    push:

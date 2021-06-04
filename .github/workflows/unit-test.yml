@@ -4,9 +4,9 @@ name: Unit Tests
 # we cannot disable them for documentation-only changes.
 on:
     workflow_run:
-        workflows: [ "Prime Caches" ]
+        workflows: ['Prime Caches']
         types:
-          - completed
+            - completed
 
 #    pull_request:
 #    push:

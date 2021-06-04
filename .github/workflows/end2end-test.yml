@@ -1,11 +1,11 @@
 name: End-to-End Tests
 
 on:
-  workflow_run:
-    workflows:
-      - Prime Caches
-    types:
-      - completed
+    workflow_run:
+        workflows:
+            - Prime Caches
+        types:
+            - completed
 
 #    pull_request:
 #    push:
