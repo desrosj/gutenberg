@@ -50,7 +50,8 @@ jobs:
               run: |
                   npm run wp-env start
 
-            - run: ls
+            - run: ls -a
+            - run: ls ${{ github.workspace }}/.jest-cache
 
             - name: Running the tests
               run: |
@@ -64,4 +65,5 @@ jobs:
                   name: failures-artifacts
                   path: artifacts
 
-            - run: ls
+            - run: ls -a
+            - run: ls ${{ github.workspace }}/.jest-cache
