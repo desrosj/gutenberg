@@ -24,10 +24,12 @@ jobs:
               issue_number: ${{ github.event.pull_request.number }},
             });
 
-            console.log( pr_comments );
+            console.debug( pr_comments );
+
+            console.debug( pr_participants );
 
             pr_comments.forEach( function( element, index, array ) {
               pr_participants.push( element.user.login );
             });
 
-            console.log( pr_participants );
+            console.debug( pr_participants );
