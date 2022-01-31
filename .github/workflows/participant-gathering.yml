@@ -11,7 +11,7 @@ jobs:
     timeout-minutes: 20
     env:
       PR_NUMBER: ${{ github.event.number }}
-      PR: ${{ toJSON( github.event.pull_request }}
+      PR: ${{ toJSON( github.event.pull_request ) }}
 
     #
     steps:
