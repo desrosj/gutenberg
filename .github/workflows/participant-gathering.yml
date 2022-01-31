@@ -1,0 +1,26 @@
+name: Participant Gathering
+
+on:
+  # Gathers all of the participants for pull requests to assist in giving proper credit.
+  pull_request:
+
+jobs:
+  pull_request_participants:
+    name: Gather pull request participants
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PR_NUMBER: ${{ github.event.number }}
+      PR: ${{ toJSON( github.event.pull_request }}
+
+    #
+    steps:
+      - name: Fetch pull request data
+        uses: actions/github-script@e3cbab99d3a9b271e1b79fc96d103a4a5534998c # v5.1.0
+        with:
+          script: |
+            return github.rest.issues.listComments({
+              'desrosj',
+              'gutenberg',
+              ${{ github.event.pull_request.number }},
+            });
