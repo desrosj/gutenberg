@@ -17,9 +17,9 @@ jobs:
         with:
           script: |
             const pr_comments = github.rest.issues.listComments({
-              'desrosj',
-              'gutenberg',
-              ${{ github.event.pull_request.number }}
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ github.event.pull_request.number }},
             });
 
             console.log( pr_comments );
