@@ -19,7 +19,7 @@ jobs:
             const pr_comments = github.rest.issues.listComments({
               'desrosj',
               'gutenberg',
-              '${{ github.event.pull_request.number }}',
+              ${{ github.event.pull_request.number }}
             });
 
             console.log( pr_comments );
