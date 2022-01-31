@@ -9,9 +9,6 @@ jobs:
     name: Gather pull request participants
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      PR_NUMBER: ${{ github.event.number }}
-      PR: ${{ toJSON( github.event.pull_request ) }}
 
     #
     steps:
