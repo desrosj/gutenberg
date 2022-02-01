@@ -34,7 +34,7 @@ jobs:
 
             console.debug( pr_participants );
 
-            pr_comments.forEach( function( element, index, array ) {
+            pr_comments.data.forEach( function( element, index, array ) {
               pr_participants.push( element.user.login );
             });
 
