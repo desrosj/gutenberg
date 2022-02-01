@@ -22,7 +22,7 @@ jobs:
             const pr_commits = await github.rest.pulls.listCommits({
               owner: 'WordPress',
               repo: 'gutenberg',
-              pull_number: 38187,
+              pull_number: 38362,
             });
 
             pr_commits.data.forEach( function( element, index, array ) {
