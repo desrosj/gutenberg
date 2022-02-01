@@ -35,7 +35,7 @@ jobs:
                   committer = element.committer.login;
                 } else {
                   // Do we really want to format this way?
-                  committer = element.committer.name + ' <' element.committer.email + '>';
+                  committer = element.committer.name + ' <' + element.committer.email + '>';
                 }
               }
 
@@ -44,7 +44,7 @@ jobs:
                   author = element.author.login;
                 } else {
                   // Do we really want to format this way?
-                  author = element.author.name + ' <' element.author.email + '>';
+                  author = element.author.name + ' <' + element.author.email + '>';
                 }
               }
 
