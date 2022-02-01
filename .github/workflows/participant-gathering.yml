@@ -12,9 +12,38 @@ jobs:
 
     #
     steps:
+      - name: Test some pagination.
+        uses: actions/github-script@e3cbab99d3a9b271e1b79fc96d103a4a5534998c # v5.1.0
+        continue-on-error: ${{ true }}
+        with:
+          script: |
+            for await (const response of github.paginate.iterator(
+              github.rest.pulls.listCommits({
+                owner: 'WordPress',
+                repo: 'gutenberg',
+                pull_number: 38362,
+              })
+            )) {
+              console.debug( response );
+            }
+      - name: Test 2
+        uses: actions/github-script@e3cbab99d3a9b271e1b79fc96d103a4a5534998c # v5.1.0
+        continue-on-error: ${{ true }}
+        with:
+          script: |
+            github.paginate( github.rest.pulls.listCommits, {
+              owner: 'WordPress',
+              repo: 'gutenberg',
+              pull_number: 38362,
+            })
+            .then( commits ) => {
+              console.debug( commits );
+            }
+
       # Fetches all commit authors for the pull request.
       - name: Fetch pull request commits
         uses: actions/github-script@e3cbab99d3a9b271e1b79fc96d103a4a5534998c # v5.1.0
+        continue-on-error: ${{ true }}
         with:
           script: |
             const pr_committers = [];
@@ -33,14 +62,14 @@ jobs:
               if ( null != element.committer ) {
                 committer = element.committer.login;
               } else {
-                // Do we really want to format this way?
+                // Is this the best way to format?
                 committer = element.commit.committer.name + ' <' + element.commit.committer.email + '>';
               }
 
               if ( null != element.author ) {
                 author = element.author.login;
               } else {
-                // Do we really want to format this way?
+                // Is this the best way to format?
                 author = element.commit.author.name + ' <' + element.commit.author.email + '>';
               }
 
@@ -58,6 +87,7 @@ jobs:
       # Fetches all pull request commenters.
       - name: Fetch pull request commenters
         uses: actions/github-script@e3cbab99d3a9b271e1b79fc96d103a4a5534998c # v5.1.0
+        continue-on-error: ${{ true }}
         with:
           script: |
             const pr_commenters = [];
@@ -80,6 +110,7 @@ jobs:
       # Fetches all contributors engaged in pull request reviews.
       - name: Fetch pull request reviewer discussions
         uses: actions/github-script@e3cbab99d3a9b271e1b79fc96d103a4a5534998c # v5.1.0
+        continue-on-error: ${{ true }}
         with:
           script: |
             const pr_reviewers = [];
