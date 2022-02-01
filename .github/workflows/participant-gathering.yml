@@ -50,3 +50,25 @@ jobs:
             console.debug( pr_reviewers );
 
             return JSON.stringify( pr_reviewers );
+
+      - name: Fetch pull request commits
+        uses: actions/github-script@e3cbab99d3a9b271e1b79fc96d103a4a5534998c # v5.1.0
+        with:
+          script: |
+            const pr_committers = [];
+
+            const pr_commits = await github.rest.pulls.listCommits({
+              owner: 'WordPress',
+              repo: 'gutenberg',
+              pull_number: 38362,
+            });
+
+            pr_commits.data.forEach( function( element, index, array ) {
+              pr_committers.push( element.user.login );
+            });
+            console.debug( pr_committers );
+
+            return JSON.stringify( pr_committers );
+
+
+
