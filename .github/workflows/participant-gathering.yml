@@ -31,21 +31,17 @@ jobs:
               let author = '';
 
               if ( null != element.committer ) {
-                if ( null != element.committer.login ) {
-                  committer = element.committer.login;
-                } else {
-                  // Do we really want to format this way?
-                  committer = element.committer.name + ' <' + element.committer.email + '>';
-                }
+                committer = element.committer.login;
+              } else {
+                // Do we really want to format this way?
+                committer = element.commit.committer.name + ' <' + element.commit.committer.email + '>';
               }
 
               if ( null != element.author ) {
-                if ( null != element.author.login ) {
-                  author = element.author.login;
-                } else {
-                  // Do we really want to format this way?
-                  author = element.author.name + ' <' + element.author.email + '>';
-                }
+                author = element.author.login;
+              } else {
+                // Do we really want to format this way?
+                author = element.commit.author.name + ' <' + element.commit.author.email + '>';
               }
 
               pr_committers.push( committer );
