@@ -12,6 +12,27 @@ jobs:
 
     #
     steps:
+      # Fetches all commit authors for the pull request.
+      - name: Fetch pull request commits
+        uses: actions/github-script@e3cbab99d3a9b271e1b79fc96d103a4a5534998c # v5.1.0
+        with:
+          script: |
+            const pr_committers = [];
+
+            const pr_commits = await github.rest.pulls.listCommits({
+              owner: 'WordPress',
+              repo: 'gutenberg',
+              pull_number: 38362,
+            });
+
+            pr_commits.data.forEach( function( element, index, array ) {
+              pr_committers.push( element.author.login );
+            });
+            console.debug( pr_committers );
+
+            return JSON.stringify( pr_committers );
+
+      # Fetches all pull request commenters.
       - name: Fetch pull request commenters
         uses: actions/github-script@e3cbab99d3a9b271e1b79fc96d103a4a5534998c # v5.1.0
         with:
@@ -33,6 +54,7 @@ jobs:
 
             return JSON.stringify( pr_commenters );
 
+      # Fetches all contributors engaged in pull request reviews.
       - name: Fetch pull request reviewer discussions
         uses: actions/github-script@e3cbab99d3a9b271e1b79fc96d103a4a5534998c # v5.1.0
         with:
@@ -52,24 +74,10 @@ jobs:
 
             return JSON.stringify( pr_reviewers );
 
-      - name: Fetch pull request commits
-        uses: actions/github-script@e3cbab99d3a9b271e1b79fc96d103a4a5534998c # v5.1.0
-        with:
-          script: |
-            const pr_committers = [];
+      # Fetches all issues linked to the pull request.
+      - name: Fetch linked issues
+        uses: kin/gh-action-get-linked-issues@8ef8d85f1410531f5adadb30609d92cda2c8a650 # v2.0
+        id: linked-issues
 
-            const pr_commits = await github.rest.pulls.listCommits({
-              owner: 'WordPress',
-              repo: 'gutenberg',
-              pull_number: 38362,
-            });
-
-            pr_commits.data.forEach( function( element, index, array ) {
-              pr_committers.push( element.author.login );
-            });
-            console.debug( pr_committers );
-
-            return JSON.stringify( pr_committers );
-
-
-
+      - name: Print linked issue numbers
+        run: echo ${{ steps.linked-issues.outputs.issues }}
