@@ -27,8 +27,8 @@ jobs:
 
             pr_commits.data.forEach( function( element, index, array ) {
               // Log both author and committer if they are different.
-              const committer = '';
-              const author = '';
+              let committer = '';
+              let author = '';
 
               if ( null != element.committer ) {
                 if ( null != element.committer.login ) {
@@ -43,7 +43,7 @@ jobs:
                 if ( null != element.author.login ) {
                   author = element.author.login;
                 } else {
-                  # Do we really want to format this way?
+                  // Do we really want to format this way?
                   author = element.author.name + ' <' element.author.email + '>';
                 }
               }
@@ -54,6 +54,7 @@ jobs:
                 pr_comitters.push( author );
               }
             });
+
             console.debug( pr_committers );
 
             return JSON.stringify( pr_committers );
