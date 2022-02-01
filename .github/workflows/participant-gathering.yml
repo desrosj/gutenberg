@@ -25,10 +25,34 @@ jobs:
               pull_number: 38187,
             });
 
-            console.debug( pr_commits );
-
             pr_commits.data.forEach( function( element, index, array ) {
-              pr_committers.push( element.committer.login );
+              # Log both author and committer if they are different.
+              const committer = '';
+              const author = '';
+
+              if ( null != element.committer ) {
+                if ( null != element.committer.login ) {
+                  committer = element.committer.login;
+                } else {
+                  # Do we really want to format this way?
+                  committer = element.committer.name + ' <' element.committer.email + '>';
+                }
+              }
+
+              if ( null != element.author ) {
+                if ( null != element.author.login ) {
+                  author = element.author.login;
+                } else {
+                  # Do we really want to format this way?
+                  author = element.author.name + ' <' element.author.email + '>';
+                }
+              }
+
+              pr_committers.push( committer );
+
+              if ( author != committer ) {
+                pr_comitters.push( author );
+              }
             });
             console.debug( pr_committers );
 
