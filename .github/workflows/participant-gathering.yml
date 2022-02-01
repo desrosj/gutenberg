@@ -27,7 +27,8 @@ jobs:
             pr_comments.data.forEach( function( element, index, array ) {
               pr_commenters.push( element.user.login );
             });
-console.debug( pr_commenters );
+
+            console.debug( pr_commenters );
 
             return JSON.stringify( pr_commenters );
 
@@ -46,6 +47,6 @@ console.debug( pr_commenters );
             pr_review_comments.data.forEach( function( element, index, array ) {
               pr_reviewers.push( element.user.login );
             });
-  console.debug( pr_reviewers );
+            console.debug( pr_reviewers );
 
             return JSON.stringify( pr_reviewers );
