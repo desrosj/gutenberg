@@ -12,11 +12,11 @@ jobs:
 
     #
     steps:
-      - name: Fetch pull request data
+      - name: Fetch pull request commenters
         uses: actions/github-script@e3cbab99d3a9b271e1b79fc96d103a4a5534998c # v5.1.0
         with:
           script: |
-            const pr_participants = [];
+            const pr_commenters = [];
 
             const pr_comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
@@ -24,18 +24,26 @@ jobs:
               issue_number: ${{ github.event.pull_request.number }},
             });
 
-            console.debug( pr_comments );
-
-            if ( pr_comments instanceof Array) {
-              console.log( 'type array' );
-            } else if ( typeof pr_comments  == "object" ) {
-              console.log( 'type object' );
-            }
-
-            console.debug( pr_participants );
-
             pr_comments.data.forEach( function( element, index, array ) {
-              pr_participants.push( element.user.login );
+              pr_commenters.push( element.user.login );
             });
 
-            console.debug( pr_participants );
+            return JSON.stringify( pr_commenters );
+
+      - name: Fetch pull request reviewer discussions
+        uses: actions/github-script@e3cbab99d3a9b271e1b79fc96d103a4a5534998c # v5.1.0
+        with:
+          script: |
+            const pr_reviewers = [];
+
+            const pr_review_comments = await github.rest.pulls.listReviewComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: ${{ github.event.pull_request.number }},
+            });
+
+            pr_review_comments.data.forEach( function( element, index, array ) {
+              pr_reviewers.push( element.user.login );
+            });
+
+            return JSON.stringify( pr_reviewers );
