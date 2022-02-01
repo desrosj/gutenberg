@@ -27,6 +27,17 @@ jobs:
             )) {
               console.debug( response );
             }
+
+            github.paginate( github.rest.pulls.listCommits, {
+              owner: 'WordPress',
+              repo: 'gutenberg',
+              pull_number: 38362,
+            })
+            .then((commits) => {
+              console.debug( commits );
+            });
+
+
       - name: Test 2
         uses: actions/github-script@e3cbab99d3a9b271e1b79fc96d103a4a5534998c # v5.1.0
         continue-on-error: ${{ true }}
