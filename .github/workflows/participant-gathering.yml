@@ -12,7 +12,7 @@ jobs:
 
     #
     steps:
-      - name: Test some pagination.
+      - name: Fetch a list of contributors
         uses: actions/github-script@e3cbab99d3a9b271e1b79fc96d103a4a5534998c # v5.1.0
         continue-on-error: ${{ true }}
         with:
@@ -24,9 +24,14 @@ jobs:
                 repo: 'gutenberg',
                 pull_number: 38362,
               }
-            )) {
+            )
+            .then(( commits ) => {
+              console.debug( commits );
+            ){
               console.debug( response );
             }
+
+
 
             github.paginate( github.rest.pulls.listCommits, {
               owner: 'WordPress',
