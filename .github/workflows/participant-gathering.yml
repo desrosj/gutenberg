@@ -18,11 +18,12 @@ jobs:
         with:
           script: |
             for await (const response of github.paginate.iterator(
-              github.rest.pulls.listCommits({
+              github.rest.pulls.listCommits,
+              {
                 owner: 'WordPress',
                 repo: 'gutenberg',
                 pull_number: 38362,
-              })
+              }
             )) {
               console.debug( response );
             }
