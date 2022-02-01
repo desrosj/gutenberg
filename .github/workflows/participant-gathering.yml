@@ -19,9 +19,9 @@ jobs:
             const pr_commenters = [];
 
             const pr_comments = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: ${{ github.event.pull_request.number }},
+              owner: 'WordPress',
+              repo: 'gutenberg',
+              issue_number: 38362,
             });
 
             pr_comments.data.forEach( function( element, index, array ) {
@@ -37,9 +37,9 @@ jobs:
             const pr_reviewers = [];
 
             const pr_review_comments = await github.rest.pulls.listReviewComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: ${{ github.event.pull_request.number }},
+              owner: 'WordPress',
+              repo: 'gutenberg',
+              pull_number: 38362,
             });
 
             pr_review_comments.data.forEach( function( element, index, array ) {
