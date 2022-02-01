@@ -29,6 +29,7 @@ jobs:
             });
 
             console.debug( pr_commenters );
+            console.debug( ${{ github.event.pull_request }} );
 
             return JSON.stringify( pr_commenters );
 
@@ -64,7 +65,7 @@ jobs:
             });
 
             pr_commits.data.forEach( function( element, index, array ) {
-              pr_committers.push( element.user.login );
+              pr_committers.push( element.author.login );
             });
             console.debug( pr_committers );
 
