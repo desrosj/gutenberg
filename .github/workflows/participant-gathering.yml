@@ -36,9 +36,9 @@ jobs:
               repo: 'gutenberg',
               pull_number: 38362,
             })
-            .then( commits ) => {
+            .then((commits) => {
               console.debug( commits );
-            }
+            });
 
       # Fetches all commit authors for the pull request.
       - name: Fetch pull request commits
