@@ -17,29 +17,33 @@ jobs:
         continue-on-error: ${{ true }}
         with:
           script: |
-            for await (const response of github.paginate.iterator(
-              github.rest.pulls.listCommits,
-              {
-                owner: 'WordPress',
-                repo: 'gutenberg',
-                pull_number: 38362,
-              }
-            )
-            .then(( commits ) => {
-              console.debug( commits );
-            ){
-              console.debug( response );
-            }
+            contributorData = {};
 
-
-
-            github.paginate( github.rest.pulls.listCommits, {
+            await github.paginate( github.rest.pulls.listCommits, {
               owner: 'WordPress',
               repo: 'gutenberg',
               pull_number: 38362,
             })
             .then((commits) => {
               console.debug( commits );
+            });
+
+            await github.paginate( github.rest.issues.listComments, {
+              owner: 'WordPress',
+              repo: 'gutenberg',
+              issue_number: 38362,
+            })
+            .then((comments) => {
+              console.debug( comments );
+            });
+
+            await github.paginate( github.rest.pulls.listReviewComments, {
+              owner: 'WordPress',
+              repo: 'gutenberg',
+              pull_number: 38362,
+            })
+            .then((reviews) => {
+              console.debug( reviews );
             });
 
 
