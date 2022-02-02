@@ -68,6 +68,7 @@ jobs:
               pull_number: 38362,
             })
             .then((reviews) => {
+              console.debug(reviews);
               for (const review of reviews) {
                 if (!contributorData.committers.has(review.user.login) && !contributorData.commenters.has(review.user.login)) {
                   contributorData.reviewers.add(review.user.login);
@@ -78,18 +79,95 @@ jobs:
 
             console.debug( contributorData );
 
-      - name: Test 2
+      - name: GraphQL
         uses: actions/github-script@e3cbab99d3a9b271e1b79fc96d103a4a5534998c # v5.1.0
         continue-on-error: ${{ true }}
         with:
           script: |
-            github.paginate( github.rest.pulls.listCommits, {
-              owner: 'WordPress',
-              repo: 'gutenberg',
-              pull_number: 38362,
-            })
-            .then((commits) => {
-              console.debug( commits );
+            const ownerName = 'WordPress';
+            const repoName = 'gutenberg';
+            const prNumber = 38360;
+
+            if (!ownerName || !repoName || !prNumber) {
+                return;
+            }
+
+            const {data: contributorData} = await github.graphql(
+                `{
+                    repository(owner: "${ownerName}", name: "${repoName}") {
+                        pullRequest(number: ${prNumber}) {
+                            commits(first: 100) {
+                                nodes {
+                                    commit {
+                                        author {
+                                            user {
+                                                databaseId
+                                                login
+                                                name
+                                                email
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            reviews(first: 100) {
+                                nodes {
+                                    author {
+                                        login
+                                    }
+                                }
+                            }
+                            comments(first: 100) {
+                                nodes {
+                                    author {
+                                        login
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }`
+            );
+
+            console.debug( contributorData );
+
+            coAuthorData.userData = [];
+            coAuthorData.committers = new Set();
+
+            for (const commit of contributorData.repository.pullRequest.commits.nodes) {
+                coAuthorData.committers.add(commit.commit.author.user.login);
+                coAuthorData.userData[commit.commit.author.user.login] = commit.commit.author.user;
+            }
+
+            coAuthorData.reviewers = new Set();
+
+            for (const review of contributorData.repository.pullRequest.reviews.nodes) {
+                // Only store reviewers that aren't committers.
+                if (!coAuthorData.committers.has(review.author.login)) {
+                    coAuthorData.reviewers.add(review.author.login);
+                }
+            }
+
+            coAuthorData.commenters = new Set();
+
+            for (const comment of contributorData.repository.pullRequest.comments.nodes) {
+                // Only store commenters that aren't committers or reviewers.
+                if (!coAuthorData.committers.has(comment.author.login) && !coAuthorData.reviewers.has(comment.author.login)) {
+                    coAuthorData.commenters.add(comment.author.login);
+                }
+            }
+
+            // We already have user info for committers, we need to grab it for everyone else.
+            const {data: userData} = await api.v4(
+                '{' +
+                    [...coAuthorData.reviewers, ...coAuthorData.commenters].map(user =>
+                        escapeForGql(user) + `: user(login: "${user}") {databaseId, login, name, email}`
+                    ) +
+                '}'
+            );
+
+            Object.values(userData).forEach(user => {
+                coAuthorData.userData[user.login] = user;
             });
 
       # Fetches all commit authors for the pull request.
