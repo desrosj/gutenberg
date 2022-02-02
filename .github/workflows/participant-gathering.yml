@@ -144,8 +144,8 @@ jobs:
                     email: commit.author.email
                   };
                 } else {
-                  coAuthorData.committers.add(commit.author.user.login);
-                  coAuthorData.userData[commit.author.user.login] = commit.author.user;
+                  coAuthorData.committers.add(commit.commit.author.user.login);
+                  coAuthorData.userData[commit.commit.author.user.login] = commit.commit.author.user;
                 }
             }
 
