@@ -18,7 +18,7 @@ jobs:
         with:
           script: |
             const contributorData = {};
-            contributerData.userData = [];
+            contributorData.userData = [];
             contributorData.committers = new Set();
 
             await github.paginate( github.rest.pulls.listCommits, {
@@ -28,7 +28,7 @@ jobs:
             })
             .then((commits) => {
               for (const commit of commits) {
-                contributerData.committers.add(commit.author.login);
+                contributorData.committers.add(commit.author.login);
                 contributorData.userData[commit.author.login] = commit.author;
               }
             });
