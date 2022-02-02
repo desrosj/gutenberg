@@ -84,6 +84,7 @@ jobs:
         continue-on-error: ${{ true }}
         with:
           script: |
+            const coAuthorData = {};
             const ownerName = 'WordPress';
             const repoName = 'gutenberg';
             const prNumber = 38360;
