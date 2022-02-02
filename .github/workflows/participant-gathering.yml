@@ -65,11 +65,11 @@ jobs:
             await github.paginate( github.rest.pulls.listReviewComments, {
               owner: 'WordPress',
               repo: 'gutenberg',
-              pull_number: 38362,
+              pull_number: 38360,
             })
             .then((reviews) => {
               for (const review of reviews) {
-                if (!contributorData.committers.has(review.user.login) && ! contributorData.commenters.has(review.user.login)) {
+                if (!contributorData.committers.has(review.user.login) && !contributorData.commenters.has(review.user.login)) {
                   contributorData.reviewers.add(review.user.login);
                   contributorData.userData[review.user.login] = review.user;
                 }
