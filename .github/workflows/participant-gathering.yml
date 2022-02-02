@@ -35,12 +35,12 @@ jobs:
                   login = commit.author.login;
                   author = commit.author;
                 } else {
-                  login = commit.commit.author;
+                  login = commit.commit.author.name;
                   author = commit.commit.author;
                 }
 
                 contributorData.committers.add( login );
-                contributorData.userData[commit.author.login] = author;
+                contributorData.userData[login] = author;
               }
             });
 
@@ -53,10 +53,14 @@ jobs:
             })
             .then((comments) => {
               for (const comment of comments) {
-                contributorData.commenters.add(comment.author.login);
-                contributorData.userData[comment.author.login] = comment.author;
+                if (!contributorData.committers.has(comment.user.login)) {
+                  contributorData.commenters.add(comment.user.login);
+                  contributorData.userData[comment.user.login] = comment.user;
+                }
               }
             });
+
+            contributorData.reviewers = new Set();
 
             await github.paginate( github.rest.pulls.listReviewComments, {
               owner: 'WordPress',
@@ -64,7 +68,12 @@ jobs:
               pull_number: 38362,
             })
             .then((reviews) => {
-              console.debug( reviews );
+              for (const review of reviews) {
+                if (!contributorData.committers.has(reviews.user.login) && ! contributorData.commenters.has(reviews.user.login)) {
+                  contributorData.reviewers.add(review.user.login);
+                  contributorData.userData[review.user.login] = review.user;
+                }
+              }
             });
 
             console.debug( contributorData );
