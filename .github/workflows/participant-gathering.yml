@@ -69,7 +69,7 @@ jobs:
             })
             .then((reviews) => {
               for (const review of reviews) {
-                if (!contributorData.committers.has(reviews.user.login) && ! contributorData.commenters.has(reviews.user.login)) {
+                if (!contributorData.committers.has(review.user.login) && ! contributorData.commenters.has(review.user.login)) {
                   contributorData.reviewers.add(review.user.login);
                   contributorData.userData[review.user.login] = review.user;
                 }
