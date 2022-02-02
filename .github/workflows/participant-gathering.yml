@@ -136,16 +136,16 @@ jobs:
             coAuthorData.committers = new Set();
 
             for (const commit of contributorData.repository.pullRequest.commits.nodes) {
-                if ( null == commit.author.user ) {
+                if ( null != commit.author.user ) {
+                  coAuthorData.committers.add(commit.commit.author.user.login);
+                  coAuthorData.userData[commit.commit.author.user.login] = commit.commit.author.user;
+                } else {
                   const authorEmail = '<' + commit.author.email + '>';
                   coAuthorData.committers.add(authorEmail);
                   coAuthorData.userData[authorEmail] = {
                     name: commit.author.name,
                     email: commit.author.email
                   };
-                } else {
-                  coAuthorData.committers.add(commit.commit.author.user.login);
-                  coAuthorData.userData[commit.commit.author.user.login] = commit.commit.author.user;
                 }
             }
 
