@@ -137,11 +137,11 @@ jobs:
 
             for (const commit of contributorData.repository.pullRequest.commits.nodes) {
                 if ( null == commit.commit.author.user ) {
-                  const authorEmail = '<' + commit.author.email + '>';
+                  const authorEmail = '<' + commit.commit.author.email + '>';
                   coAuthorData.committers.add(authorEmail);
                   coAuthorData.userData[authorEmail] = {
-                    name: commit.author.name,
-                    email: commit.author.email
+                    name: commit.commit.author.name,
+                    email: commit.commit.author.email
                   };
                 } else {
                   coAuthorData.committers.add(commit.commit.author.user.login);
