@@ -100,6 +100,10 @@ jobs:
                                                 name
                                                 email
                                             }
+                                            details {
+                                              name
+                                              email
+                                            }
                                         }
                                     }
                                 }
@@ -138,7 +142,8 @@ jobs:
             for (const commit of contributorData.repository.pullRequest.commits.nodes) {
                 console.dir( commit );
                 console.dir( commit.author );
-            
+                console.dir( commit.author.details );
+
                 coAuthorData.committers.add(commit.commit.author.user.login);
                 coAuthorData.userData[commit.commit.author.user.login] = commit.commit.author.user;
             }
