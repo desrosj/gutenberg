@@ -28,8 +28,19 @@ jobs:
             })
             .then((commits) => {
               for (const commit of commits) {
-                contributorData.committers.add(commit.author.login);
-                contributorData.userData[commit.author.login] = commit.author;
+                let login = '';
+                let author = {};
+
+                if ( null != commit.author ) {
+                  login = commit.author.login;
+                  author = commit.author;
+                } else {
+                  login = commit.commit.author;
+                  author = commit.commit.author;
+                }
+
+                contributorData.committers.add( login );
+                contributorData.userData[commit.author.login] = author;
               }
             });
 
