@@ -85,15 +85,8 @@ jobs:
         with:
           script: |
             const coAuthorData = {};
-            const ownerName = 'WordPress';
-            const repoName = 'gutenberg';
-            const prNumber = 38360;
 
-            if (!ownerName || !repoName || !prNumber) {
-                return;
-            }
-
-            const {data: contributorData} = await github.graphql(
+            const contributorData = await github.graphql(
                 `query($owner:String!, $name:String!, $prNumber:Int!) {
                     repository(owner:$owner, name:$name) {
                         pullRequest(number:$prNumber) {
