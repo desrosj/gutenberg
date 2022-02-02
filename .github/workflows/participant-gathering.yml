@@ -100,10 +100,8 @@ jobs:
                                                 name
                                                 email
                                             }
-                                            details {
-                                              name
-                                              email
-                                            }
+                                            name
+                                            email
                                         }
                                     }
                                 }
