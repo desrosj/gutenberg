@@ -62,10 +62,10 @@ jobs:
 
             contributorData.reviewers = new Set();
 
-            await github.paginate( github.rest.pulls.listReviewComments, {
+            await github.paginate( github.rest.pulls.listReviews, {
               owner: 'WordPress',
               repo: 'gutenberg',
-              pull_number: 38360,
+              pull_number: 38362,
             })
             .then((reviews) => {
               for (const review of reviews) {
