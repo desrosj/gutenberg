@@ -135,15 +135,18 @@ jobs:
             coAuthorData.userData = [];
             coAuthorData.committers = new Set();
 
-            console.dir( contributorData.repository.pullRequest.commits.nodes );
-
             for (const commit of contributorData.repository.pullRequest.commits.nodes) {
-                console.dir( commit );
-                console.dir( commit.author );
-                console.dir( commit.author.details );
-
-                coAuthorData.committers.add(commit.commit.author.user.login);
-                coAuthorData.userData[commit.commit.author.user.login] = commit.commit.author.user;
+                if ( null == commit.author.user ) {
+                  const authorEmail = '<' + commit.author.email + '>';
+                  coAuthorData.committers.add(authorEmail);
+                  coAuthorData.userData[authorEmail] = {
+                    name: commit.author.name,
+                    email: commit.author.email
+                  };
+                } else {
+                  coAuthorData.committers.add(commit.author.user.login);
+                  coAuthorData.userData[commit.author.user.login] = commit.author.user;
+                }
             }
 
             coAuthorData.reviewers = new Set();
