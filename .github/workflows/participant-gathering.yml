@@ -95,8 +95,8 @@ jobs:
 
             const {data: contributorData} = await github.graphql(
                 `query($owner:String!, $name:String!, prNumber:Integer!) {
-                    repository(owner: "${ownerName}", name: "${repoName}") {
-                        pullRequest(number: ${prNumber}) {
+                    repository(owner:$owner, name:$name) {
+                        pullRequest(number:$prNumber) {
                             commits(first: 100) {
                                 nodes {
                                     commit {
