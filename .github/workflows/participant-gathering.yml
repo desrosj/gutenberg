@@ -84,6 +84,8 @@ jobs:
         continue-on-error: ${{ true }}
         with:
           script: |
+            const escapeForGql = string => '_' + string.replace(/[./-]/g, '_');
+            
             const coAuthorData = {};
 
             const contributorData = await github.graphql(
@@ -168,7 +170,7 @@ jobs:
             console.debug( coAuthorData );
 
             // We already have user info for committers, we need to grab it for everyone else.
-            const {data: userData} = await github.graphql(
+            const userData = await github.graphql(
                 '{' +
                     [...coAuthorData.reviewers, ...coAuthorData.commenters].map(user =>
                         escapeForGql(user) + `: user(login: "${user}") {databaseId, login, name, email}`
