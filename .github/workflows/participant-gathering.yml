@@ -41,9 +41,9 @@ jobs:
               issue_number: 38362,
             })
             .then((comments) => {
-              for (const commit of commits) {
-                contributorData.commenters.add(commit.author.login);
-                contributorData.userData[commit.author.login] = commit.author;
+              for (const comment of comments) {
+                contributorData.commenters.add(comment.author.login);
+                contributorData.userData[comment.author.login] = comment.author;
               }
             });
 
