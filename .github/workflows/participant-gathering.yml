@@ -167,19 +167,20 @@ jobs:
 
             console.debug( coAuthorData );
 
-#            // We already have user info for committers, we need to grab it for everyone else.
-#            const {data: userData} = await github.graphql(
-#                '{' +
-#                    [...coAuthorData.reviewers, ...coAuthorData.commenters].map(user =>
-#                        escapeForGql(user) + `: user(login: "${user}") {databaseId, login, name, email}`
-#                    ) +
-#                '}'
-#            );
-#
-#            Object.values(userData).forEach(user => {
-#                coAuthorData.userData[user.login] = user;
-#            });
+            // We already have user info for committers, we need to grab it for everyone else.
+            const {data: userData} = await github.graphql(
+                '{' +
+                    [...coAuthorData.reviewers, ...coAuthorData.commenters].map(user =>
+                        escapeForGql(user) + `: user(login: "${user}") {databaseId, login, name, email}`
+                    ) +
+                '}'
+            );
 
+            Object.values(userData).forEach(user => {
+                coAuthorData.userData[user.login] = user;
+            });
+
+            console.debug( coAuthorData );
 
       # Fetches all commit authors for the pull request.
       - name: Fetch pull request commits
