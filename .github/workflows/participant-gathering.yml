@@ -136,8 +136,11 @@ jobs:
             console.dir( contributorData.repository.pullRequest.commits.nodes );
 
             for (const commit of contributorData.repository.pullRequest.commits.nodes) {
-                coAuthorData.committers.add(commit.author.user.login);
-                coAuthorData.userData[commit.author.user.login] = commit.author.user;
+                console.dir( commit );
+                console.dir( commit.author );
+            
+                coAuthorData.committers.add(commit.commit.author.user.login);
+                coAuthorData.userData[commit.commit.author.user.login] = commit.commit.author.user;
             }
 
             coAuthorData.reviewers = new Set();
