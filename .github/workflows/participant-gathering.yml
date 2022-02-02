@@ -18,6 +18,7 @@ jobs:
         with:
           script: |
             contributorData = {};
+            contributer.userData = [];
             contributorData.committers = new Set();
 
             await github.paginate( github.rest.pulls.listCommits, {
@@ -32,13 +33,18 @@ jobs:
               }
             });
 
+            contributorData.commenters = new Set();
+
             await github.paginate( github.rest.issues.listComments, {
               owner: 'WordPress',
               repo: 'gutenberg',
               issue_number: 38362,
             })
             .then((comments) => {
-              console.debug( comments );
+              for (const commit of commits) {
+                contributorData.commenters.add(commit.author.login);
+                contributorData.userData[commit.author.login] = commit.author;
+              }
             });
 
             await github.paginate( github.rest.pulls.listReviewComments, {
