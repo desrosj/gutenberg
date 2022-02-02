@@ -130,8 +130,6 @@ jobs:
                 }
             );
 
-            console.debug( contributorData );
-
             coAuthorData.userData = [];
             coAuthorData.committers = new Set();
 
@@ -150,7 +148,6 @@ jobs:
             }
 
             coAuthorData.reviewers = new Set();
-            console.dir( contributorData.repository.pullRequest.reviews.nodes );
 
             for (const review of contributorData.repository.pullRequest.reviews.nodes) {
                 // Only store reviewers that aren't committers.
@@ -161,8 +158,6 @@ jobs:
 
             coAuthorData.commenters = new Set();
 
-            console.dir( contributorData.repository.pullRequest.comments.nodes );
-
             for (const comment of contributorData.repository.pullRequest.comments.nodes) {
                 // Only store commenters that aren't committers or reviewers.
                 if (!coAuthorData.committers.has(comment.author.login) && !coAuthorData.reviewers.has(comment.author.login)) {
@@ -170,7 +165,7 @@ jobs:
                 }
             }
 
-            console.debug( contributorData );
+            console.debug( coAuthorData );
 
 #            // We already have user info for committers, we need to grab it for everyone else.
 #            const {data: userData} = await github.graphql(
