@@ -156,9 +156,10 @@ jobs:
                     email: commit.commit.author.email
                   };
                 } else {
-                  if ( skipUser( commit.commit.author.user.login ) {
+                  if ( skipUser( commit.commit.author.user.login ) ) {
                     continue;
                   }
+
                   coAuthorData.committers.add(commit.commit.author.user.login);
                   coAuthorData.userData[commit.commit.author.user.login] = commit.commit.author.user;
                 }
@@ -167,7 +168,7 @@ jobs:
             coAuthorData.reviewers = new Set();
 
             for (const review of contributorData.repository.pullRequest.reviews.nodes) {
-                if ( skipUser( commit.commit.author.user.login ) {
+                if ( skipUser( commit.commit.author.user.login ) ) {
                   continue;
                 }
 
@@ -180,7 +181,7 @@ jobs:
             coAuthorData.commenters = new Set();
 
             for (const comment of contributorData.repository.pullRequest.comments.nodes) {
-                if ( skipUser( commit.commit.author.user.login ) {
+                if ( skipUser( commit.commit.author.user.login ) ) {
                   continue;
                 }
 
