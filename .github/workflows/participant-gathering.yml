@@ -82,6 +82,7 @@ jobs:
       - name: GraphQL
         uses: actions/github-script@e3cbab99d3a9b271e1b79fc96d103a4a5534998c # v5.1.0
         continue-on-error: ${{ true }}
+        id: contributor-data
         with:
           script: |
             function skipUser( username ) {
@@ -208,6 +209,9 @@ jobs:
             console.debug( coAuthorData );
 
             return coAuthorData;
+
+      - name: Test data
+        run: echo "${{steps.contributor-data.outputs.result}}"
 
       # Fetches all issues linked to the pull request.
       - name: Fetch linked issues
