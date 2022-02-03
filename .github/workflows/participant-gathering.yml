@@ -18,6 +18,10 @@ jobs:
         id: contributor-data
         with:
           script: |
+            console.log( context );
+            console.log( context.number );
+            console.log( context.pull_request );
+            console.log( context.event );
             function skipUser( username ) {
                 const skippedUsers = [
                     'github-actions'
@@ -105,7 +109,7 @@ jobs:
                 {
                     owner: context.repo.owner,
                     name: context.repo.repo,
-                    prNumber: context.pull_request.number
+                    prNumber: ${{ github.event.pull_request.number }}
                 }
             );
 
