@@ -48,7 +48,6 @@ jobs:
                 reviewers: new Set(),
                 commenters: new Set(),
                 reporters: new Set(),
-                linkedIssueCommenters: new Set()
             };
 
             const contributorData = await github.graphql(
@@ -163,16 +162,16 @@ jobs:
                     }
 
                     if (!contributorAlreadyPresent( issueComment.author.login ) ) {
-                        coAuthorData.linkedIssueCommenters.add( issueComment.author.login );
+                        coAuthorData.commenters.add( issueComment.author.login );
                     }
                 }
             }
 
             // We already have user info for committers, we need to grab it for everyone else.
-            if ( [...coAuthorData.reviewers, ...coAuthorData.commenters, ...coAuthorData.reporters, ...coAuthorData.linkedIssueCommenters].length > 0 ) {
+            if ( [...coAuthorData.reviewers, ...coAuthorData.commenters, ...coAuthorData.reporters].length > 0 ) {
                 const userData = await github.graphql(
                     '{' +
-                    [...coAuthorData.reviewers, ...coAuthorData.commenters, ...coAuthorData.reporters, ...coAuthorData.linkedIssueCommenters].map(user =>
+                    [...coAuthorData.reviewers, ...coAuthorData.commenters, ...coAuthorData.reporters].map(user =>
                         escapeForGql(user) + `: user(login: "${user}") {databaseId, login, name, email}`
                     ) +
                     '}'
