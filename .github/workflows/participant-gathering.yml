@@ -19,7 +19,7 @@ jobs:
         with:
           script: |
             console.log( github );
-            console.log( github.event );
+            console.log( context );
             function skipUser( username ) {
                 const skippedUsers = [
                     'github-actions'
