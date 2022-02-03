@@ -162,9 +162,9 @@ jobs:
             console.log( contributorData.repository.pullRequest.closingIssuesReferences );
             console.log( contributorData.repository.pullRequest.closingIssuesReferences.nodes );
 
-  for (const issueComment of contributorData.repository.pullRequest.closingIssuesReferences.nodes){
-    console.debug( issueComment );
-}
+              for (const issueComment of contributorData.repository.pullRequest.closingIssuesReferences.nodes){
+                console.debug( issueComment );
+            }
 
             coAuthorData.userData = [];
             coAuthorData.committers = new Set();
