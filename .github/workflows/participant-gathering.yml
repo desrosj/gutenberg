@@ -208,7 +208,7 @@ jobs:
 
             console.debug( coAuthorData );
 
-            return coAuthorData;
+            return JSON.stringify( coAuthorData );
 
       - name: Test data
         run: echo "${{steps.contributor-data.outputs.result}}"
