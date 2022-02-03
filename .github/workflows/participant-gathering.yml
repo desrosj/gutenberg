@@ -18,7 +18,7 @@ jobs:
         id: contributor-data
         with:
           script: |
-            const script = require('./tools/contributions.js');
+            const script = require('tools/contributions.js');
 
       - name: Test data
         run: echo "${{steps.contributor-data.outputs.result}}"
