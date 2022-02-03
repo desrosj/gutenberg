@@ -105,7 +105,7 @@ jobs:
                 {
                     owner: context.repo.owner,
                     name: context.repo.repo,
-                    prNumber: context.number
+                    prNumber: context.pull_request.number
                 }
             );
 
