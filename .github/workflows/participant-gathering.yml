@@ -209,8 +209,8 @@ jobs:
                     const commitEmail = email || `${databaseId}+${username}@users.noreply.github.com`;
 
                     return `Co-authored-by: ${name} <${commitEmail}>`;
-                }).join('\n\n');
-            }).join('\n');
+                }).join('\n');
+            }).join('\n\n');
 
             console.log( coAuthors );
 
