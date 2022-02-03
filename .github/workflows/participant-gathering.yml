@@ -12,73 +12,6 @@ jobs:
 
     #
     steps:
-      - name: Fetch a list of contributors
-        uses: actions/github-script@e3cbab99d3a9b271e1b79fc96d103a4a5534998c # v5.1.0
-        continue-on-error: ${{ true }}
-        with:
-          script: |
-            const contributorData = {};
-            contributorData.userData = [];
-            contributorData.committers = new Set();
-
-            await github.paginate( github.rest.pulls.listCommits, {
-              owner: 'WordPress',
-              repo: 'gutenberg',
-              pull_number: 38360,
-            })
-            .then((commits) => {
-              for (const commit of commits) {
-                let login = '';
-                let author = {};
-
-                if ( null != commit.author ) {
-                  login = commit.author.login;
-                  author = commit.author;
-                } else {
-                  login = commit.commit.author.name;
-                  author = commit.commit.author;
-                }
-
-                contributorData.committers.add( login );
-                contributorData.userData[login] = author;
-              }
-            });
-
-            contributorData.commenters = new Set();
-
-            await github.paginate( github.rest.issues.listComments, {
-              owner: 'WordPress',
-              repo: 'gutenberg',
-              issue_number: 38362,
-            })
-            .then((comments) => {
-              for (const comment of comments) {
-                if (!contributorData.committers.has(comment.user.login)) {
-                  contributorData.commenters.add(comment.user.login);
-                  contributorData.userData[comment.user.login] = comment.user;
-                }
-              }
-            });
-
-            contributorData.reviewers = new Set();
-
-            await github.paginate( github.rest.pulls.listReviews, {
-              owner: 'WordPress',
-              repo: 'gutenberg',
-              pull_number: 38362,
-            })
-            .then((reviews) => {
-              console.debug(reviews);
-              for (const review of reviews) {
-                if (!contributorData.committers.has(review.user.login) && !contributorData.commenters.has(review.user.login)) {
-                  contributorData.reviewers.add(review.user.login);
-                  contributorData.userData[review.user.login] = review.user;
-                }
-              }
-            });
-
-            console.debug( contributorData );
-
       - name: GraphQL
         uses: actions/github-script@e3cbab99d3a9b271e1b79fc96d103a4a5534998c # v5.1.0
         continue-on-error: ${{ true }}
@@ -163,7 +96,7 @@ jobs:
             console.log( contributorData.repository.pullRequest.closingIssuesReferences.nodes );
 
               for (const issueComment of contributorData.repository.pullRequest.closingIssuesReferences.nodes){
-                console.debug( issueComment.comments );
+                console.debug( issueComment.comments.author );
             }
 
             coAuthorData.userData = [];
