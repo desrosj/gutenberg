@@ -128,7 +128,6 @@ for (const comment of contributorData.repository.pullRequest.comments.nodes) {
 	}
 }
 
-
 // Grab reporters and commenters on linked issues.
 for (const linkedIssue of contributorData.repository.pullRequest.closingIssuesReferences.nodes){
 	if (!contributorAlreadyPresent( linkedIssue.author.login ) && !skipUser( linkedIssue.author.login ) ) {

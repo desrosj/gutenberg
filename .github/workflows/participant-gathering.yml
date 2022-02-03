@@ -205,7 +205,7 @@ jobs:
 
             console.log( coAuthors );
 
-
+            return coAuthors;
 
       - name: Test data
         run: echo "${{steps.contributor-data.outputs.result}}"
