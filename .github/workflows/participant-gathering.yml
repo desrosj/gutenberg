@@ -110,7 +110,7 @@ jobs:
                 {
                     owner: 'WordPress',
                     name: 'gutenberg',
-                    prNumber: 38314
+                    prNumber: 38358
                 }
             );
 
@@ -233,7 +233,7 @@ jobs:
             const commentMessage = 'Here is the suggested props message for the merge commit message:\n\n' +
               '```\n' +
               ${{ steps.contributor-data.outputs.result }} +
-              '```';
+              '\n```';
 
             const comment = {
                 ...commentInfo,
