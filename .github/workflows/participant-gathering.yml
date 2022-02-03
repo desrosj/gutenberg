@@ -105,7 +105,7 @@ jobs:
                 {
                     owner: context.repo.owner,
                     name: context.repo.repo,
-                    prNumber: github.event.pull_reqquest.number
+                    prNumber: github.event.pull_request.number
                 }
             );
 
