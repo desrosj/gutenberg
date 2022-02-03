@@ -135,16 +135,31 @@ jobs:
                                     }
                                 }
                             }
+                            closingIssuesReferences(first:100){
+                              nodes {
+                                author {
+                                  login
+                                }
+                                comments(first:100) {
+                                  nodes {
+                                    author {
+                                      login
+                                    }
+                                  }
+                                }
+                              }
+                            }
                         }
                     }
                 }`,
                 {
                   owner: 'WordPress',
                   name: 'gutenberg',
-                  prNumber: 38362
+                  prNumber: 38440
                 }
             );
 
+            console.log( contributorData.repository.pullRequest.closingIssuesReferences.nodes );
             coAuthorData.userData = [];
             coAuthorData.committers = new Set();
 
