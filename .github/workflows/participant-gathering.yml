@@ -179,11 +179,11 @@ jobs:
                       ) +
                   '}'
               );
-            }
 
-            Object.values(userData).forEach(user => {
-                coAuthorData.userData[user.login] = user;
-            });
+              Object.values(userData).forEach(user => {
+                  coAuthorData.userData[user.login] = user;
+              });
+            }
 
             console.debug( coAuthorData );
 
