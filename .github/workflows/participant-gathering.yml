@@ -165,7 +165,7 @@ jobs:
             // We already have user info for committers, we need to grab it for everyone else.
             const userData = await github.graphql(
                 '{' +
-                    [...coAuthorData.reviewers, ...coAuthorData.commenters].map(user =>
+                    [...coAuthorData.reviewers, ...coAuthorData.commenters, ...coAuthorData.reporters, ..coAuthorData.linkedIssueCommenters].map(user =>
                         escapeForGql(user) + `: user(login: "${user}") {databaseId, login, name, email}`
                     ) +
                 '}'
@@ -177,7 +177,7 @@ jobs:
 
             console.debug( coAuthorData );
 
-            const priorities = ['committers', 'reviewers', 'commenters'];
+            const priorities = ['committers', 'reviewers', 'commenters', 'reporters'];
 
             const coAuthors = priorities.map(priority => {
               // Skip an empty set of contributors.
