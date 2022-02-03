@@ -225,9 +225,9 @@ jobs:
             };
 
             const commentMessage = 'Here is the suggested props message for the merge commit message:\n\n' +
-              '<blockquote>' +
-              '${{ steps.contributor-data.outputs.result }}' +
-              '</blockquote>';
+              '```' +
+              ${{ steps.contributor-data.outputs.result }} +
+              '```';
 
             const comment = {
                 ...commentInfo,
