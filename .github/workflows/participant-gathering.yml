@@ -30,9 +30,26 @@ jobs:
                 return false;
             }
 
+            function contributorAlreadyPresent( login ) {
+                const contributorTypes = ['committers', 'reviewers', 'commenters', 'reporters'];
+
+                for (const contributorType of contributorTypes) {
+                    if ( coAuthorData[contributorType].has( login ) ) {
+                        return true;
+                    }
+                }
+            }
+
             const escapeForGql = string => '_' + string.replace(/[./-]/g, '_');
 
-            const coAuthorData = {};
+            const coAuthorData = {
+                userData: [],
+                committers: new Set(),
+                reviewers: new Set(),
+                commenters: new Set(),
+                reporters: new Set(),
+                linkedIssueCommenters: new Set()
+            };
 
             const contributorData = await github.graphql(
                 `query($owner:String!, $name:String!, $prNumber:Int!) {
@@ -92,9 +109,6 @@ jobs:
                 }
             );
 
-            coAuthorData.userData = [];
-            coAuthorData.committers = new Set();
-
             for (const commit of contributorData.repository.pullRequest.commits.nodes) {
                 if ( null == commit.commit.author.user ) {
                     coAuthorData.committers.add(commit.commit.author.email);
@@ -112,20 +126,16 @@ jobs:
                 }
             }
 
-            coAuthorData.reviewers = new Set();
-
             for (const review of contributorData.repository.pullRequest.reviews.nodes) {
                 if ( skipUser( review.author.login ) ) {
                     continue;
                 }
 
                 // Only store reviewers that aren't committers.
-                if (!coAuthorData.committers.has(review.author.login)) {
+                if (!contributorAlreadyPresent( review.author.login ) ) {
                     coAuthorData.reviewers.add(review.author.login);
                 }
             }
-
-            coAuthorData.commenters = new Set();
 
             for (const comment of contributorData.repository.pullRequest.comments.nodes) {
                 if ( skipUser( comment.author.login ) ) {
@@ -133,20 +143,16 @@ jobs:
                 }
 
                 // Only store commenters that aren't committers or reviewers.
-                if (!coAuthorData.committers.has(comment.author.login) && !coAuthorData.reviewers.has(comment.author.login)) {
+                if (!contributorAlreadyPresent( comment.author.login ) ) {
                     coAuthorData.commenters.add(comment.author.login);
                 }
             }
 
-            coAuthorData.reporters = new Set();
-            coAuthorData.linkedIssueCommenters = new Set();
 
             // Grab reporters and commenters on linked issues.
             for (const linkedIssue of contributorData.repository.pullRequest.closingIssuesReferences.nodes){
-                if (!coAuthorData.committers.has(linkedIssue.author.login) && !coAuthorData.reviewers.has(linkedIssue.author.login) && !coAuthorData.commenters.has(linkedIssue.author.login)) {
-                    if ( ! skipUser( linkedIssue.author.login ) ) {
-                        coAuthorData.reporters.add(linkedIssue.author.login);
-                    }
+                if (!contributorAlreadyPresent( linkedIssue.author.login ) && !skipUser( linkedIssue.author.login ) ) {
+                    coAuthorData.reporters.add(linkedIssue.author.login);
                 }
 
                 for (const issueComment of linkedIssue.comments.nodes){
@@ -154,7 +160,7 @@ jobs:
                         continue;
                     }
 
-                    if (!coAuthorData.committers.has(issueComment.author.login) && !coAuthorData.reviewers.has(issueComment.author.login) && !coAuthorData.commenters.has(issueComment.author.login) && !coAuthorData.reporters.has(issueComment.author.login)) {
+                    if (!contributorAlreadyPresent( issueComment.author.login ) ) {
                         coAuthorData.linkedIssueCommenters.add( issueComment.author.login );
                     }
                 }
@@ -198,6 +204,7 @@ jobs:
             }).join('\n');
 
             console.log( coAuthors );
+
 
 
       - name: Test data
