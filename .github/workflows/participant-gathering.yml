@@ -225,7 +225,7 @@ jobs:
             };
 
             const commentMessage = 'Here is the suggested props message for the merge commit message:\n\n' +
-              '```' +
+              '```\n' +
               ${{ steps.contributor-data.outputs.result }} +
               '```';
 
