@@ -110,7 +110,7 @@ jobs:
                 {
                     owner: 'WordPress',
                     name: 'gutenberg',
-                    prNumber: 38358
+                    prNumber: 38314
                 }
             );
 
@@ -197,6 +197,7 @@ jobs:
             const coAuthors = priorities.map(priority => {
                 // Skip an empty set of contributors.
                 if (coAuthorData[priority].length === 0) {
+                    delete coAuthorData[priority];
                     return [];
                 }
 
