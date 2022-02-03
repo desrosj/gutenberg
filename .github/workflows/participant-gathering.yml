@@ -163,7 +163,7 @@ jobs:
             console.log( contributorData.repository.pullRequest.closingIssuesReferences.nodes );
 
               for (const issueComment of contributorData.repository.pullRequest.closingIssuesReferences.nodes){
-                console.debug( issueComment );
+                console.debug( issueComment.comments );
             }
 
             coAuthorData.userData = [];
