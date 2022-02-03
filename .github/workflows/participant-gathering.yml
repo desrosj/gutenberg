@@ -102,10 +102,15 @@ jobs:
                         }
                     }
                 }`,
+#                {
+#                    owner: context.repo.owner,
+#                    name: context.repo.repo,
+#                    prNumber: ${{ github.event.pull_request.number }}
+#                }
                 {
-                    owner: context.repo.owner,
-                    name: context.repo.repo,
-                    prNumber: ${{ github.event.pull_request.number }}
+                    owner: 'WordPress',
+                    name: 'gutenberg',
+                    prNumber: 38358
                 }
             );
 
