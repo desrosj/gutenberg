@@ -18,10 +18,6 @@ jobs:
         id: contributor-data
         with:
           script: |
-            console.log( context );
-            console.log( context.number );
-            console.log( context.pull_request );
-            console.log( context.event );
             function skipUser( username ) {
                 const skippedUsers = [
                     'github-actions'
@@ -112,6 +108,8 @@ jobs:
                     prNumber: ${{ github.event.pull_request.number }}
                 }
             );
+
+            console.debug( contributorData );
 
             for (const commit of contributorData.repository.pullRequest.commits.nodes) {
                 if ( null == commit.commit.author.user ) {
