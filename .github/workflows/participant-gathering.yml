@@ -219,7 +219,8 @@ jobs:
             let commentId;
 
             const commentInfo = {
-                context.repo.repo,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
                 issue_number: ${{ github.event.pull_request.number }}
             };
 
