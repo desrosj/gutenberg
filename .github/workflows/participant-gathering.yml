@@ -159,7 +159,13 @@ jobs:
                 }
             );
 
-            console.log( contributorData.repository.pullRequest.closingIssuesReferences.nodes.comments );
+            console.log( contributorData.repository.pullRequest.closingIssuesReferences );
+            console.log( contributorData.repository.pullRequest.closingIssuesReferences.nodes );
+
+  for (const issueComment of contributorData.repository.pullRequest.closingIssuesReferences.nodes){
+    console.debug( issueComment );
+}
+
             coAuthorData.userData = [];
             coAuthorData.committers = new Set();
 
@@ -209,6 +215,13 @@ jobs:
             console.debug( coAuthorData );
 
             // We already have user info for committers, we need to grab it for everyone else.
+            const userData = await github.graphql(
+                '{' +
+                    [...coAuthorData.reviewers, ...coAuthorData.commenters].map(user =>
+                        escapeForGql(user) + `: user(login: "${user}") {databaseId, login, name, email}`
+                    ) +
+                '}'
+            );
 
             Object.values(userData).forEach(user => {
                 coAuthorData.userData[user.login] = user;
