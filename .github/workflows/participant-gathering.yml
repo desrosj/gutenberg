@@ -18,6 +18,8 @@ jobs:
         id: contributor-data
         with:
           script: |
+            console.log( github );
+            console.log( github.event );
             function skipUser( username ) {
                 const skippedUsers = [
                     'github-actions'
