@@ -144,13 +144,13 @@ jobs:
             // Grab reporters and commenters on linked issues.
             for (const linkedIssue of contributorData.repository.pullRequest.closingIssuesReferences.nodes){
               if (!coAuthorData.committers.has(linkedIssue.author.login) && !coAuthorData.reviewers.has(linkedIssue.author.login) && !coAuthorData.commenters.has(linkedIssue.author.login)) {
-                if ( ! skipUser( review.author.login ) ) {
+                if ( ! skipUser( linkedIssue.author.login ) ) {
                   coAuthorData.reporters.add(linkedIssue.author.login);
                 }
               }
 
               for (const issueComment of linkedIssue.comments.nodes){
-                  if ( skipUser( review.author.login ) ) {
+                  if ( skipUser( issueComment.author.login ) ) {
                     continue;
                   }
 
