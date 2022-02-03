@@ -227,7 +227,7 @@ jobs:
                 ...commentInfo,
                 body:  + '\n\n<sub>contributor-collection-action</sub>'
             };
-
+            console.log( github.rest );
             const comments = ( await github.rest.issues.listComments(commentInfo)).data;
             for (const comment of comments){
                 if (comment.user.type === 'Bot' && /<sub>[\s\n]*contributor-collection-action/.test(comment.body)) {
