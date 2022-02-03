@@ -159,7 +159,7 @@ jobs:
                 }
             );
 
-            console.log( contributorData.repository.pullRequest.closingIssuesReferences.nodes );
+            console.log( contributorData.repository.pullRequest.closingIssuesReferences.nodes.comments );
             coAuthorData.userData = [];
             coAuthorData.committers = new Set();
 
