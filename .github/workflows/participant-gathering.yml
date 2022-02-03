@@ -92,15 +92,6 @@ jobs:
                 }
             );
 
-            console.log( contributorData.repository.pullRequest.closingIssuesReferences );
-            console.log( contributorData.repository.pullRequest.closingIssuesReferences.nodes );
-
-              for (const linkedIssue of contributorData.repository.pullRequest.closingIssuesReferences.nodes){
-                for (const issueComment of linkedIssue.comments.nodes){
-                  console.debug( issueComment.author );
-                }
-            }
-
             coAuthorData.userData = [];
             coAuthorData.committers = new Set();
 
@@ -144,6 +135,22 @@ jobs:
                 // Only store commenters that aren't committers or reviewers.
                 if (!coAuthorData.committers.has(comment.author.login) && !coAuthorData.reviewers.has(comment.author.login)) {
                     coAuthorData.commenters.add(comment.author.login);
+                }
+            }
+
+            coAuthorData.reporters = new Set();
+            coAuthorData.linkedIssueCommenters = new Set();
+
+            // Grab reporters and commenters on linked issues.
+            for (const linkedIssue of contributorData.repository.pullRequest.closingIssuesReferences.nodes){
+              if (!coAuthorData.committers.has(linkedIssue.author.login) && !coAuthorData.reviewers.has(linkedIssue.author.login) && !coAuthorData.commenters.has(linkedIssue.author.login)) {
+                coAuthorData.reporters.add(linkedIssue.author.login);
+              }
+
+              for (const issueComment of linkedIssue.comments.nodes){
+                  if (!coAuthorData.committers.has(issueComment.author) && !coAuthorData.reviewers.has(issueComment.author) && !coAuthorData.commenters.has(issueComment.author) && !coAuthorData.reporters.has(issueComment.author)) {
+                    ccoAuthorData.linkedIssueCommenters.add( issueComment.author );
+                  }
                 }
             }
 
