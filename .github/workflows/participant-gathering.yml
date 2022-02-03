@@ -224,9 +224,14 @@ jobs:
                 issue_number: ${{ github.event.pull_request.number }}
             };
 
+            const commentMessage = 'Here is the suggested props message for the merge commit message:\n\n' +
+              '<blockquote>' +
+              '${{ steps.contributor-data.outputs.result }}' +
+              '</blockquote>';
+
             const comment = {
                 ...commentInfo,
-                body: "${{ steps.contributor-data.outputs.result }}" + '\n\n<sub>contributor-collection-action</sub>'
+                body: commentMessage + '\n\n<sub>contributor-collection-action</sub>'
             };
 
             const comments = ( await github.rest.issues.listComments(commentInfo)).data;
