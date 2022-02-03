@@ -197,7 +197,6 @@ jobs:
             const coAuthors = priorities.map(priority => {
                 // Skip an empty set of contributors.
                 if (coAuthorData[priority].length === 0) {
-                    delete coAuthorData[priority];
                     return [];
                 }
 
@@ -210,7 +209,7 @@ jobs:
                     const commitEmail = email || `${databaseId}+${username}@users.noreply.github.com`;
 
                     return `Co-authored-by: ${name} <${commitEmail}>`;
-                }).join('\n');
+                }).join('\n\n');
             }).join('\n');
 
             console.log( coAuthors );
