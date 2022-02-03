@@ -3,6 +3,13 @@ name: Participant Gathering
 on:
   # Gathers all of the participants for pull requests to assist in giving proper credit.
   pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - labeled
+      - ready_for_review
+  pull_request_review:
 
 jobs:
   pull_request_participants:
