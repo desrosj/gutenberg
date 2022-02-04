@@ -1,4 +1,4 @@
-module.exports = ({github, context}) => {
+module.exports = async ({github, context}) => {
 	const contributorTypes = ['committers', 'reviewers', 'commenters', 'reporters'];
 	const coAuthorData = {
 		userData: []
