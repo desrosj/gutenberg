@@ -1,36 +1,22 @@
-function skipUser( username ) {
-	const skippedUsers = [
-		'github-actions'
-	];
-
-	if ( -1 !== skippedUsers.indexOf( username ) ) {
-		return true;
-	}
-
-	return false;
-}
-
-function contributorAlreadyPresent( login ) {
-	const contributorTypes = ['committers', 'reviewers', 'commenters', 'reporters'];
-
-	for (const contributorType of contributorTypes) {
-		if ( coAuthorData[contributorType].has( login ) ) {
-			return true;
-		}
-	}
-}
-
 const escapeForGql = string => '_' + string.replace(/[./-]/g, '_');
 
+const contributorTypes = ['committers', 'reviewers', 'commenters', 'reporters'];
 const coAuthorData = {
-	userData: [],
-	committers: new Set(),
-	reviewers: new Set(),
-	commenters: new Set(),
-	reporters: new Set(),
-	linkedIssueCommenters: new Set()
+	userData: []
 };
 
+for (const type of contributorTypes) {
+	coAuthorData[type] = new Set();
+}
+
+/*
+ * Fetch the following data for the pull request:
+ * - Commits with author details.
+ * - Reviews with author logins.
+ * - Comments with author logins.
+ * - Linked issues with author logins.
+ * - Comments on linked issues with author logins.
+ */
 const contributorData = await github.graphql(
 	`query($owner:String!, $name:String!, $prNumber:Int!) {
 		repository(owner:$owner, name:$name) {
@@ -83,13 +69,18 @@ const contributorData = await github.graphql(
 		}
 	}`,
 	{
-		owner: 'WordPress',
-		name: 'gutenberg',
-		prNumber: 38164
+		owner: context.repo.owner,
+		name: context.repo.repo,
+		prNumber: ${{ github.event.pull_request.number }}
 	}
 );
 
+// Process pull request commits.
 for (const commit of contributorData.repository.pullRequest.commits.nodes) {
+	/*
+	 * Commits are sometimes made by an email that is not associated with a GitHub account.
+	 * For these, info that may help us guess later.
+	 */
 	if ( null == commit.commit.author.user ) {
 		coAuthorData.committers.add(commit.commit.author.email);
 		coAuthorData.userData[commit.commit.author.email] = {
@@ -106,31 +97,27 @@ for (const commit of contributorData.repository.pullRequest.commits.nodes) {
 	}
 }
 
+// Process pull request reviews.
 for (const review of contributorData.repository.pullRequest.reviews.nodes) {
 	if ( skipUser( review.author.login ) ) {
 		continue;
 	}
 
-	// Only store reviewers that aren't committers.
-	if (!contributorAlreadyPresent( review.author.login ) ) {
-		coAuthorData.reviewers.add(review.author.login);
-	}
+	coAuthorData.reviewers.add(review.author.login);
 }
 
+// Process pull request comments.
 for (const comment of contributorData.repository.pullRequest.comments.nodes) {
 	if ( skipUser( comment.author.login ) ) {
 		continue;
 	}
 
-	// Only store commenters that aren't committers or reviewers.
-	if (!contributorAlreadyPresent( comment.author.login ) ) {
-		coAuthorData.commenters.add(comment.author.login);
-	}
+	coAuthorData.commenters.add(comment.author.login);
 }
 
-// Grab reporters and commenters on linked issues.
+// Process reporters and commenters for linked issues.
 for (const linkedIssue of contributorData.repository.pullRequest.closingIssuesReferences.nodes){
-	if (!contributorAlreadyPresent( linkedIssue.author.login ) && !skipUser( linkedIssue.author.login ) ) {
+	if ( ! skipUser( linkedIssue.author.login ) ) {
 		coAuthorData.reporters.add(linkedIssue.author.login);
 	}
 
@@ -139,32 +126,28 @@ for (const linkedIssue of contributorData.repository.pullRequest.closingIssuesRe
 			continue;
 		}
 
-		if (!contributorAlreadyPresent( issueComment.author.login ) ) {
-			coAuthorData.linkedIssueCommenters.add( issueComment.author.login );
-		}
+		coAuthorData.commenters.add( issueComment.author.login );
 	}
+}
+
+// We already have user info for committers, we need to grab it for everyone else.
+if ( [...coAuthorData.reviewers, ...coAuthorData.commenters, ...coAuthorData.reporters].length > 0 ) {
+	const userData = await github.graphql(
+		'{' +
+		[...coAuthorData.reviewers, ...coAuthorData.commenters, ...coAuthorData.reporters].map(user =>
+			escapeForGql(user) + `: user(login: "${user}") {databaseId, login, name, email}`
+		) +
+		'}'
+	);
+
+	Object.values(userData).forEach(user => {
+		coAuthorData.userData[user.login] = user;
+	});
 }
 
 console.debug( coAuthorData );
 
-// We already have user info for committers, we need to grab it for everyone else.
-const userData = await github.graphql(
-	'{' +
-		[...coAuthorData.reviewers, ...coAuthorData.commenters, ...coAuthorData.reporters, ...coAuthorData.linkedIssueCommenters].map(user =>
-			escapeForGql(user) + `: user(login: "${user}") {databaseId, login, name, email}`
-		) +
-	'}'
-);
-
-Object.values(userData).forEach(user => {
-	coAuthorData.userData[user.login] = user;
-});
-
-console.debug( coAuthorData );
-
-const priorities = ['committers', 'reviewers', 'commenters', 'reporters'];
-
-const coAuthors = priorities.map(priority => {
+const coAuthors = contributorTypes.map(priority => {
 	// Skip an empty set of contributors.
 	if (coAuthorData[priority].length === 0) {
 		return [];
@@ -180,6 +163,100 @@ const coAuthors = priorities.map(priority => {
 
 		return `Co-authored-by: ${name} <${commitEmail}>`;
 	}).join('\n');
-}).join('\n');
+}).join('\n\n');
 
-console.log( coAuthors );
+return coAuthors;
+
+/**
+ * Checks if a user should be skipped.
+ *
+ * @param {string} username Username to check.
+ *
+ * @return {boolean} true if the username should be skipped. false otherwise.
+ */
+function skipUser( username ) {
+	const skippedUsers = [
+		'github-actions'
+	];
+
+	if ( -1 === skippedUsers.indexOf( username ) && ! contributorAlreadyPresent( username ) ) {
+		return false;
+	}
+
+	return true;
+}
+
+/**
+ * Checks if a user has already been added to the list of contributors to receive props.
+ *
+ * Contributors should only appear in the props list once, even when contributing in multiple ways.
+ *
+ * @param {string} username The username to check.
+ *
+ * @return {boolean} true if the username is already in the list. false otherwise.
+ */
+function contributorAlreadyPresent( username ) {
+	const contributorTypes = ['committers', 'reviewers', 'commenters', 'reporters'];
+
+	for (const contributorType of contributorTypes) {
+		if ( coAuthorData[contributorType].has( username ) ) {
+			return true;
+		}
+	}
+}
+
+
+
+
+
+
+let commentId;
+
+const commentInfo = {
+	owner: context.repo.owner,
+	repo: context.repo.repo,
+	issue_number: ${{ github.event.pull_request.number }}
+};
+
+const commentMessage = 'Here is a list of everyone that appears to have contributed to this PR and any linked issues:\n\n' +
+	'```\n' +
+${{ steps.contributor-data.outputs.result }} +
+	'\n```';
+
+const comment = {
+	...commentInfo,
+	body: commentMessage + '\n\n<sub>contributor-collection-action</sub>'
+};
+
+const comments = ( await github.rest.issues.listComments(commentInfo)).data;
+for (const comment of comments){
+	if (comment.user.type === 'Bot' && /<sub>[\s\n]*contributor-collection-action/.test(comment.body)) {
+		commentId = comment.id;
+		break;
+	}
+}
+
+if (commentId) {
+	console.log(`Updating previous comment #${commentId}`)
+	try {
+		await github.rest.issues.updateComment({
+			...context.repo,
+			comment_id: commentId,
+			body: comment.body
+		});
+	}
+	catch (e) {
+		console.log('Error editing previous comment: ' + e.message);
+		commentId = null;
+	}
+}
+
+// no previous or edit failed
+if (!commentId) {
+	console.log('Creating new comment');
+	try {
+		await github.rest.issues.createComment(comment);
+	} catch (e) {
+		console.log(`Error creating comment: ${e.message}`);
+	}
+}

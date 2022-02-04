@@ -7,9 +7,13 @@ on:
       - opened
       - reopened
       - synchronize
-      - labeled
-      - ready_for_review
+  issue_comment:
+    types:
+      - created
   pull_request_review:
+  pull_request_review_comment:
+    types:
+      - created
 
 jobs:
   pull_request_participants:
@@ -25,38 +29,25 @@ jobs:
         id: contributor-data
         with:
           script: |
-            function skipUser( username ) {
-                const skippedUsers = [
-                    'github-actions'
-                ];
-
-                if ( -1 !== skippedUsers.indexOf( username ) ) {
-                    return true;
-                }
-
-                return false;
-            }
-
-            function contributorAlreadyPresent( login ) {
-                const contributorTypes = ['committers', 'reviewers', 'commenters', 'reporters'];
-
-                for (const contributorType of contributorTypes) {
-                    if ( coAuthorData[contributorType].has( login ) ) {
-                        return true;
-                    }
-                }
-            }
-
             const escapeForGql = string => '_' + string.replace(/[./-]/g, '_');
 
+            const contributorTypes = ['committers', 'reviewers', 'commenters', 'reporters'];
             const coAuthorData = {
-                userData: [],
-                committers: new Set(),
-                reviewers: new Set(),
-                commenters: new Set(),
-                reporters: new Set(),
+                userData: []
             };
 
+            for (const type of contributorTypes) {
+                coAuthorData[type] = new Set();
+            }
+
+            /*
+             * Fetch the following data for the pull request:
+             * - Commits with author details.
+             * - Reviews with author logins.
+             * - Comments with author logins.
+             * - Linked issues with author logins.
+             * - Comments on linked issues with author logins.
+             */
             const contributorData = await github.graphql(
                 `query($owner:String!, $name:String!, $prNumber:Int!) {
                     repository(owner:$owner, name:$name) {
@@ -115,9 +106,12 @@ jobs:
                 }
             );
 
+            // Process pull request commits.
             for (const commit of contributorData.repository.pullRequest.commits.nodes) {
-                // If a commit was made from an email address that is not associated with a GitHub account,
-                // there will be no user set.
+                /*
+                 * Commits are sometimes made by an email that is not associated with a GitHub account.
+                 * For these, info that may help us guess later.
+                 */
                 if ( null == commit.commit.author.user ) {
                     coAuthorData.committers.add(commit.commit.author.email);
                     coAuthorData.userData[commit.commit.author.email] = {
@@ -134,32 +128,27 @@ jobs:
                 }
             }
 
+            // Process pull request reviews.
             for (const review of contributorData.repository.pullRequest.reviews.nodes) {
                 if ( skipUser( review.author.login ) ) {
                     continue;
                 }
 
-                // Only store reviewers that aren't committers.
-                if (!contributorAlreadyPresent( review.author.login ) ) {
-                    coAuthorData.reviewers.add(review.author.login);
-                }
+                coAuthorData.reviewers.add(review.author.login);
             }
 
+            // Process pull request comments.
             for (const comment of contributorData.repository.pullRequest.comments.nodes) {
                 if ( skipUser( comment.author.login ) ) {
                     continue;
                 }
 
-                // Only store commenters that aren't committers or reviewers.
-                if (!contributorAlreadyPresent( comment.author.login ) ) {
-                    coAuthorData.commenters.add(comment.author.login);
-                }
+                coAuthorData.commenters.add(comment.author.login);
             }
 
-
-            // Grab reporters and commenters on linked issues.
+            // Process reporters and commenters for linked issues.
             for (const linkedIssue of contributorData.repository.pullRequest.closingIssuesReferences.nodes){
-                if (!contributorAlreadyPresent( linkedIssue.author.login ) && !skipUser( linkedIssue.author.login ) ) {
+                if ( ! skipUser( linkedIssue.author.login ) ) {
                     coAuthorData.reporters.add(linkedIssue.author.login);
                 }
 
@@ -168,9 +157,7 @@ jobs:
                         continue;
                     }
 
-                    if (!contributorAlreadyPresent( issueComment.author.login ) ) {
-                        coAuthorData.commenters.add( issueComment.author.login );
-                    }
+                    coAuthorData.commenters.add( issueComment.author.login );
                 }
             }
 
@@ -191,9 +178,7 @@ jobs:
 
             console.debug( coAuthorData );
 
-            const priorities = ['committers', 'reviewers', 'commenters', 'reporters'];
-
-            const coAuthors = priorities.map(priority => {
+            const coAuthors = contributorTypes.map(priority => {
                 // Skip an empty set of contributors.
                 if (coAuthorData[priority].length === 0) {
                     return [];
@@ -213,6 +198,44 @@ jobs:
 
             return coAuthors;
 
+            /**
+             * Checks if a user should be skipped.
+             *
+             * @param {string} username Username to check.
+             *
+             * @return {boolean} true if the username should be skipped. false otherwise.
+             */
+            function skipUser( username ) {
+                const skippedUsers = [
+                    'github-actions'
+                ];
+
+                if ( -1 === skippedUsers.indexOf( username ) && ! contributorAlreadyPresent( username ) ) {
+                    return false;
+                }
+
+                return true;
+            }
+
+            /**
+             * Checks if a user has already been added to the list of contributors to receive props.
+             *
+             * Contributors should only appear in the props list once, even when contributing in multiple ways.
+             *
+             * @param {string} username The username to check.
+             *
+             * @return {boolean} true if the username is already in the list. false otherwise.
+             */
+            function contributorAlreadyPresent( username ) {
+                const contributorTypes = ['committers', 'reviewers', 'commenters', 'reporters'];
+
+                for (const contributorType of contributorTypes) {
+                    if ( coAuthorData[contributorType].has( username ) ) {
+                        return true;
+                    }
+                }
+            }
+
       - name: Comment on pull request
         uses: actions/github-script@e3cbab99d3a9b271e1b79fc96d103a4a5534998c # v5.1.0
         continue-on-error: ${{ true }}
@@ -228,7 +251,7 @@ jobs:
 
               const commentMessage = 'Here is a list of everyone that appears to have contributed to this PR and any linked issues:\n\n' +
                   '```\n' +
-              ${{ steps.contributor-data.outputs.result }} +
+                  ${{ steps.contributor-data.outputs.result }} +
                   '\n```';
 
               const comment = {
