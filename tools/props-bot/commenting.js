@@ -9,7 +9,7 @@ module.exports = async ({github, context, commentMessage}) => {
 
 	const commentMessage = 'Here is a list of everyone that appears to have contributed to this PR and any linked issues:\n\n' +
 		'```\n' +
-		${{ steps.contributor-data.outputs.result }} +
+		commentMessage +
 		'\n```';
 
 	const comment = {
