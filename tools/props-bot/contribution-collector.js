@@ -1,9 +1,10 @@
-module.exports = async ({github, context}) => {
-	const contributorTypes = ['committers', 'reviewers', 'commenters', 'reporters'];
-	const coAuthorData = {
-		userData: []
-	};
+const coAuthorData = {
+	userData: []
+};
+const contributorTypes = ['committers', 'reviewers', 'commenters', 'reporters'];
 
+
+module.exports = async ({github, context}) => {
 	for (const type of contributorTypes) {
 		coAuthorData[type] = new Set();
 	}
