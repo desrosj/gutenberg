@@ -168,7 +168,7 @@ module.exports = async ( { github, context } ) => {
 
 	console.debug( coAuthorData );
 
-	const botMessage = contributorTypes
+	return contributorTypes
 		.map( ( priority ) => {
 			// Skip an empty set of contributors.
 			if ( coAuthorData[ priority ].length === 0 ) {
@@ -201,23 +201,7 @@ module.exports = async ( { github, context } ) => {
 			);
 		} )
 		.join( '\n\n' );
-
-	return botMessage + '\n\n# Alternative props format:\n\n' + contributorTypes
-		.map( ( priority ) => {
-			// Skip an empty set of contributors.
-			if ( coAuthorData[ priority ].length === 0 ) {
-				return [];
-			}
-
-			return (
-				[ ...coAuthorData[ priority ] ]
-					.map( ( username ) => {
-						return username;
-					} )
-					.join( ', ' )
-			);
-		} )
-		.join( '\n\n' );
+};
 
 const escapeForGql = ( string ) => '_' + string.replace( /[./-]/g, '_' );
 
