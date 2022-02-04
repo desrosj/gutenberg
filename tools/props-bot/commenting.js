@@ -1,4 +1,4 @@
-module.exports = async ({github, context, commentMessage}) => {
+module.exports = async ({github, context, generatedMessage}) => {
 	let commentId;
 
 	const commentInfo = {
@@ -9,7 +9,7 @@ module.exports = async ({github, context, commentMessage}) => {
 
 	const commentMessage = 'Here is a list of everyone that appears to have contributed to this PR and any linked issues:\n\n' +
 		'```\n' +
-		commentMessage +
+		generatedMessage +
 		'\n```';
 
 	const comment = {

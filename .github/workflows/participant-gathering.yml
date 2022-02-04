@@ -39,7 +39,7 @@ jobs:
         with:
           script: |
             const props_bot = require( './tools/props-bot/commenting.js' );
-            await props_bot({
+            return await props_bot({
               github,
               context,
               ${{ steps.contributor-data.outputs.result }}
