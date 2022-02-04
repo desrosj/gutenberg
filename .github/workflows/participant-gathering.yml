@@ -241,7 +241,7 @@ jobs:
               const commentInfo = {
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  issue_number: github.event.pull_request.number
+                  issue_number: context.payload.pull_request.number
               };
 
               const commentMessage = 'Here is a list of everyone that appears to have contributed to this PR and any linked issues:\n\n' +
