@@ -70,7 +70,7 @@ module.exports = async ({github, context}) => {
 		{
 			owner: context.repo.owner,
 			name: context.repo.repo,
-			prNumber: ${{ github.event.pull_request.number }}
+			prNumber: context.payload.pull_request.number
 		}
 	);
 
