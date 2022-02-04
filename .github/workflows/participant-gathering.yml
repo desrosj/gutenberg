@@ -29,7 +29,7 @@ jobs:
         with:
           script: |
             const contribution_collector = require( './tools/props-bot/contribution-collector.js' );
-            return awwait contribution_collector({github,context});
+            return await contribution_collector({github,context});
 
       - name: Comment on the pull request
         uses: actions/github-script@e3cbab99d3a9b271e1b79fc96d103a4a5534998c # v5.1.0
