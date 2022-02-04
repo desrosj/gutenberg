@@ -1,11 +1,16 @@
 const coAuthorData = {
-	userData: []
+	userData: [],
 };
-const contributorTypes = ['committers', 'reviewers', 'commenters', 'reporters'];
+const contributorTypes = [
+	'committers',
+	'reviewers',
+	'commenters',
+	'reporters',
+];
 
-module.exports = async ({github, context}) => {
-	for (const type of contributorTypes) {
-		coAuthorData[type] = new Set();
+module.exports = async ( { github, context } ) => {
+	for ( const type of contributorTypes ) {
+		coAuthorData[ type ] = new Set();
 	}
 
 	/*
@@ -70,57 +75,62 @@ module.exports = async ({github, context}) => {
 		{
 			owner: context.repo.owner,
 			name: context.repo.repo,
-			prNumber: context.payload.pull_request.number
+			prNumber: context.payload.pull_request.number,
 		}
 	);
 
 	// Process pull request commits.
-	for (const commit of contributorData.repository.pullRequest.commits.nodes) {
+	for ( const commit of contributorData.repository.pullRequest.commits
+		.nodes ) {
 		/*
 		 * Commits are sometimes made by an email that is not associated with a GitHub account.
 		 * For these, info that may help us guess later.
 		 */
-		if ( null == commit.commit.author.user ) {
-			coAuthorData.committers.add(commit.commit.author.email);
-			coAuthorData.userData[commit.commit.author.email] = {
+		if ( null === commit.commit.author.user ) {
+			coAuthorData.committers.add( commit.commit.author.email );
+			coAuthorData.userData[ commit.commit.author.email ] = {
 				name: commit.commit.author.name,
-				email: commit.commit.author.email
+				email: commit.commit.author.email,
 			};
 		} else {
 			if ( skipUser( commit.commit.author.user.login ) ) {
 				continue;
 			}
 
-			coAuthorData.committers.add(commit.commit.author.user.login);
-			coAuthorData.userData[commit.commit.author.user.login] = commit.commit.author.user;
+			coAuthorData.committers.add( commit.commit.author.user.login );
+			coAuthorData.userData[ commit.commit.author.user.login ] =
+				commit.commit.author.user;
 		}
 	}
 
 	// Process pull request reviews.
-	for (const review of contributorData.repository.pullRequest.reviews.nodes) {
+	for ( const review of contributorData.repository.pullRequest.reviews
+		.nodes ) {
 		if ( skipUser( review.author.login ) ) {
 			continue;
 		}
 
-		coAuthorData.reviewers.add(review.author.login);
+		coAuthorData.reviewers.add( review.author.login );
 	}
 
 	// Process pull request comments.
-	for (const comment of contributorData.repository.pullRequest.comments.nodes) {
+	for ( const comment of contributorData.repository.pullRequest.comments
+		.nodes ) {
 		if ( skipUser( comment.author.login ) ) {
 			continue;
 		}
 
-		coAuthorData.commenters.add(comment.author.login);
+		coAuthorData.commenters.add( comment.author.login );
 	}
 
 	// Process reporters and commenters for linked issues.
-	for (const linkedIssue of contributorData.repository.pullRequest.closingIssuesReferences.nodes){
+	for ( const linkedIssue of contributorData.repository.pullRequest
+		.closingIssuesReferences.nodes ) {
 		if ( ! skipUser( linkedIssue.author.login ) ) {
-			coAuthorData.reporters.add(linkedIssue.author.login);
+			coAuthorData.reporters.add( linkedIssue.author.login );
 		}
 
-		for (const issueComment of linkedIssue.comments.nodes){
+		for ( const issueComment of linkedIssue.comments.nodes ) {
 			if ( skipUser( issueComment.author.login ) ) {
 				continue;
 			}
@@ -130,42 +140,70 @@ module.exports = async ({github, context}) => {
 	}
 
 	// We already have user info for committers, we need to grab it for everyone else.
-	if ( [...coAuthorData.reviewers, ...coAuthorData.commenters, ...coAuthorData.reporters].length > 0 ) {
+	if (
+		[
+			...coAuthorData.reviewers,
+			...coAuthorData.commenters,
+			...coAuthorData.reporters,
+		].length > 0
+	) {
 		const userData = await github.graphql(
 			'{' +
-			[...coAuthorData.reviewers, ...coAuthorData.commenters, ...coAuthorData.reporters].map(user =>
-				escapeForGql(user) + `: user(login: "${user}") {databaseId, login, name, email}`
-			) +
-			'}'
+				[
+					...coAuthorData.reviewers,
+					...coAuthorData.commenters,
+					...coAuthorData.reporters,
+				].map(
+					( user ) =>
+						escapeForGql( user ) +
+						`: user(login: "${ user }") {databaseId, login, name, email}`
+				) +
+				'}'
 		);
 
-		Object.values(userData).forEach(user => {
-			coAuthorData.userData[user.login] = user;
-		});
+		Object.values( userData ).forEach( ( user ) => {
+			coAuthorData.userData[ user.login ] = user;
+		} );
 	}
 
 	console.debug( coAuthorData );
 
-	return contributorTypes.map(priority => {
-		// Skip an empty set of contributors.
-		if (coAuthorData[priority].length === 0) {
-			return [];
-		}
+	return contributorTypes
+		.map( ( priority ) => {
+			// Skip an empty set of contributors.
+			if ( coAuthorData[ priority ].length === 0 ) {
+				return [];
+			}
 
-		// Add a header for each section.
-		const header = '# ' + priority.replace(/^./, char => char.toUpperCase()) + '\n';
+			// Add a header for each section.
+			const header =
+				'# ' +
+				priority.replace( /^./, ( char ) => char.toUpperCase() ) +
+				'\n';
 
-		// Generate each Co-authored-by entry, and join them into a single string.
-		return header + [...coAuthorData[priority]].map(username => {
-			const {name, databaseId, email} = coAuthorData.userData[username];
-			const commitEmail = email || `${databaseId}+${username}@users.noreply.github.com`;
+			// Generate each Co-authored-by entry, and join them into a single string.
+			return (
+				header +
+				[ ...coAuthorData[ priority ] ]
+					.map( ( username ) => {
+						const {
+							name,
+							databaseId,
+							email,
+						} = coAuthorData.userData[ username ];
+						const commitEmail =
+							email ||
+							`${ databaseId }+${ username }@users.noreply.github.com`;
 
-			return `Co-authored-by: ${name} <${commitEmail}>`;
-		}).join('\n');
-	}).join('\n\n');
-}
+						return `Co-authored-by: ${ name } <${ commitEmail }>`;
+					} )
+					.join( '\n' )
+			);
+		} )
+		.join( '\n\n' );
+};
 
-const escapeForGql = string => '_' + string.replace(/[./-]/g, '_');
+const escapeForGql = ( string ) => '_' + string.replace( /[./-]/g, '_' );
 
 /**
  * Checks if a user should be skipped.
@@ -175,11 +213,12 @@ const escapeForGql = string => '_' + string.replace(/[./-]/g, '_');
  * @return {boolean} true if the username should be skipped. false otherwise.
  */
 function skipUser( username ) {
-	const skippedUsers = [
-		'github-actions'
-	];
+	const skippedUsers = [ 'github-actions' ];
 
-	if ( -1 === skippedUsers.indexOf( username ) && ! contributorAlreadyPresent( username ) ) {
+	if (
+		-1 === skippedUsers.indexOf( username ) &&
+		! contributorAlreadyPresent( username )
+	) {
 		return false;
 	}
 
@@ -196,10 +235,8 @@ function skipUser( username ) {
  * @return {boolean} true if the username is already in the list. false otherwise.
  */
 function contributorAlreadyPresent( username ) {
-	const contributorTypes = ['committers', 'reviewers', 'commenters', 'reporters'];
-
-	for (const contributorType of contributorTypes) {
-		if ( coAuthorData[contributorType].has( username ) ) {
+	for ( const contributorType of contributorTypes ) {
+		if ( coAuthorData[ contributorType ].has( username ) ) {
 			return true;
 		}
 	}
