@@ -168,7 +168,7 @@ module.exports = async ( { github, context } ) => {
 
 	console.debug( coAuthorData );
 
-	return contributorTypes
+	const botMessage = contributorTypes
 		.map( ( priority ) => {
 			// Skip an empty set of contributors.
 			if ( coAuthorData[ priority ].length === 0 ) {
@@ -201,6 +201,12 @@ module.exports = async ( { github, context } ) => {
 			);
 		} )
 		.join( '\n\n' );
+
+	return botMessage + '\n\n# Alternative props format:\n\n' + [ ...coAuthorData[ priority ] ]
+		.map( ( username ) => {
+			return username;
+		})
+		.join( ', ' );
 };
 
 const escapeForGql = ( string ) => '_' + string.replace( /[./-]/g, '_' );
