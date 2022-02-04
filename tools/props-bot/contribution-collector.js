@@ -195,7 +195,7 @@ module.exports = async ( { github, context } ) => {
 							email ||
 							`${ databaseId }+${ username }@users.noreply.github.com`;
 
-						return `Co-authored-by: ${ name } <${ commitEmail }>`;
+						return `Co-authored-by: ${ username } <${ commitEmail }>`;
 					} )
 					.join( '\n' )
 			);
