@@ -204,13 +204,20 @@ module.exports = async ( { github, context } ) => {
 
 	return botMessage + '\n\n# Alternative props format:\n\n' + contributorTypes
 		.map( ( priority ) => {
-			[ ...coAuthorData[ priority ] ]
-				.map( ( username ) => {
-					return username;
-				})
-			.join( ', ' );
-		});
-};
+			// Skip an empty set of contributors.
+			if ( coAuthorData[ priority ].length === 0 ) {
+				return [];
+			}
+
+			return (
+				[ ...coAuthorData[ priority ] ]
+					.map( ( username ) => {
+						return username;
+					} )
+					.join( ', ' )
+			);
+		} )
+		.join( '\n\n' );
 
 const escapeForGql = ( string ) => '_' + string.replace( /[./-]/g, '_' );
 
