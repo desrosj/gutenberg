@@ -42,4 +42,5 @@ jobs:
             return await props_bot({
               github,
               context,
+              ${{ steps.contributor-data.outputs.result }}
             });
