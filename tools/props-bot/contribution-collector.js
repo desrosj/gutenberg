@@ -3,7 +3,6 @@ const coAuthorData = {
 };
 const contributorTypes = ['committers', 'reviewers', 'commenters', 'reporters'];
 
-
 module.exports = async ({github, context}) => {
 	for (const type of contributorTypes) {
 		coAuthorData[type] = new Set();
@@ -147,7 +146,7 @@ module.exports = async ({github, context}) => {
 
 	console.debug( coAuthorData );
 
-	const coAuthors = contributorTypes.map(priority => {
+	return contributorTypes.map(priority => {
 		// Skip an empty set of contributors.
 		if (coAuthorData[priority].length === 0) {
 			return [];
@@ -164,8 +163,6 @@ module.exports = async ({github, context}) => {
 			return `Co-authored-by: ${name} <${commitEmail}>`;
 		}).join('\n');
 	}).join('\n\n');
-
-	return coAuthors;
 }
 
 const escapeForGql = string => '_' + string.replace(/[./-]/g, '_');
