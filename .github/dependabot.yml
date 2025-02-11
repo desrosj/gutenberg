@@ -4,7 +4,9 @@ version: 2
 updates:
     # Check for updates to GitHub Actions.
     - package-ecosystem: 'github-actions'
-      directory: '/.github'
+      directories:
+          - '.github/workflows'
+          - '.github/setup-node'
       schedule:
           interval: 'daily'
       open-pull-requests-limit: 10
