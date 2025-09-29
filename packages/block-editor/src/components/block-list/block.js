@@ -604,6 +604,13 @@ function BlockListBlockProvider( props ) {
 				getActiveBlockVariation,
 			} = select( blocksStore );
 			const attributes = getBlockAttributes( clientId );
+			const selectedCommentId = unlock(
+				select( blockEditorStore )
+			).getSelectedCommentId?.();
+			const isCommentSelected =
+				attributes?.metadata?.commentId !== undefined &&
+				selectedCommentId !== undefined &&
+				attributes.metadata.commentId === selectedCommentId;
 			const { name: blockName, isValid } = blockWithoutAttributes;
 			const blockType = getBlockType( blockName );
 			const { supportsLayout, isPreviewMode } = getSettings();
@@ -624,6 +631,7 @@ function BlockListBlockProvider( props ) {
 					? getBlockDefaultClassName( blockName )
 					: undefined,
 				blockTitle: blockType?.title,
+				isCommentSelected,
 			};
 
 			// When in preview mode, we can avoid a lot of selection and
@@ -705,6 +713,7 @@ function BlockListBlockProvider( props ) {
 				originalBlockClientId: isInvalid
 					? blocksWithSameName[ 0 ]
 					: false,
+				isCommentSelected,
 			};
 		},
 		[ clientId, rootClientId ]
@@ -747,6 +756,7 @@ function BlockListBlockProvider( props ) {
 		className,
 		defaultClassName,
 		originalBlockClientId,
+		isCommentSelected,
 	} = selectedProps;
 
 	// Users of the editor.BlockListBlock filter used to be able to
@@ -795,6 +805,7 @@ function BlockListBlockProvider( props ) {
 		originalBlockClientId,
 		themeSupportsLayout,
 		canMove,
+		isCommentSelected,
 	};
 
 	// Here we separate between the props passed to BlockListBlock and any other

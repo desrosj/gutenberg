@@ -617,6 +617,16 @@ export function getZoomLevel( state ) {
 }
 
 /**
+ * Returns the currently selected block comment id (private API).
+ *
+ * @param {Object} state Editor state.
+ * @return {?number} Selected comment id.
+ */
+export function getSelectedCommentId( state ) {
+	return state.selectedCommentId;
+}
+
+/**
  * Finds the closest block where the block is allowed to be inserted.
  *
  * @param {Object}            state    Editor state.

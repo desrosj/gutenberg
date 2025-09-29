@@ -1200,6 +1200,21 @@ export const blocks = pipe(
 } );
 
 /**
+ * Reducer storing the currently selected comment id for block comments.
+ *
+ * @param {?number} state  The current selected comment id.
+ * @param {Object}  action The dispatched action.
+ * @return {?number} The next selected comment id.
+ */
+export function selectedCommentId( state = null, action ) {
+	switch ( action.type ) {
+		case 'SET_SELECTED_COMMENT_ID':
+			return action.commentId ?? null;
+	}
+	return state;
+}
+
+/**
  * Reducer returning visibility status of block interface.
  *
  * @param {boolean} state  Current state.
@@ -2125,6 +2140,7 @@ const combinedReducers = combineReducers( {
 	openedBlockSettingsMenu,
 	registeredInserterMediaCategories,
 	zoomLevel,
+	selectedCommentId,
 } );
 
 /**

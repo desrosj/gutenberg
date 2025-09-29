@@ -484,3 +484,16 @@ export function resetZoomLevel() {
 		type: 'RESET_ZOOM_LEVEL',
 	};
 }
+
+/**
+ * Sets the currently selected block comment id (private API).
+ *
+ * @param {?number} commentId The selected comment id, or null to clear.
+ * @return {Object} Action object.
+ */
+export function setSelectedCommentId( commentId ) {
+	return {
+		type: 'SET_SELECTED_COMMENT_ID',
+		commentId,
+	};
+}

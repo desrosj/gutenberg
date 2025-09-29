@@ -30,6 +30,7 @@ import { useIntersectionObserver } from './use-intersection-observer';
 import { useScrollIntoView } from './use-scroll-into-view';
 import { useFlashEditableBlocks } from '../../use-flash-editable-blocks';
 import { useFirefoxDraggableCompatibility } from './use-firefox-draggable-compatibility';
+// No store reads here; rely entirely on PrivateBlockContext.
 
 /**
  * This hook is used to lightly mark an element as a block element. The element
@@ -102,6 +103,9 @@ export function useBlockProps( props = {}, { __unstableIsHtml } = {} ) {
 		isSectionBlock,
 		canMove,
 	} = useContext( PrivateBlockContext );
+
+	// Provided by PrivateBlockContext to avoid local store subscription.
+	const { isCommentSelected } = useContext( PrivateBlockContext );
 
 	// translators: %s: Type of block (i.e. Text, Image etc)
 	const blockLabel = sprintf( __( 'Block: %s' ), blockTitle );
@@ -183,6 +187,7 @@ export function useBlockProps( props = {}, { __unstableIsHtml } = {} ) {
 				'has-negative-margin': hasNegativeMargin,
 				'is-content-locked-temporarily-editing-as-blocks':
 					isTemporarilyEditingAsBlocks,
+				'is-comment-selected': isCommentSelected,
 			},
 			className,
 			props.className,

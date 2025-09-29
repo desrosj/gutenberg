@@ -106,6 +106,7 @@ function Thread( {
 	setShowCommentBoard,
 } ) {
 	const threadRef = useRef( null );
+	const blockEditorDispatch = useDispatch( blockEditorStore );
 	const { toggleBlockHighlight } = useDispatch( blockEditorStore );
 	const relatedBlockElement = useBlockElement( thread.blockClientId );
 	const debouncedToggleBlockHighlight = useDebounce(
@@ -124,6 +125,7 @@ function Thread( {
 	const handleCommentSelect = ( { id, blockClientId } ) => {
 		setShowCommentBoard( false );
 		setSelectedThread( id );
+		unlock( blockEditorDispatch ).setSelectedCommentId( id );
 		if ( blockClientId && relatedBlockElement ) {
 			relatedBlockElement.scrollIntoView( {
 				behavior: 'instant',
@@ -139,6 +141,7 @@ function Thread( {
 	const unselectThread = () => {
 		setSelectedThread( null );
 		setShowCommentBoard( false );
+		unlock( blockEditorDispatch ).setSelectedCommentId( null );
 	};
 
 	const replies = thread?.reply;
