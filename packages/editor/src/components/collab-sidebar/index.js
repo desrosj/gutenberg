@@ -25,6 +25,7 @@ import AddCommentButton from './comment-button';
 import CommentAvatarIndicator from './comment-indicator-toolbar';
 import { useGlobalStylesContext } from '../global-styles-provider';
 import { useBlockComments } from './hooks';
+import { unlock } from '../../lock-unlock';
 
 function CollabSidebarContent( {
 	showCommentBoard,
@@ -196,6 +197,7 @@ export default function CollabSidebar() {
 	const { enableComplementaryArea } = useDispatch( interfaceStore );
 	const { getActiveComplementaryArea } = useSelect( interfaceStore );
 	const isLargeViewport = useViewportMatch( 'medium' );
+	const blockEditorDispatch = useDispatch( blockEditorStore );
 
 	const { postId } = useSelect( ( select ) => {
 		const { getCurrentPostId } = select( editorStore );
@@ -229,12 +231,24 @@ export default function CollabSidebar() {
 	const backgroundColor = GlobalStyles?.styles?.color?.background;
 
 	if ( 0 < resultComments.length ) {
+		// Track last selected block to clear selectedCommentId on selection changes.
+		let lastSelectedClientId = window?.wp?.data
+			?.select?.( 'core/block-editor' )
+			?.getSelectedBlockClientId?.();
 		const unsubscribe = subscribe( () => {
 			const activeSidebar = getActiveComplementaryArea( 'core' );
 
 			if ( ! activeSidebar ) {
 				enableComplementaryArea( 'core', collabSidebarName );
 				unsubscribe();
+			}
+
+			const currentSelected = window?.wp?.data
+				?.select?.( 'core/block-editor' )
+				?.getSelectedBlockClientId?.();
+			if ( currentSelected !== lastSelectedClientId ) {
+				unlock( blockEditorDispatch ).setSelectedCommentId( null );
+				lastSelectedClientId = currentSelected;
 			}
 		} );
 	}
@@ -256,7 +270,12 @@ export default function CollabSidebar() {
 	return (
 		<>
 			<AddCommentComponent
-				onClick={ openCollabBoard }
+				onClick={ () => {
+					unlock( blockEditorDispatch ).setSelectedCommentId(
+						currentThread?.id ?? null
+					);
+					openCollabBoard();
+				} }
 				thread={ currentThread }
 				hasMoreComments={ hasMoreComments }
 			/>
