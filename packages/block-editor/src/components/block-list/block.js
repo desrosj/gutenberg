@@ -581,6 +581,7 @@ function BlockListBlockProvider( props ) {
 				isBlockMultiSelected,
 				isBlockSubtreeDisabled,
 				isBlockHighlighted,
+				isBlockSpotlighted,
 				__unstableIsFullySelected,
 				__unstableSelectionHasUnmergeableBlock,
 				isBlockBeingDragged,
@@ -691,6 +692,7 @@ function BlockListBlockProvider( props ) {
 					? getSelectedBlocksInitialCaretPosition()
 					: undefined,
 				isHighlighted: isBlockHighlighted( clientId ),
+				isSpotlighted: isBlockSpotlighted( clientId ),
 				isMultiSelected,
 				isPartiallySelected:
 					isMultiSelected &&
@@ -736,6 +738,7 @@ function BlockListBlockProvider( props ) {
 		hasOverlay,
 		initialPosition,
 		isHighlighted,
+		isSpotlighted,
 		isMultiSelected,
 		isPartiallySelected,
 		isReusable,
@@ -780,6 +783,7 @@ function BlockListBlockProvider( props ) {
 		initialPosition,
 		blockEditingMode,
 		isHighlighted,
+		isSpotlighted,
 		isMultiSelected,
 		isPartiallySelected,
 		isReusable,

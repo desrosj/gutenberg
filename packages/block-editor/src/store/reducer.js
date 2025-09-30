@@ -1874,6 +1874,35 @@ export function highlightedBlock( state, action ) {
 }
 
 /**
+ * Reducer returning current spotlighted block.
+ *
+ * @param {boolean} state  Current spotlighted block.
+ * @param {Object}  action Dispatched action.
+ *
+ * @return {string} Updated state.
+ */
+export function spotlightedBlock( state, action ) {
+	switch ( action.type ) {
+		case 'TOGGLE_BLOCK_SPOTLIGHT':
+			const { clientId, isSpotlighted } = action;
+
+			if ( isSpotlighted ) {
+				return clientId;
+			} else if ( state === clientId ) {
+				return null;
+			}
+
+			return state;
+		case 'SELECT_BLOCK':
+			if ( action.clientId !== state ) {
+				return null;
+			}
+	}
+
+	return state;
+}
+
+/**
  * Reducer returning current expanded block in the list view.
  *
  * @param {string|null} state  Current expanded block.
@@ -2114,6 +2143,7 @@ const combinedReducers = combineReducers( {
 	lastFocus,
 	expandedBlock,
 	highlightedBlock,
+	spotlightedBlock,
 	lastBlockInserted,
 	temporarilyEditingAsBlocks,
 	temporarilyEditingFocusModeRevert,

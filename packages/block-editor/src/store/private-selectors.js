@@ -685,3 +685,15 @@ export function getClosestAllowedInsertionPointForPattern(
 export function getInsertionPoint( state ) {
 	return state.insertionPoint;
 }
+
+/**
+ * Returns true if the current spotlighted block matches the block clientId.
+ *
+ * @param {Object} state    Global application state.
+ * @param {string} clientId The block to check.
+ *
+ * @return {boolean} Whether the block is currently spotlighted.
+ */
+export function isBlockSpotlighted( state, clientId ) {
+	return state.spotlightedBlock === clientId;
+}
