@@ -64,10 +64,6 @@
 		"openByDefault": {
 			"type": "boolean",
 			"default": false
-		},
-		"isSelected": {
-			"type": "boolean",
-			"default": false
 		}
 	},
 	"textdomain": "default",
