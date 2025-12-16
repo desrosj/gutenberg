@@ -33,7 +33,7 @@ function gutenberg_experiments_wp_admin_enqueue_scripts( $hook_suffix ) {
 		return;
 	}
 
-	// Pass experiments data to JavaScript
+	// Pass experiments data to JavaScript as fallback
 	wp_add_inline_script(
 		'experiments-wp-admin-prerequisites',
 		sprintf(
