@@ -140,8 +140,13 @@ if ( ! function_exists( 'the_gutenberg_experiments' ) ) {
 	 * @since 6.3.0
 	 */
 	function the_gutenberg_experiments() {
-		// Redirect to the new boot-based implementation
-		experiments_wp_admin_render_page();
+		// Redirect to the new boot-based implementation if available
+		if ( function_exists( 'experiments_wp_admin_render_page' ) ) {
+			experiments_wp_admin_render_page();
+		} else {
+			// Fallback for backward compatibility (should not happen after build)
+			wp_die( esc_html__( 'Experiments page is not available. Please rebuild the project.', 'gutenberg' ) );
+		}
 	}
 }
 

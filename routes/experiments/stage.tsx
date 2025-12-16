@@ -18,6 +18,7 @@ import { privateApis as routePrivateApis } from '@wordpress/route';
  * Internal dependencies
  */
 import { unlock } from './lock-unlock';
+import './style.scss';
 
 const { useLoaderData } = unlock( routePrivateApis );
 
