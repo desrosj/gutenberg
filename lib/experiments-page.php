@@ -130,26 +130,6 @@ function gutenberg_get_experiments() {
 	);
 }
 
-if ( ! function_exists( 'the_gutenberg_experiments' ) ) {
-	/**
-	 * The main entry point for the Gutenberg experiments page.
-	 *
-	 * @deprecated This function is deprecated. Use experiments_wp_admin_render_page() instead.
-	 * The page is now powered by @wordpress/boot package.
-	 *
-	 * @since 6.3.0
-	 */
-	function the_gutenberg_experiments() {
-		// Redirect to the new boot-based implementation if available
-		if ( function_exists( 'experiments_wp_admin_render_page' ) ) {
-			experiments_wp_admin_render_page();
-		} else {
-			// Fallback for backward compatibility (should not happen after build)
-			wp_die( esc_html__( 'Experiments page is not available. Please rebuild the project.', 'gutenberg' ) );
-		}
-	}
-}
-
 /**
  * Set up the experiments settings.
  *

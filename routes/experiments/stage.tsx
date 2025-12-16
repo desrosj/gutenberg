@@ -12,15 +12,11 @@ import { DataForm } from '@wordpress/dataviews';
 import { __, _x } from '@wordpress/i18n';
 import { useEntityRecord } from '@wordpress/core-data';
 import { useMemo, useState } from '@wordpress/element';
-import { privateApis as routePrivateApis } from '@wordpress/route';
 
 /**
  * Internal dependencies
  */
-import { unlock } from './lock-unlock';
 import './style.scss';
-
-const { useLoaderData } = unlock( routePrivateApis );
 
 /**
  * Group labels for experiment categories.
@@ -299,9 +295,8 @@ function ExperimentsPage( { experiments = [] }: ExperimentsPageProps ) {
 }
 
 function Stage() {
-	// Get experiments data from route loader
-	const loaderData = useLoaderData() as { experiments?: Experiment[] };
-	const experiments = loaderData?.experiments || [];
+	// Get experiments data from window object (passed from PHP)
+	const experiments = ( window as any ).__GUTENBERG_EXPERIMENTS__ || [];
 
 	return <ExperimentsPage experiments={ experiments } />;
 }
