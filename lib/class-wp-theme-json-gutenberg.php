@@ -3163,7 +3163,23 @@ class WP_Theme_JSON_Gutenberg {
 
 		// 5. Generate and append the feature level rulesets.
 		foreach ( $feature_declarations as $feature_selector => $individual_feature_declarations ) {
-			$block_rules .= static::to_ruleset( ":root :where($feature_selector)", $individual_feature_declarations );
+			// Special handling for textIndent selector based on indentRule
+			$final_selector  = $feature_selector;
+			$has_text_indent = false;
+			foreach ( $individual_feature_declarations as $declaration ) {
+				if ( isset( $declaration['name'] ) && 'text-indent' === $declaration['name'] ) {
+					$has_text_indent = true;
+					break;
+				}
+			}
+			if ( $has_text_indent ) {
+				$indent_rule = $settings['typography']['textIndent']['indentRule'] ?? 'skipFirst';
+				if ( 'skipFirst' === $indent_rule ) {
+					// Append "+ {original selector}" to the base selector
+					$final_selector = "$feature_selector + $feature_selector";
+				}
+			}
+			$block_rules .= static::to_ruleset( ":root :where($final_selector)", $individual_feature_declarations );
 		}
 
 		// 6. Generate and append the style variation rulesets.

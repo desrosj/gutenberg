@@ -79,7 +79,7 @@
 	"selectors": {
 		"root": "p",
 		"typography": {
-			"textIndent": "p + p"
+			"textIndent": ".wp-block-paragraph"
 		}
 	},
 	"editorStyle": "wp-block-paragraph-editor",

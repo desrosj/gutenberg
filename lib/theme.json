@@ -308,7 +308,10 @@
 			"textAlign": true,
 			"textColumns": false,
 			"textDecoration": true,
-			"textIndent": true,
+			"textIndent": {
+				"enabled": true,
+				"indentRule": "all"
+			},
 			"textTransform": true,
 			"writingMode": false
 		},

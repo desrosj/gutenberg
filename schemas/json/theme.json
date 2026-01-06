@@ -637,11 +637,27 @@
 							"type": "boolean",
 							"default": false
 						},
-						"textIndent": {
-							"description": "Allow users to set custom line indent.",
-							"type": "boolean",
-							"default": false
+					"textIndent": {
+						"description": "Allow users to set custom line indent.",
+						"type": "object",
+						"properties": {
+							"enabled": {
+								"description": "Allow users to set custom line indent.",
+								"type": "boolean",
+								"default": false
+							},
+							"indentRule": {
+								"description": "Control which paragraphs to indent. 'all' indents all paragraphs, 'skipFirst' excludes the first paragraph in each section.",
+								"type": "string",
+								"enum": [
+									"all",
+									"skipFirst"
+								],
+								"default": "skipFirst"
+							}
 						},
+						"additionalProperties": false
+					},
 						"textAlign": {
 							"description": "Allow users to set the text align.",
 							"type": "boolean",

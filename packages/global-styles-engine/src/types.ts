@@ -161,6 +161,10 @@ export interface TypographySettings {
 	fontSizes?: TypographyPreset[] | Record< string, TypographyPreset[] >;
 	fontFamilies?: Record< string, FontFamilyPreset[] >;
 	defaultFontSizes?: boolean;
+	textIndent?: {
+		enabled?: boolean;
+		indentRule?: 'all' | 'skipFirst';
+	};
 }
 
 // =============================================================================

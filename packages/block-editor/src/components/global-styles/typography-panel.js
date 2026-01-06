@@ -122,7 +122,7 @@ function useHasTextColumnsControl( settings ) {
 }
 
 function useHasTextIndentControl( settings ) {
-	return settings?.typography?.textIndent;
+	return !! settings?.typography?.textIndent?.enabled;
 }
 
 /**

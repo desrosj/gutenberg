@@ -817,46 +817,9 @@ export const getNodesWithStyles = (
 		if ( tree.styles?.elements?.[ name ] ) {
 			const elementStyles = tree.styles?.elements?.[ name ] ?? {};
 
-			// Special handling for text element with textIndent - use p + p selector
-			const finalSelector = selector as string;
-			let textIndentStyles = null;
-			if ( name === 'text' && elementStyles?.typography?.textIndent ) {
-				textIndentStyles = {
-					typography: {
-						textIndent: elementStyles.typography.textIndent,
-					},
-				};
-				// Remove textIndent from the main styles to avoid duplication
-				const stylesWithoutTextIndent = { ...elementStyles };
-				if ( stylesWithoutTextIndent.typography ) {
-					const { textIndent, ...restTypography } =
-						stylesWithoutTextIndent.typography;
-					stylesWithoutTextIndent.typography = restTypography;
-				}
-
-				// Push the main styles with p selector (if there are any other styles)
-				if ( Object.keys( stylesWithoutTextIndent ).length > 0 ) {
-					nodes.push( {
-						styles: stylesWithoutTextIndent,
-						selector: finalSelector,
-						skipSelectorWrapper: ! (
-							ELEMENT_CLASS_NAMES as Record< string, string >
-						 )[ name ],
-					} );
-				}
-
-				// Push textIndent with p + p selector
-				nodes.push( {
-					styles: textIndentStyles,
-					selector: 'p + p',
-					skipSelectorWrapper: true,
-				} );
-				return; // Skip the normal push below
-			}
-
 			nodes.push( {
 				styles: elementStyles,
-				selector: finalSelector,
+				selector: selector as string,
 				// Top level elements that don't use a class name should not receive the
 				// `:root :where()` wrapper to maintain backwards compatibility.
 				skipSelectorWrapper: ! (
@@ -1233,8 +1196,23 @@ export const transformToStyles = (
 					Object.entries( featureDeclarations ).forEach(
 						( [ cssSelector, declarations ] ) => {
 							if ( declarations.length ) {
+								// Special handling for textIndent selector based on indentRule
+								let finalSelector = cssSelector;
+								const hasTextIndent = declarations.some(
+									( decl ) =>
+										decl.startsWith( 'text-indent:' )
+								);
+								if ( hasTextIndent ) {
+									const indentRule =
+										tree.settings?.typography?.textIndent
+											?.indentRule ?? 'skipFirst';
+									if ( indentRule === 'skipFirst' ) {
+										// Append "+ {original selector}" to the base selector
+										finalSelector = `${ cssSelector } + ${ cssSelector }`;
+									}
+								}
 								const rules = declarations.join( ';' );
-								ruleset += `:root :where(${ cssSelector }){${ rules };}`;
+								ruleset += `:root :where(${ finalSelector }){${ rules };}`;
 							}
 						}
 					);

@@ -6,14 +6,21 @@
 		"layout": {
 			"contentSize": "840px",
 			"wideSize": "1100px"
+		},
+		"typography": {
+			"textIndent": {
+				"enabled": false,
+				"indentRule": "skipFirst"
+			}
 		}
 	},
-	"customTemplates": [
-		{
-			"name": "custom-template",
-			"title": "Custom",
-			"postTypes": [ "post" ]
+	"styles": {
+		"blocks": {
+			"core/paragraph": {
+				"typography": {
+					"textIndent": "2em"
+				}
+			}
 		}
-	],
-	"patterns": [ "short-text-surrounded-by-round-images", "partner-logos" ]
+	}
 }
