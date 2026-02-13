@@ -8,6 +8,10 @@ import { useEvent, useRefEffect } from '@wordpress/compose';
  * Internal dependencies
  */
 import { initWaveformPlayer } from './waveform-utils';
+import {
+	getEffectiveBackgroundColor,
+	getProgressBackgroundColor,
+} from '../playlist/utils';
 
 const EMPTY_ARTIST_PLACEHOLDER = '\u00a0';
 
@@ -50,26 +54,36 @@ function updatePlayerMetadata( instance, { title, artist, image } ) {
 /**
  * A reusable WaveformPlayer component for the block editor.
  *
- * Renders an audio waveform visualization with play/pause controls.
+ * Renders an audio waveform visualization with dual layers (base + hover),
+ * time elements, control buttons, and progress background.
  * Automatically inherits colors from the parent block's text color.
  *
- * @param {Object}   props               - Component props.
- * @param {string}   props.src           - The audio file URL.
- * @param {string}   props.title         - The track title.
- * @param {string}   props.artist        - The artist name.
- * @param {string}   props.image         - The artwork image URL.
- * @param {string}   props.waveformStyle - Waveform style (bars, mirror, line, blocks, dots, seekbar).
- * @param {Function} props.onEnded       - Callback when the track finishes playing.
+ * @param {Object}   props                        - Component props.
+ * @param {string}   props.src                    - The audio file URL.
+ * @param {string}   props.title                  - The track title.
+ * @param {string}   props.artist                 - The artist name.
+ * @param {string}   props.album                  - The album name.
+ * @param {string}   props.image                  - The artwork image URL.
+ * @param {string}   props.visualizationStyle     - Waveform style (bars, mirror, etc).
+ * @param {boolean}  props.showProgressBackground - Whether to show progress background.
+ * @param {string}   props.progressColor          - Custom progress background color.
+ * @param {Function} props.onEnded                - Callback when the track finishes playing.
  * @return {Element} The WaveformPlayer element.
  */
 export function WaveformPlayer( {
 	src,
 	title,
 	artist,
+	album,
 	image,
 	waveformStyle,
+	visualizationStyle,
+	showProgressBackground,
+	progressColor,
 	onEnded,
 } ) {
+	const playerWaveformStyle = visualizationStyle || waveformStyle || 'bars';
+
 	// Store onEnded in a stable callback so it doesn't need to be a useRefEffect dependency.
 	// The callback changes reference on every render (its dependency chain
 	// includes an unstable array), which would cause useRefEffect to destroy
@@ -112,16 +126,27 @@ export function WaveformPlayer( {
 				if ( cancelled ) {
 					return;
 				}
+
+				// Compute colors from the element's position in the DOM.
+				const bgColor = getEffectiveBackgroundColor( element );
+				const progressBgColor =
+					progressColor || getProgressBackgroundColor( bgColor );
+
+				const metadata = metadataRef.current;
 				const player = initWaveformPlayer( element, {
 					src,
-					...metadataRef.current,
-					waveformStyle,
+					...metadata,
+					album,
+					waveformStyle: playerWaveformStyle,
 					artist:
-						metadataRef.current.artist || EMPTY_ARTIST_PLACEHOLDER,
+						metadata.artist || EMPTY_ARTIST_PLACEHOLDER,
+					showProgressBackground,
+					progressBackgroundColor: progressBgColor,
+					bgColor,
 					onEnded: () => onEndedEvent?.(),
 				} );
 				playerRef.current = player;
-				updatePlayerMetadata( player.instance, metadataRef.current );
+				updatePlayerMetadata( player.instance, metadata );
 				const { destroy } = player;
 				playerDestroy = destroy;
 			}
@@ -142,8 +167,22 @@ export function WaveformPlayer( {
 				playerDestroy?.();
 			};
 		},
-		[ onEndedEvent, src, waveformStyle, hasImage ]
+		[
+			onEndedEvent,
+			src,
+			album,
+			playerWaveformStyle,
+			hasImage,
+			showProgressBackground,
+			progressColor,
+		]
 	);
 
-	return <div ref={ ref } className="wp-block-playlist__waveform-player" />;
+	return (
+		<div
+			ref={ ref }
+			className="wp-block-playlist__waveform-player"
+			data-waveform-style={ playerWaveformStyle }
+		/>
+	);
 }
