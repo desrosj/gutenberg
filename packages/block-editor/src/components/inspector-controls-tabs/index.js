@@ -157,7 +157,7 @@ export default function InspectorControlsTabs( {
 			selectedTabIdRef.current !== TAB_LIST_VIEW.name
 		) {
 			setSelectedTabId( TAB_LIST_VIEW.name );
-			hasUserSelectionRef.current = false;
+			hasUserSelectionRef.current = true;
 		}
 	}, [ isListChildSelected ] );
 
