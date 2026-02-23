@@ -203,6 +203,8 @@ function getSassOptions( workingDir ) {
 			path.join( workingDir, 'node_modules' ),
 			// Root node_modules (for npm hoisted deps)
 			path.join( ROOT_DIR, 'node_modules' ),
+			// Resolves theme (imported by base-styles' mixins)
+			path.join( PACKAGES_DIR, 'wp-build', 'node_modules' ),
 			// For local imports like @use "mixins"
 			path.join( PACKAGES_DIR, 'base-styles' ),
 		],
