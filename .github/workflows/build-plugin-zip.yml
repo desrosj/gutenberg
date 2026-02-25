@@ -179,7 +179,7 @@ jobs:
                   fi
 
     build:
-        name: Build Release Artifact
+        name: ${{ matrix.IS_WORDPRESS_CORE && 'Build assets for wordpress-develop' || 'Build Release Artifact' }}
         runs-on: 'ubuntu-24.04'
         permissions:
             contents: read
