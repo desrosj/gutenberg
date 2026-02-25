@@ -193,7 +193,7 @@ jobs:
         strategy:
             matrix:
                 IS_GUTENBERG_PLUGIN: [true]
-                IS_WORDPREESS_CORE: [false]
+                IS_WORDPRESS_CORE: [false]
 
                 include:
                     - IS_GUTENBERG_PLUGIN: false
