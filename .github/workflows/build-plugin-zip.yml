@@ -196,8 +196,8 @@ jobs:
                 IS_WORDPREESS_CORE: [false]
 
                 include:
-                    - IS_GUTENBERG_PLUGIN: [false]
-                      IS_WORDPRESS_CORE: [true]
+                    - IS_GUTENBERG_PLUGIN: false
+                      IS_WORDPRESS_CORE: true
 
         outputs:
             job_status: ${{ job.status }}
@@ -220,8 +220,8 @@ jobs:
               run: ./bin/build-plugin-zip.sh
               env:
                   NO_CHECKS: 'true'
-                  IS_GUTENBERG_PLUGIN: ${{ matrix.IS_GUTENBERG_PLUGIN && true || false }}
-                  IS_WORDPRESS_CORE: ${{ matrix.IS_WORDPRESS_CORE && true || false }}
+                  IS_GUTENBERG_PLUGIN: ${{ matrix.IS_GUTENBERG_PLUGIN }}
+                  IS_WORDPRESS_CORE: ${{ matrix.IS_WORDPRESS_CORE }}
 
             - name: Upload artifact
               uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
