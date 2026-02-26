@@ -2128,7 +2128,9 @@ async function main() {
 			},
 			'base-url': {
 				type: 'string',
-				default: 'plugin_dir_url( __FILE__ )',
+				default: Boolean( process.env.npm_package_config_IS_WORDPRESS_CORE )
+					? 'includes_url( \'build/\' )'
+					: 'plugin_dir_url( __FILE__ )',
 			},
 		},
 		strict: false,
