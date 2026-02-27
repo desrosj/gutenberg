@@ -179,7 +179,7 @@ jobs:
                   fi
 
     build:
-        name: ${{ matrix.IS_WORDPRESS_CORE && 'Build assets for wordpress-develop' || 'Build Release Artifact' }}
+        name: ${{ matrix.IS_WORDPRESS_CORE == 'true' && 'Build assets for wordpress-develop' || 'Build Release Artifact' }}
         runs-on: 'ubuntu-24.04'
         permissions:
             contents: read
@@ -227,7 +227,7 @@ jobs:
             - name: Upload artifact
               uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
               with:
-                  name: gutenberg-${{ matrix.IS_WORDPRESS_CORE && 'wordpress-develop' || 'plugin' }}
+                  name: gutenberg-${{ matrix.IS_WORDPRESS_CORE == 'true' && 'wordpress-develop' || 'plugin' }}
                   path: ./gutenberg.zip
 
             - name: Build release notes draft
