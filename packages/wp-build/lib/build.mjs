@@ -113,17 +113,23 @@ const HANDLE_PREFIX = WP_PLUGIN_CONFIG.handlePrefix || PACKAGE_NAMESPACE;
 const EXTERNAL_NAMESPACES = WP_PLUGIN_CONFIG.externalNamespaces || {};
 const PAGES = WP_PLUGIN_CONFIG.pages || [];
 
+const toBool = (value) => {
+	if (value === undefined) return undefined;
+	if (typeof value === 'boolean') return value;
+	return value === 'true';
+};
+
 const baseDefine = {
 	'globalThis.IS_GUTENBERG_PLUGIN': JSON.stringify(
 		Boolean(
-			process.env.IS_GUTENBERG_PLUGIN ??
-				process.env.npm_package_config_IS_GUTENBERG_PLUGIN
+			toBool(process.env.IS_GUTENBERG_PLUGIN) ??
+			toBool(process.env.npm_package_config_IS_GUTENBERG_PLUGIN)
 		)
 	),
 	'globalThis.IS_WORDPRESS_CORE': JSON.stringify(
 		Boolean(
-			process.env.IS_WORDPRESS_CORE ??
-				process.env.npm_package_config_IS_WORDPRESS_CORE
+			toBool(process.env.IS_WORDPRESS_CORE) ??
+			toBool(process.env.npm_package_config_IS_WORDPRESS_CORE)
 		)
 	),
 };
@@ -2134,16 +2140,15 @@ async function main() {
 			},
 			'base-url': {
 				type: 'string',
-				default: Boolean(
-					process.env.IS_WORDPRESS_CORE ??
-						process.env.npm_package_config_IS_WORDPRESS_CORE
-				)
+				default: toBool( process.env.IS_WORDPRESS_CORE )
 					? 'includes_url( \'build/\' )'
 					: 'plugin_dir_url( __FILE__ )',
 			},
 		},
 		strict: false,
 	} );
+
+	console.debug( values );
 
 	const baseUrlExpression = values[ 'base-url' ];
 
