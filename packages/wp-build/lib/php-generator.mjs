@@ -27,7 +27,10 @@ export async function getPhpReplacements( rootDir, baseUrlExpression ) {
 		throw new Error( 'Could not read root package.json' );
 	}
 
-	const name = process.env.npm_package_config_WP_PLUGIN_NAME || 'gutenberg';
+	const name =
+		process.env.WP_PLUGIN_NAME ??
+		process.env.npm_package_config_WP_PLUGIN_NAME ??
+		'gutenberg';
 	const version = rootPackageJson.version;
 
 	return {

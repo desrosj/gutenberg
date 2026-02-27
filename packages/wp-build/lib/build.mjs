@@ -115,10 +115,16 @@ const PAGES = WP_PLUGIN_CONFIG.pages || [];
 
 const baseDefine = {
 	'globalThis.IS_GUTENBERG_PLUGIN': JSON.stringify(
-		Boolean( process.env.npm_package_config_IS_GUTENBERG_PLUGIN )
+		Boolean(
+			process.env.IS_GUTENBERG_PLUGIN ??
+				process.env.npm_package_config_IS_GUTENBERG_PLUGIN
+		)
 	),
 	'globalThis.IS_WORDPRESS_CORE': JSON.stringify(
-		Boolean( process.env.npm_package_config_IS_WORDPRESS_CORE )
+		Boolean(
+			process.env.IS_WORDPRESS_CORE ??
+				process.env.npm_package_config_IS_WORDPRESS_CORE
+		)
 	),
 };
 const getDefine = ( scriptDebug ) => ( {
@@ -2128,7 +2134,10 @@ async function main() {
 			},
 			'base-url': {
 				type: 'string',
-				default: Boolean( process.env.npm_package_config_IS_WORDPRESS_CORE )
+				default: Boolean(
+					process.env.IS_WORDPRESS_CORE ??
+						process.env.npm_package_config_IS_WORDPRESS_CORE
+				)
 					? 'includes_url( \'build/\' )'
 					: 'plugin_dir_url( __FILE__ )',
 			},
