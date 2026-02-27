@@ -192,12 +192,12 @@ jobs:
             )
         strategy:
             matrix:
-                IS_GUTENBERG_PLUGIN: ['true']
-                IS_WORDPRESS_CORE: ['false']
+                IS_GUTENBERG_PLUGIN: [true]
+                IS_WORDPRESS_CORE: [false]
 
                 include:
-                    - IS_GUTENBERG_PLUGIN: 'false'
-                      IS_WORDPRESS_CORE: 'true'
+                    - IS_GUTENBERG_PLUGIN: false
+                      IS_WORDPRESS_CORE: true
 
         outputs:
             job_status: ${{ job.status }}
@@ -220,14 +220,14 @@ jobs:
               run: ./bin/build-plugin-zip.sh
               env:
                   NO_CHECKS: 'true'
-                  IS_GUTENBERG_PLUGIN: ${{ matrix.IS_GUTENBERG_PLUGIN == 'true' && true || '' }}
-                  IS_WORDPRESS_CORE: ${{ matrix.IS_WORDPRESS_CORE == 'true' && true || '' }}
+                  IS_GUTENBERG_PLUGIN: ${{ matrix.IS_GUTENBERG_PLUGIN }}
+                  IS_WORDPRESS_CORE: ${{ matrix.IS_WORDPRESS_CORE }}
                   WP_PLUGIN_NAME: ${{ matrix.IS_WORDPRESS_CORE && 'wp' || 'gutenberg' }}
 
             - name: Upload artifact
               uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
               with:
-                  name: gutenberg-${{ matrix.IS_WORDPRESS_CORE == 'true' && 'wordpress-develop' || 'plugin' }}
+                  name: gutenberg-${{ matrix.IS_WORDPRESS_CORE && 'wordpress-develop' || 'plugin' }}
                   path: ./gutenberg.zip
 
             - name: Build release notes draft
