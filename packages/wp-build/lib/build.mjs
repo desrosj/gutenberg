@@ -674,6 +674,21 @@ async function bundlePackage( packageName, options = {} ) {
 
 	if ( packageJson.wpCopyFiles ) {
 		const { files, transforms = {} } = packageJson.wpCopyFiles;
+
+		// Resolve WP_PLUGIN_NAME-based overrides for PHP transforms.
+		if ( transforms.php ) {
+			const pluginName =
+				process.env.WP_PLUGIN_NAME ??
+				process.env.npm_package_config_WP_PLUGIN_NAME ??
+				'gutenberg';
+			transforms.php = {
+				...transforms.php,
+				functionPrefix: `${ pluginName }_`,
+				classSuffix:
+					pluginName === 'gutenberg' ? transforms.php.classSuffix : '',
+			};
+		}
+
 		const packageSourceDir = path.join( packageDir, 'src' );
 		const outputDir = path.join( BUILD_DIR, 'scripts', packageName );
 
