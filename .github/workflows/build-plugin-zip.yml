@@ -192,12 +192,12 @@ jobs:
             )
         strategy:
             matrix:
-                IS_GUTENBERG_PLUGIN: [true]
-                IS_WORDPRESS_CORE: [false]
+                IS_GUTENBERG_PLUGIN: ['true']
+                IS_WORDPRESS_CORE: ['false']
 
                 include:
-                    - IS_GUTENBERG_PLUGIN: false
-                      IS_WORDPRESS_CORE: true
+                    - IS_GUTENBERG_PLUGIN: 'false'
+                      IS_WORDPRESS_CORE: 'true'
 
         outputs:
             job_status: ${{ job.status }}
@@ -220,8 +220,8 @@ jobs:
               run: ./bin/build-plugin-zip.sh
               env:
                   NO_CHECKS: 'true'
-                  IS_GUTENBERG_PLUGIN: ${{ matrix.IS_GUTENBERG_PLUGIN }}
-                  IS_WORDPRESS_CORE: ${{ matrix.IS_WORDPRESS_CORE }}
+                  IS_GUTENBERG_PLUGIN: ${{ matrix.IS_GUTENBERG_PLUGIN == 'true' && true || false }}
+                  IS_WORDPRESS_CORE: ${{ matrix.IS_WORDPRESS_CORE == 'true' && true || false }}
                   WP_PLUGIN_NAME: ${{ matrix.IS_WORDPRESS_CORE && 'wp' || 'gutenberg' }}
 
             - name: Upload artifact
