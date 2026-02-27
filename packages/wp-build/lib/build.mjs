@@ -2148,8 +2148,6 @@ async function main() {
 		strict: false,
 	} );
 
-	console.debug( values );
-
 	const baseUrlExpression = values[ 'base-url' ];
 
 	await buildAll( baseUrlExpression );
