@@ -126,7 +126,7 @@ const castBool = ( value ) => {
 	if ( typeof value === 'boolean' ) {
 		return value;
 	}
-	return value === 'true';
+	return [ 'true', '1', 1 ].includes( value?.toLowerCase?.() ?? value );
 };
 
 const baseDefine = {
