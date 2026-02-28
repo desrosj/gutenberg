@@ -120,24 +120,26 @@ const PAGES = WP_PLUGIN_CONFIG.pages || [];
  * are "truthy" and incorrectly typecast to Boolean true.
  *
  * @param {string|boolean|undefined} value The value to cast.
- * @returns {boolean} The typecast value.
+ * @return {boolean} The typecast value.
  */
-const castBool = (value) => {
-	if (typeof value === 'boolean') return value;
+const castBool = ( value ) => {
+	if ( typeof value === 'boolean' ) {
+		return value;
+	}
 	return value === 'true';
 };
 
 const baseDefine = {
 	'globalThis.IS_GUTENBERG_PLUGIN': JSON.stringify(
 		Boolean(
-			castBool(process.env.IS_GUTENBERG_PLUGIN) ??
-			castBool(process.env.npm_package_config_IS_GUTENBERG_PLUGIN)
+			castBool( process.env.IS_GUTENBERG_PLUGIN ) ??
+				castBool( process.env.npm_package_config_IS_GUTENBERG_PLUGIN )
 		)
 	),
 	'globalThis.IS_WORDPRESS_CORE': JSON.stringify(
 		Boolean(
-			castBool(process.env.IS_WORDPRESS_CORE) ??
-			castBool(process.env.npm_package_config_IS_WORDPRESS_CORE)
+			castBool( process.env.IS_WORDPRESS_CORE ) ??
+				castBool( process.env.npm_package_config_IS_WORDPRESS_CORE )
 		)
 	),
 };
@@ -2159,7 +2161,7 @@ async function main() {
 			'base-url': {
 				type: 'string',
 				default: castBool( process.env.IS_WORDPRESS_CORE )
-					? 'includes_url( \'build/\' )'
+					? "includes_url( 'build/' )"
 					: 'plugin_dir_url( __FILE__ )',
 			},
 		},
