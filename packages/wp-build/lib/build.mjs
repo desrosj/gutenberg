@@ -113,8 +113,16 @@ const HANDLE_PREFIX = WP_PLUGIN_CONFIG.handlePrefix || PACKAGE_NAMESPACE;
 const EXTERNAL_NAMESPACES = WP_PLUGIN_CONFIG.externalNamespaces || {};
 const PAGES = WP_PLUGIN_CONFIG.pages || [];
 
-const toBool = (value) => {
-	if (value === undefined) return undefined;
+/**
+ * Reliably casts a value into a boolean.
+ *
+ * This helps to avoid scenarios where falsey string values such as false or 0
+ * are "truthy" and incorrectly typecast to Boolean true.
+ *
+ * @param {string|boolean|undefined} value The value to cast.
+ * @returns {boolean} The typecast value.
+ */
+const castBool = (value) => {
 	if (typeof value === 'boolean') return value;
 	return value === 'true';
 };
@@ -122,14 +130,14 @@ const toBool = (value) => {
 const baseDefine = {
 	'globalThis.IS_GUTENBERG_PLUGIN': JSON.stringify(
 		Boolean(
-			toBool(process.env.IS_GUTENBERG_PLUGIN) ??
-			toBool(process.env.npm_package_config_IS_GUTENBERG_PLUGIN)
+			castBool(process.env.IS_GUTENBERG_PLUGIN) ??
+			castBool(process.env.npm_package_config_IS_GUTENBERG_PLUGIN)
 		)
 	),
 	'globalThis.IS_WORDPRESS_CORE': JSON.stringify(
 		Boolean(
-			toBool(process.env.IS_WORDPRESS_CORE) ??
-			toBool(process.env.npm_package_config_IS_WORDPRESS_CORE)
+			castBool(process.env.IS_WORDPRESS_CORE) ??
+			castBool(process.env.npm_package_config_IS_WORDPRESS_CORE)
 		)
 	),
 };
@@ -325,8 +333,13 @@ function transformPhpContent( content, transforms ) {
 
 	content = content.toString();
 
-	// Skip any transforms when building for WordPress Core.
-	if ( toBool( process.env.IS_WORDPRESS_CORE ) ) {
+	/*
+	 * Transforms are used to modify PHP files that are committed to version
+	 * control in their wordpress-develop state (`wp_` function prefixes, `WP_`
+	 * class prefixes, etc.). When building for WordPress Core, it's not
+	 * necessary to perform these steps.
+	 */
+	if ( castBool( process.env.IS_WORDPRESS_CORE ) ) {
 		return content;
 	}
 
@@ -2145,7 +2158,7 @@ async function main() {
 			},
 			'base-url': {
 				type: 'string',
-				default: toBool( process.env.IS_WORDPRESS_CORE )
+				default: castBool( process.env.IS_WORDPRESS_CORE )
 					? 'includes_url( \'build/\' )'
 					: 'plugin_dir_url( __FILE__ )',
 			},
