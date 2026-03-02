@@ -277,7 +277,7 @@ jobs:
               run: echo "${{ github.sha }}" > .gutenberg-hash
 
             - name: Recompress as a .gz file
-              run: tar -czf gutenberg.tar.gz gutenberg
+              run: tar -czf gutenberg.tar.gz .
 
             - name: Debug commands
               run: |
