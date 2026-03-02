@@ -272,12 +272,15 @@ jobs:
               with:
                   name: gutenberg-wordpress-develop
 
+            - name: Unzip zip file
+              run: unzip gutenberg.zip gutenberg
+
             # Noting the hash helps keep track of the commit the zip was built from.
             - name: Add a file for tracking the SHA value used.
-              run: echo "${{ github.sha }}" > .gutenberg-hash
+              run: echo "${{ github.sha }}" > gutenberg/.gutenberg-hash
 
             - name: Recompress as a .gz file
-              run: tar -czf ${{ runner.temp }}/gutenberg.tar.gz --exclude="gutenberg.zip" . && mv ${{ runner.temp }}/gutenberg.tar.gz .
+              run: tar -czf gutenberg.tar.gz gutenberg
 
             - name: Debug commands
               run: |
