@@ -277,7 +277,7 @@ jobs:
               run: echo "${{ github.sha }}" > .gutenberg-hash
 
             - name: Recompress as a .gz file
-              run: tar -czf gutenberg.tar.gz .
+              run: tar -czf ${{ runner.temp }}/gutenberg.tar.gz --exclude="gutenberg.zip" . && mv ${{ runner.temp }}/gutenberg.tar.gz .
 
             - name: Debug commands
               run: |
