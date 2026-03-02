@@ -276,8 +276,14 @@ jobs:
             - name: Add a file for tracking the SHA value used.
               run: echo "${{ github.sha }}" > .gutenberg-hash
 
-            - name: Include the new file in the zip
-              run: zip gutenberg.zip .gutenberg-hash
+            - name: Unzip the artifact
+              run: unzip gutenberg.zip
+
+            - name: Add the new file in the zip
+              run: mv .gutenberg-hash gutenberg
+
+            - name: Recompress as a .gz file
+              run: tar -czf gutenberg.tar.gz gutenberg
 
             - name: Login to GitHub Container Registry
               uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
@@ -286,7 +292,7 @@ jobs:
                   username: ${{ github.actor }}
                   password: ${{ secrets.GITHUB_TOKEN }}
 
-            # OCI Registry As Storage (ORAS) provides a way to push and pull non-image, generic artifacts (zip files,
+            # OCI Registry As Storage (ORAS) provides a way to push and pull non-image, generic artifacts (.gz files,
             # for example) to container registries such as GitHub Container Registry.
             - name: Setup ORAS
               uses: oras-project/setup-oras@22ce207df3b08e061f537244349aac6ae1d214f6 # v1.2.4
@@ -294,10 +300,10 @@ jobs:
             # The owner/repository is hard-coded because capital letters are not allowed when publishing to GitHub
             # Container Registry. The organization name is WordPress, so ${{ github.repository }} causes an error.
             # See https://github.com/orgs/community/discussions/27086 for more info.
-            - name: Push built plugin ZIP file to GitHub Container Registry
+            - name: Push built plugin .tar.gz file to GitHub Container Registry
               run: |
                   oras push "ghcr.io/wordpress/gutenberg/gutenberg-wp-develop-build:${{ github.sha }}" \
-                  "gutenberg.zip:application/zip" \
+                  "gutenberg.tar.gz:application/gzip" \
                   --annotation "org.opencontainers.image.description=Gutenberg plugin build for commit ${{ github.sha }}" \
                   --annotation "org.opencontainers.image.source=https://github.com/${{ github.repository }}" \
                   --annotation "org.opencontainers.image.revision=${{ github.sha }}"
