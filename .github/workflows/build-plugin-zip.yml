@@ -285,6 +285,12 @@ jobs:
             - name: Recompress as a .gz file
               run: tar -czf gutenberg.tar.gz gutenberg
 
+            - name: Debug commands
+              run: |
+                  ls -la
+                  ls -la gutenberg/ 2>/dev/null || echo "No gutenberg/ directory found"
+                  find . -not -path './.git/*' | head -50
+
             - name: Login to GitHub Container Registry
               uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
               with:
