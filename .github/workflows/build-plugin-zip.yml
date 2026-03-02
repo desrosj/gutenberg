@@ -276,12 +276,6 @@ jobs:
             - name: Add a file for tracking the SHA value used.
               run: echo "${{ github.sha }}" > .gutenberg-hash
 
-            - name: Unzip the artifact
-              run: unzip gutenberg.zip
-
-            - name: Add the new file in the zip
-              run: mv .gutenberg-hash gutenberg
-
             - name: Recompress as a .gz file
               run: tar -czf gutenberg.tar.gz gutenberg
 
