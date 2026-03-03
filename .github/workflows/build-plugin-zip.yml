@@ -277,7 +277,7 @@ jobs:
                   find . -not -path './.git/*' | head -50
 
             - name: Unzip zip file
-              run: unzip gutenberg.zip gutenberg
+              run: unzip gutenberg.zip
 
             - name: Debug commands
               run: |
@@ -287,7 +287,8 @@ jobs:
 
             # Noting the hash helps keep track of the commit the zip was built from.
             - name: Add a file for tracking the SHA value used.
-              run: echo "${{ github.sha }}" > gutenberg/.gutenberg-hash
+              working-directory: gutenberg
+              run: echo "${{ github.sha }}" > .gutenberg-hash
 
             - name: Recompress as a .gz file
               run: tar -czf gutenberg.tar.gz gutenberg
