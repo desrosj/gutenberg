@@ -8,47 +8,6 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 LABELER_CONFIG="$REPO_ROOT/.github/labeler.yml"
 
-# DO NOT ADD TO THIS LIST. These are packages which do not have an associated
-# GitHub label yet. Remove entries from this list as labels are created.
-EXCLUDED_PACKAGES="
-	abilities
-	annotations
-	asset-loader
-	block-directory
-	block-serialization-default-parser
-	block-serialization-spec-parser
-	connectors
-	core-abilities
-	create-block-interactive-template
-	create-block-tutorial-template
-	customize-widgets
-	edit-site-init
-	global-styles-engine
-	global-styles-ui
-	latex-to-mathml
-	lazy-editor
-	list-reusable-blocks
-	media-editor
-	media-fields
-	nux
-	postcss-themes
-	preferences-persistence
-	react-native-aztec
-	react-native-bridge
-	react-native-editor
-	report-flaky-tests
-	reusable-blocks
-	route
-	shortcode
-	undo-manager
-	upload-media
-	views
-	vips
-	widgets
-	worker-threads
-	workflow
-"
-
 missing=()
 
 for pkg_dir in "$REPO_ROOT"/packages/*/; do
@@ -58,11 +17,6 @@ for pkg_dir in "$REPO_ROOT"/packages/*/; do
 	fi
 
 	pkg_name="$(basename "$pkg_dir")"
-
-	# Skip excluded packages
-	if echo "$EXCLUDED_PACKAGES" | grep -qw "$pkg_name"; then
-		continue
-	fi
 
 	# Check that the labeler config references this package's glob
 	if ! grep -q "packages/${pkg_name}/\*\*" "$LABELER_CONFIG"; then
