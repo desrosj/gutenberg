@@ -16,11 +16,14 @@ import {
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { desktop, mobile, tablet, external, check } from '@wordpress/icons';
-import { useSelect, useDispatch } from '@wordpress/data';
+import { useSelect, useDispatch, useRegistry } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
 import { store as preferencesStore } from '@wordpress/preferences';
 import { ActionItem } from '@wordpress/interface';
-import { store as blockEditorStore } from '@wordpress/block-editor';
+import {
+	store as blockEditorStore,
+	privateApis as blockEditorPrivateApis,
+} from '@wordpress/block-editor';
 import { VisuallyHidden } from '@wordpress/ui';
 
 /**
@@ -29,6 +32,8 @@ import { VisuallyHidden } from '@wordpress/ui';
 import { store as editorStore } from '../../store';
 import PostPreviewButton from '../post-preview-button';
 import { unlock } from '../../lock-unlock';
+
+const { resolveCurrentViewport } = unlock( blockEditorPrivateApis );
 
 export default function PreviewDropdown( { forceIsAutosaveable, disabled } ) {
 	const {
@@ -62,9 +67,46 @@ export default function PreviewDropdown( { forceIsAutosaveable, disabled } ) {
 	const { setDeviceType, setRenderingMode, setDefaultRenderingMode } = unlock(
 		useDispatch( editorStore )
 	);
-	const { resetZoomLevel } = unlock( useDispatch( blockEditorStore ) );
+	const blockEditorDispatch = useDispatch( blockEditorStore );
+	const { clearSelectedBlock } = blockEditorDispatch;
+	const { resetZoomLevel } = unlock( blockEditorDispatch );
+	const registry = useRegistry();
+
+	const isLargerThanMobile = useViewportMatch( 'mobile', '>=' ); // >= 480px
+	const isLargerThanTablet = useViewportMatch( 'medium', '>=' ); // >= 782px
 
 	const handleDevicePreviewChange = ( newDeviceType ) => {
+		const isListViewOpened = registry
+			.select( editorStore )
+			.isListViewOpened();
+		const selectedBlockClientId = registry
+			.select( blockEditorStore )
+			.getSelectedBlockClientId();
+
+		if ( ! isListViewOpened && selectedBlockClientId ) {
+			const targetViewport = resolveCurrentViewport(
+				newDeviceType,
+				isLargerThanMobile,
+				isLargerThanTablet
+			);
+			const blockEditorSelectors = unlock(
+				registry.select( blockEditorStore )
+			);
+			const isSelectedBlockHiddenInTargetViewport =
+				blockEditorSelectors.isBlockHiddenAtViewport(
+					selectedBlockClientId,
+					targetViewport
+				) ||
+				blockEditorSelectors.isBlockParentHiddenAtViewport(
+					selectedBlockClientId,
+					targetViewport
+				);
+
+			if ( isSelectedBlockHiddenInTargetViewport ) {
+				clearSelectedBlock();
+			}
+		}
+
 		setDeviceType( newDeviceType );
 		resetZoomLevel();
 	};
