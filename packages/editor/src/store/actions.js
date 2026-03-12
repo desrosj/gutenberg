@@ -289,6 +289,7 @@ export const savePost =
 				post: previousRecord,
 				edits,
 				error,
+				options,
 			} );
 			if ( args.length ) {
 				registry.dispatch( noticesStore ).createErrorNotice( ...args );
