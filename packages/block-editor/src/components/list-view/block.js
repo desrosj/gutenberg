@@ -125,7 +125,12 @@ function ListViewBlock( {
 
 	const pasteStyles = usePasteStyles();
 
-	const { block, blockName, allowRightClickOverrides } = useSelect(
+	const {
+		block,
+		blockName,
+		allowRightClickOverrides,
+		blockVisibilitySetting,
+	} = useSelect(
 		( select ) => {
 			const { getBlock, getBlockName, getSettings } = unlock(
 				select( blockEditorStore )
@@ -136,6 +141,9 @@ function ListViewBlock( {
 				blockName: getBlockName( clientId ),
 				allowRightClickOverrides:
 					getSettings().allowRightClickOverrides,
+				blockVisibilitySetting:
+					getSettings().__experimentalFeatures?.responsive
+						?.blockVisibility,
 			};
 		},
 		[ clientId ]
@@ -388,6 +396,10 @@ function ListViewBlock( {
 					( id ) => getBlockEditingMode( id ) !== 'default'
 				)
 			) {
+				return;
+			}
+
+			if ( blockVisibilitySetting === false ) {
 				return;
 			}
 

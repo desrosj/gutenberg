@@ -450,6 +450,9 @@ class WP_Theme_JSON_Gutenberg {
 			'fixed'  => null,
 			'sticky' => null,
 		),
+		'responsive'                    => array(
+			'blockVisibility' => true,
+		),
 		'spacing'                       => array(
 			'customSpacingSize'   => null,
 			'defaultSpacingSizes' => null,
