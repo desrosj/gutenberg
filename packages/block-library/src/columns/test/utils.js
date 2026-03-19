@@ -39,7 +39,11 @@ describe( 'toWidthPrecision', () => {
 
 describe( 'getEffectiveColumnWidth', () => {
 	it( 'should return attribute value if set, rounded to precision', () => {
-		const block = { attributes: { width: 50.108 } };
+		const block = {
+			attributes: {
+				style: { dimensions: { width: 50.108 } },
+			},
+		};
 
 		const width = getEffectiveColumnWidth( block, 3 );
 
@@ -53,13 +57,27 @@ describe( 'getEffectiveColumnWidth', () => {
 
 		expect( width ).toBe( 33.33 );
 	} );
+
+	it( 'should fall back to legacy width attribute', () => {
+		const block = { attributes: { width: 50.108 } };
+
+		const width = getEffectiveColumnWidth( block, 3 );
+
+		expect( width ).toBe( 50.11 );
+	} );
 } );
 
 describe( 'getTotalColumnsWidth', () => {
 	describe( 'explicit width', () => {
 		const blocks = [
-			{ clientId: 'a', attributes: { width: 30 } },
-			{ clientId: 'b', attributes: { width: 40 } },
+			{
+				clientId: 'a',
+				attributes: { style: { dimensions: { width: 30 } } },
+			},
+			{
+				clientId: 'b',
+				attributes: { style: { dimensions: { width: 40 } } },
+			},
 		];
 
 		it( 'returns the sum total of columns width', () => {
@@ -86,8 +104,14 @@ describe( 'getTotalColumnsWidth', () => {
 describe( 'getColumnWidths', () => {
 	describe( 'explicit width', () => {
 		const blocks = [
-			{ clientId: 'a', attributes: { width: 30.459 } },
-			{ clientId: 'b', attributes: { width: 29.543 } },
+			{
+				clientId: 'a',
+				attributes: { style: { dimensions: { width: 30.459 } } },
+			},
+			{
+				clientId: 'b',
+				attributes: { style: { dimensions: { width: 29.543 } } },
+			},
 		];
 
 		it( 'returns the column widths', () => {
@@ -120,8 +144,14 @@ describe( 'getColumnWidths', () => {
 describe( 'getRedistributedColumnWidths', () => {
 	describe( 'explicit width', () => {
 		let blocks = [
-			{ clientId: 'a', attributes: { width: 30 } },
-			{ clientId: 'b', attributes: { width: 40 } },
+			{
+				clientId: 'a',
+				attributes: { style: { dimensions: { width: 30 } } },
+			},
+			{
+				clientId: 'b',
+				attributes: { style: { dimensions: { width: 40 } } },
+			},
 		];
 
 		it( 'should constrain to fit available width', () => {
@@ -144,8 +174,18 @@ describe( 'getRedistributedColumnWidths', () => {
 
 		it( 'should decrease proportionally for third column', () => {
 			blocks = [
-				{ clientId: 'a', attributes: { width: 99 } },
-				{ clientId: 'b', attributes: { width: 1 } },
+				{
+					clientId: 'a',
+					attributes: {
+						style: { dimensions: { width: 99 } },
+					},
+				},
+				{
+					clientId: 'b',
+					attributes: {
+						style: { dimensions: { width: 1 } },
+					},
+				},
 			];
 			const widths = getRedistributedColumnWidths( blocks, 66.67 );
 
@@ -157,9 +197,24 @@ describe( 'getRedistributedColumnWidths', () => {
 
 		it( 'should decrease proportionally for fourth column', () => {
 			blocks = [
-				{ clientId: 'a', attributes: { width: 98 } },
-				{ clientId: 'b', attributes: { width: 1 } },
-				{ clientId: 'c', attributes: { width: 1 } },
+				{
+					clientId: 'a',
+					attributes: {
+						style: { dimensions: { width: 98 } },
+					},
+				},
+				{
+					clientId: 'b',
+					attributes: {
+						style: { dimensions: { width: 1 } },
+					},
+				},
+				{
+					clientId: 'c',
+					attributes: {
+						style: { dimensions: { width: 1 } },
+					},
+				},
 			];
 			const widths = getRedistributedColumnWidths( blocks, 75 );
 
@@ -207,7 +262,13 @@ describe( 'hasExplicitPercentColumnWidths', () => {
 	} );
 
 	it( 'returns true if a block has explicit width defined as a number', () => {
-		const blocks = [ { attributes: { width: 100 } } ];
+		const blocks = [
+			{
+				attributes: {
+					style: { dimensions: { width: 100 } },
+				},
+			},
+		];
 
 		const result = hasExplicitPercentColumnWidths( blocks );
 
@@ -215,7 +276,13 @@ describe( 'hasExplicitPercentColumnWidths', () => {
 	} );
 
 	it( 'returns true if a block has explicit percent width defined as a string', () => {
-		const blocks = [ { attributes: { width: '100%' } } ];
+		const blocks = [
+			{
+				attributes: {
+					style: { dimensions: { width: '100%' } },
+				},
+			},
+		];
 
 		const result = hasExplicitPercentColumnWidths( blocks );
 
@@ -224,8 +291,12 @@ describe( 'hasExplicitPercentColumnWidths', () => {
 
 	it( 'returns false if some, not all blocks have explicit width', () => {
 		const blocks = [
-			{ attributes: { width: 10 } },
-			{ attributes: { width: undefined } },
+			{
+				attributes: {
+					style: { dimensions: { width: 10 } },
+				},
+			},
+			{ attributes: {} },
 		];
 
 		const result = hasExplicitPercentColumnWidths( blocks );
@@ -235,8 +306,16 @@ describe( 'hasExplicitPercentColumnWidths', () => {
 
 	it( 'returns true if all blocks have explicit width', () => {
 		const blocks = [
-			{ attributes: { width: 10 } },
-			{ attributes: { width: 90 } },
+			{
+				attributes: {
+					style: { dimensions: { width: 10 } },
+				},
+			},
+			{
+				attributes: {
+					style: { dimensions: { width: 90 } },
+				},
+			},
 		];
 
 		const result = hasExplicitPercentColumnWidths( blocks );
@@ -246,8 +325,16 @@ describe( 'hasExplicitPercentColumnWidths', () => {
 
 	it( 'returns true if blocks have width defined as percent strings and numbers', () => {
 		const blocks = [
-			{ attributes: { width: '10%' } },
-			{ attributes: { width: 90 } },
+			{
+				attributes: {
+					style: { dimensions: { width: '10%' } },
+				},
+			},
+			{
+				attributes: {
+					style: { dimensions: { width: 90 } },
+				},
+			},
 		];
 
 		const result = hasExplicitPercentColumnWidths( blocks );
@@ -257,21 +344,50 @@ describe( 'hasExplicitPercentColumnWidths', () => {
 
 	it( 'returns false if blocks have width defined as mixed unit strings', () => {
 		const blocks = [
-			{ attributes: { width: '20%' } },
-			{ attributes: { width: '90px' } },
+			{
+				attributes: {
+					style: { dimensions: { width: '20%' } },
+				},
+			},
+			{
+				attributes: {
+					style: { dimensions: { width: '90px' } },
+				},
+			},
 		];
 
 		const result = hasExplicitPercentColumnWidths( blocks );
 
 		expect( result ).toBe( false );
 	} );
+
+	it( 'falls back to legacy width attribute', () => {
+		const blocks = [
+			{ attributes: { width: 10 } },
+			{ attributes: { width: 90 } },
+		];
+
+		const result = hasExplicitPercentColumnWidths( blocks );
+
+		expect( result ).toBe( true );
+	} );
 } );
 
 describe( 'getMappedColumnWidths', () => {
 	it( 'merges to block attributes using provided widths', () => {
 		const blocks = [
-			{ clientId: 'a', attributes: { width: 30 } },
-			{ clientId: 'b', attributes: { width: 40 } },
+			{
+				clientId: 'a',
+				attributes: {
+					style: { dimensions: { width: 30 } },
+				},
+			},
+			{
+				clientId: 'b',
+				attributes: {
+					style: { dimensions: { width: 40 } },
+				},
+			},
 		];
 		const widths = {
 			a: 25,
@@ -281,15 +397,35 @@ describe( 'getMappedColumnWidths', () => {
 		const result = getMappedColumnWidths( blocks, widths );
 
 		expect( result ).toEqual( [
-			{ clientId: 'a', attributes: { width: '25%' } },
-			{ clientId: 'b', attributes: { width: '35%' } },
+			{
+				clientId: 'a',
+				attributes: {
+					style: { dimensions: { width: '25%' } },
+				},
+			},
+			{
+				clientId: 'b',
+				attributes: {
+					style: { dimensions: { width: '35%' } },
+				},
+			},
 		] );
 	} );
 
 	it( 'always returns new objects and does not mutate input blocks', () => {
 		const blocks = [
-			deepFreeze( { clientId: 'a', attributes: { width: 30 } } ),
-			deepFreeze( { clientId: 'b', attributes: { width: 40 } } ),
+			deepFreeze( {
+				clientId: 'a',
+				attributes: {
+					style: { dimensions: { width: 30 } },
+				},
+			} ),
+			deepFreeze( {
+				clientId: 'b',
+				attributes: {
+					style: { dimensions: { width: 40 } },
+				},
+			} ),
 		];
 		const widths = {
 			a: 25,
@@ -312,8 +448,18 @@ describe( 'getMappedColumnWidths', () => {
 		const result = getMappedColumnWidths( blocks, widths );
 
 		expect( result ).toEqual( [
-			{ clientId: 'a', attributes: { width: '25%' } },
-			{ clientId: 'b', attributes: { width: '35%' } },
+			{
+				clientId: 'a',
+				attributes: {
+					style: { dimensions: { width: '25%' } },
+				},
+			},
+			{
+				clientId: 'b',
+				attributes: {
+					style: { dimensions: { width: '35%' } },
+				},
+			},
 		] );
 	} );
 
@@ -330,8 +476,20 @@ describe( 'getMappedColumnWidths', () => {
 		const result = getMappedColumnWidths( blocks, widths );
 
 		expect( result ).toEqual( [
-			{ clientId: 'a', attributes: { align: 'left', width: '25%' } },
-			{ clientId: 'b', attributes: { align: 'right', width: '35%' } },
+			{
+				clientId: 'a',
+				attributes: {
+					align: 'left',
+					style: { dimensions: { width: '25%' } },
+				},
+			},
+			{
+				clientId: 'b',
+				attributes: {
+					align: 'right',
+					style: { dimensions: { width: '35%' } },
+				},
+			},
 		] );
 	} );
 } );

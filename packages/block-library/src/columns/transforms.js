@@ -81,10 +81,26 @@ const transforms = {
 					media = [ 'core/video', { id, src: url } ];
 				}
 				const innerBlocksTemplate = [
-					[ 'core/column', { width: `${ mediaWidth }%` }, [ media ] ],
 					[
 						'core/column',
-						{ width: `${ 100 - mediaWidth }%` },
+						{
+							style: {
+								dimensions: {
+									width: `${ mediaWidth }%`,
+								},
+							},
+						},
+						[ media ],
+					],
+					[
+						'core/column',
+						{
+							style: {
+								dimensions: {
+									width: `${ 100 - mediaWidth }%`,
+								},
+							},
+						},
 						innerBlocks,
 					],
 				];

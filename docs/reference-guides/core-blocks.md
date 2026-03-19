@@ -147,8 +147,8 @@ A single column within a columns block. ([Source](https://github.com/WordPress/g
 -	**Name:** core/column
 -	**Category:** design
 -	**Parent:** core/columns
--	**Supports:** allowedBlocks, anchor, color (background, button, gradients, heading, link, text), interactivity (clientNavigation), layout, shadow, spacing (blockGap, padding), typography (fontSize, lineHeight), ~~html~~, ~~reusable~~
--	**Attributes:** templateLock, verticalAlignment, width
+-	**Supports:** allowedBlocks, anchor, color (background, button, gradients, heading, link, text), dimensions (width), interactivity (clientNavigation), layout, shadow, spacing (blockGap, padding), typography (fontSize, lineHeight), ~~html~~, ~~reusable~~
+-	**Attributes:** templateLock, verticalAlignment
 
 ## Columns
 

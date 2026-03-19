@@ -1466,6 +1466,18 @@ export const transformToStyles = (
 					} );
 				}
 
+				// Column blocks use flex-basis instead of width
+				// because they live in a flex container. Extract the
+				// width value before generating declarations and
+				// output it as flex-basis instead.
+				let columnFlexBasis: string | undefined;
+				if ( name === 'core/column' && styles?.dimensions?.width ) {
+					columnFlexBasis = getCSSValueFromRawStyle(
+						styles.dimensions.width
+					);
+					delete styles.dimensions.width;
+				}
+
 				// Process the remaining block styles (they use either normal block class or __experimentalSelector).
 				const styleDeclarations = getStylesDeclarations(
 					styles,
@@ -1474,6 +1486,11 @@ export const transformToStyles = (
 					tree,
 					disableRootPadding
 				);
+
+				if ( columnFlexBasis ) {
+					styleDeclarations.push( `flex-basis:${ columnFlexBasis }` );
+				}
+
 				if ( styleDeclarations?.length ) {
 					const generalSelector = skipSelectorWrapper
 						? selector
@@ -1540,6 +1557,19 @@ export const transformToStyles = (
 								}
 
 								// Otherwise add regular selectors.
+								// Column blocks use flex-basis instead of width.
+								let variationFlexBasis: string | undefined;
+								if (
+									name === 'core/column' &&
+									styleVariations?.dimensions?.width
+								) {
+									variationFlexBasis =
+										getCSSValueFromRawStyle(
+											styleVariations.dimensions.width
+										);
+									delete styleVariations.dimensions.width;
+								}
+
 								const styleVariationDeclarations =
 									getStylesDeclarations(
 										styleVariations,
@@ -1547,6 +1577,13 @@ export const transformToStyles = (
 										useRootPaddingAlign,
 										tree
 									);
+
+								if ( variationFlexBasis ) {
+									styleVariationDeclarations.push(
+										`flex-basis:${ variationFlexBasis }`
+									);
+								}
+
 								if ( styleVariationDeclarations.length ) {
 									ruleset += `:root :where(${ styleVariationSelector }){${ styleVariationDeclarations.join(
 										';'

@@ -172,7 +172,10 @@ function ColumnsEditContainer( {
 
 		return innerWidths.map( ( column, index ) => {
 			const { valueUnit = '%' } =
-				getValueAndUnit( column.attributes.width ) || {};
+				getValueAndUnit(
+					column.attributes?.style?.dimensions?.width ??
+						column.attributes?.width
+				) || {};
 			const label = sprintf(
 				/* translators: %d: column index. */
 				__( 'Column %d' ),
@@ -465,7 +468,15 @@ const ColumnsEdit = ( props ) => {
 		() =>
 			innerBlocks.map( ( inn ) => ( {
 				clientId: inn.clientId,
-				attributes: { width: inn.attributes.width },
+				attributes: {
+					style: {
+						dimensions: {
+							width:
+								inn.attributes?.style?.dimensions?.width ??
+								inn.attributes?.width,
+						},
+					},
+				},
 			} ) ),
 		[ innerBlocks ]
 	);

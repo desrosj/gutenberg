@@ -22,7 +22,10 @@ export const toWidthPrecision = ( value ) => {
  * @return {number} Effective column width.
  */
 export function getEffectiveColumnWidth( block, totalBlockCount ) {
-	const { width = 100 / totalBlockCount } = block.attributes;
+	const width =
+		block.attributes?.style?.dimensions?.width ??
+		block.attributes?.width ??
+		100 / totalBlockCount;
 	return toWidthPrecision( width );
 }
 
@@ -101,7 +104,9 @@ export function getRedistributedColumnWidths(
  */
 export function hasExplicitPercentColumnWidths( blocks ) {
 	return blocks.every( ( block ) => {
-		const blockWidth = block.attributes.width;
+		const blockWidth =
+			block.attributes?.style?.dimensions?.width ??
+			block.attributes?.width;
 		return Number.isFinite(
 			blockWidth?.endsWith?.( '%' )
 				? parseFloat( blockWidth )
@@ -124,7 +129,13 @@ export function getMappedColumnWidths( blocks, widths ) {
 		...block,
 		attributes: {
 			...block.attributes,
-			width: `${ widths[ block.clientId ] }%`,
+			style: {
+				...block.attributes?.style,
+				dimensions: {
+					...block.attributes?.style?.dimensions,
+					width: `${ widths[ block.clientId ] }%`,
+				},
+			},
 		},
 	} ) );
 }
@@ -140,7 +151,9 @@ export function getMappedColumnWidths( blocks, widths ) {
 export function getWidths( blocks, withParsing = true ) {
 	return blocks.map( ( innerColumn ) => {
 		const innerColumnWidth =
-			innerColumn.attributes.width || 100 / blocks.length;
+			innerColumn.attributes?.style?.dimensions?.width ||
+			innerColumn.attributes?.width ||
+			100 / blocks.length;
 
 		return withParsing ? parseFloat( innerColumnWidth ) : innerColumnWidth;
 	} );

@@ -10,65 +10,15 @@ import {
 	InnerBlocks,
 	BlockControls,
 	BlockVerticalAlignmentToolbar,
-	InspectorControls,
 	useBlockProps,
-	useSettings,
 	useInnerBlocksProps,
 	store as blockEditorStore,
 } from '@wordpress/block-editor';
-import {
-	__experimentalUseCustomUnits as useCustomUnits,
-	__experimentalUnitControl as UnitControl,
-	__experimentalToolsPanel as ToolsPanel,
-	__experimentalToolsPanelItem as ToolsPanelItem,
-} from '@wordpress/components';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { sprintf, __ } from '@wordpress/i18n';
 
-/**
- * Internal dependencies
- */
-import { useToolsPanelDropdownMenuProps } from '../utils/hooks';
-
-function ColumnInspectorControls( { width, setAttributes } ) {
-	const [ availableUnits ] = useSettings( 'spacing.units' );
-	const units = useCustomUnits( {
-		availableUnits: availableUnits || [ '%', 'px', 'em', 'rem', 'vw' ],
-	} );
-	const dropdownMenuProps = useToolsPanelDropdownMenuProps();
-	return (
-		<ToolsPanel
-			label={ __( 'Settings' ) }
-			resetAll={ () => {
-				setAttributes( { width: undefined } );
-			} }
-			dropdownMenuProps={ dropdownMenuProps }
-		>
-			<ToolsPanelItem
-				hasValue={ () => width !== undefined }
-				label={ __( 'Width' ) }
-				onDeselect={ () => setAttributes( { width: undefined } ) }
-				isShownByDefault
-			>
-				<UnitControl
-					label={ __( 'Width' ) }
-					__unstableInputWidth="calc(50% - 8px)"
-					__next40pxDefaultSize
-					value={ width || '' }
-					onChange={ ( nextWidth ) => {
-						nextWidth =
-							0 > parseFloat( nextWidth ) ? '0' : nextWidth;
-						setAttributes( { width: nextWidth } );
-					} }
-					units={ units }
-				/>
-			</ToolsPanelItem>
-		</ToolsPanel>
-	);
-}
-
 function ColumnEdit( {
-	attributes: { verticalAlignment, width, templateLock, allowedBlocks },
+	attributes: { verticalAlignment, style, templateLock, allowedBlocks },
 	setAttributes,
 	clientId,
 } ) {
@@ -102,10 +52,10 @@ function ColumnEdit( {
 		} );
 	};
 
-	const widthWithUnit = Number.isFinite( width ) ? width + '%' : width;
+	const width = style?.dimensions?.width;
 	const blockProps = useBlockProps( {
 		className: classes,
-		style: widthWithUnit ? { flexBasis: widthWithUnit } : undefined,
+		style: width ? { flexBasis: width } : undefined,
 	} );
 
 	const columnsCount = columnsIds.length;
@@ -139,12 +89,6 @@ function ColumnEdit( {
 					controls={ [ 'top', 'center', 'bottom', 'stretch' ] }
 				/>
 			</BlockControls>
-			<InspectorControls>
-				<ColumnInspectorControls
-					width={ width }
-					setAttributes={ setAttributes }
-				/>
-			</InspectorControls>
 			<div { ...innerBlocksProps } />
 		</>
 	);

@@ -53,7 +53,8 @@ function ColumnEdit( {
 		contentStyle = { [ clientId ]: {} };
 	}
 
-	const { verticalAlignment, width } = attributes;
+	const { verticalAlignment } = attributes;
+	const width = attributes.style?.dimensions?.width;
 	const { valueUnit = '%' } = getValueAndUnit( width ) || {};
 
 	const screenWidth = Math.floor( Dimensions.get( 'window' ).width );
@@ -83,7 +84,13 @@ function ColumnEdit( {
 		const widthWithUnit = getWidthWithUnit( nextWidth, widthUnit );
 
 		setAttributes( {
-			width: widthWithUnit,
+			style: {
+				...attributes.style,
+				dimensions: {
+					...attributes.style?.dimensions,
+					width: widthWithUnit,
+				},
+			},
 		} );
 	};
 
@@ -94,7 +101,13 @@ function ColumnEdit( {
 		);
 
 		setAttributes( {
-			width: getWidthWithUnit( widthWithoutUnit, nextUnit ),
+			style: {
+				...attributes.style,
+				dimensions: {
+					...attributes.style?.dimensions,
+					width: getWidthWithUnit( widthWithoutUnit, nextUnit ),
+				},
+			},
 		} );
 	};
 

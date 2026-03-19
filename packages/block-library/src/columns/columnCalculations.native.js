@@ -125,7 +125,9 @@ export const getContentWidths = (
 			const attributeWidth = convertUnitToMobile(
 				{ width },
 				globalStyles,
-				innerColumnAttributes.width || columnWidths[ clientId ]
+				innerColumnAttributes?.style?.dimensions?.width ||
+					innerColumnAttributes?.width ||
+					columnWidths[ clientId ]
 			);
 			const proportionalRatio = attributeWidth / columnWidthsSum;
 			const percentageRatio = attributeWidth / width;

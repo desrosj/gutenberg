@@ -9,19 +9,18 @@ import clsx from 'clsx';
 import { useInnerBlocksProps, useBlockProps } from '@wordpress/block-editor';
 
 export default function save( { attributes } ) {
-	const { verticalAlignment, width } = attributes;
+	const { verticalAlignment, style } = attributes;
 
 	const wrapperClasses = clsx( {
 		[ `is-vertically-aligned-${ verticalAlignment }` ]: verticalAlignment,
 	} );
 
-	let style;
-
+	let flexBasis;
+	const width = style?.dimensions?.width;
 	if ( width && /\d/.test( width ) ) {
-		// Numbers are handled for backward compatibility as they can be still provided with templates.
-		let flexBasis = Number.isFinite( width ) ? width + '%' : width;
+		flexBasis = width;
 		// In some cases we need to round the width to a shorter float.
-		if ( ! Number.isFinite( width ) && width?.endsWith( '%' ) ) {
+		if ( width?.endsWith( '%' ) ) {
 			const multiplier = 1000000000000;
 			// Shrink the number back to a reasonable float.
 			flexBasis =
@@ -29,12 +28,11 @@ export default function save( { attributes } ) {
 					multiplier +
 				'%';
 		}
-		style = { flexBasis };
 	}
 
 	const blockProps = useBlockProps.save( {
 		className: wrapperClasses,
-		style,
+		style: flexBasis ? { flexBasis } : undefined,
 	} );
 	const innerBlocksProps = useInnerBlocksProps.save( blockProps );
 
