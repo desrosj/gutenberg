@@ -131,9 +131,6 @@ function {{PREFIX}}_{{PAGE_SLUG_UNDERSCORE}}_wp_admin_enqueue_scripts( $hook_suf
 		return;
 	}
 
-	// Load build constants
-	$build_constants = require __DIR__ . '/../../constants.php';
-
 	// Fire init action for extensions to register routes and menu items
 	do_action( '{{PAGE_SLUG}}-wp-admin_init' );
 
@@ -199,7 +196,7 @@ function {{PREFIX}}_{{PAGE_SLUG_UNDERSCORE}}_wp_admin_enqueue_scripts( $hook_suf
 		// Dummy script module to ensure dependencies are loaded
 		wp_register_script_module(
 			'{{PAGE_SLUG}}-wp-admin',
-			$build_constants['build_url'] . 'pages/{{PAGE_SLUG}}/loader.js',
+			{{LOADER_JS_URL}},
 			$boot_dependencies
 		);
 

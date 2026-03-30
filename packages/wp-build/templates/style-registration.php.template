@@ -40,9 +40,7 @@ function {{PREFIX}}_override_style( $styles, $handle, $src, $deps = array(), $ve
  * @param WP_Styles $styles WP_Styles instance.
  */
 function {{PREFIX}}_register_package_styles( $styles ) {
-	// Load build constants
-	$build_constants = require __DIR__ . '/constants.php';
-	$default_version = ! SCRIPT_DEBUG ? $build_constants['version'] : time();
+	$default_version = SCRIPT_DEBUG ? time() : ( defined( 'GUTENBERG_VERSION' ) ? GUTENBERG_VERSION : false );
 	$suffix          = SCRIPT_DEBUG ? '' : '.min';
 
 	$styles_dir  = __DIR__ . '/styles';
@@ -59,7 +57,7 @@ function {{PREFIX}}_register_package_styles( $styles ) {
 		{{PREFIX}}_override_style(
 			$styles,
 			$style_data['handle'],
-			$build_constants['build_url'] . 'styles/' . $style_data['path'] . $suffix . '.css',
+			{{BASE_URL}} . 'styles/' . $style_data['path'] . $suffix . '.css',
 			$style_data['dependencies'],
 			$default_version
 		);

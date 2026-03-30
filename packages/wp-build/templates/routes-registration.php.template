@@ -39,9 +39,6 @@ foreach ( $routes_by_page as $page_slug => $page_routes ) {
  * @param string $register_function_name Name of the function to call for registering each route.
  */
 function {{PREFIX}}_register_page_routes( $page_routes, $register_function_name ) {
-	// Load build constants
-	$build_constants = require __DIR__ . '/constants.php';
-
 	foreach ( $page_routes as $route ) {
 		$content_handle = null;
 		$route_handle = null;
@@ -58,7 +55,7 @@ function {{PREFIX}}_register_page_routes( $page_routes, $register_function_name 
 				wp_deregister_script_module( $content_handle );
 				wp_register_script_module(
 					$content_handle,
-					$build_constants['build_url'] . 'routes/' . $route['name'] . '/content' . $extension,
+					{{BASE_URL}} . 'routes/' . $route['name'] . '/content' . $extension,
 					$content_asset['module_dependencies'] ?? array(),
 					$content_asset['version'] ?? false
 				);
@@ -77,7 +74,7 @@ function {{PREFIX}}_register_page_routes( $page_routes, $register_function_name 
 				wp_deregister_script_module( $route_handle );
 				wp_register_script_module(
 					$route_handle,
-					$build_constants['build_url'] . 'routes/' . $route['name'] . '/route' . $extension,
+					{{BASE_URL}} . 'routes/' . $route['name'] . '/route' . $extension,
 					$route_asset['module_dependencies'] ?? array(),
 					$route_asset['version'] ?? false
 				);

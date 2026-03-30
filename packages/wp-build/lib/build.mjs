@@ -981,19 +981,6 @@ async function generateScriptRegistrationPhp( scripts, replacements ) {
 }
 
 /**
- * Generate PHP file for constants (version and build URL).
- *
- * @param {Record<string, string>} replacements PHP template replacements.
- */
-async function generateConstantsPhp( replacements ) {
-	await generatePhpFromTemplate(
-		'constants.php.template',
-		path.join( BUILD_DIR, 'constants.php' ),
-		replacements
-	);
-}
-
-/**
  * Generate PHP files for style registration.
  *
  * @param {Array}                  styles       Array of style info objects.
@@ -1168,6 +1155,10 @@ async function generatePagesPhp( pageData, replacements ) {
 			'{{PREFIX}}': prefixUnderscore,
 			'{{INIT_MODULES_PHP_ARRAY}}': initModulesPhp,
 			'{{INIT_MODULES_JSON}}': JSON.stringify( page.initModules ),
+			'{{LOADER_JS_URL}}':
+				replacements[ '{{BASE_URL}}' ] === "includes_url( 'build/' )"
+					? `includes_url( 'build/pages/${ page.slug }/loader.js' )`
+					: `plugin_dir_url( __FILE__ ) . 'loader.js'`,
 		};
 
 		// Generate both page.php and page-wp-admin.php
@@ -1861,7 +1852,6 @@ async function buildAll( baseUrlExpression ) {
 		generateModuleRegistrationPhp( modules, phpReplacements ),
 		generateScriptRegistrationPhp( scripts, phpReplacements ),
 		generateStyleRegistrationPhp( styles, phpReplacements ),
-		generateConstantsPhp( phpReplacements ),
 		generateRoutesRegistry( activeRoutes, phpReplacements ),
 		generateRoutesPhp( activeRoutes, phpReplacements ),
 		generatePagesPhp( pageData, phpReplacements ),
@@ -1873,7 +1863,6 @@ async function buildAll( baseUrlExpression ) {
 	console.log( '   ✔ Generated build/scripts/registry.php' );
 	console.log( '   ✔ Generated build/styles.php' );
 	console.log( '   ✔ Generated build/styles/registry.php' );
-	console.log( '   ✔ Generated build/constants.php' );
 	console.log( '   ✔ Generated build/routes.php' );
 	if ( pageData.length > 0 ) {
 		console.log( '   ✔ Generated build/pages.php' );

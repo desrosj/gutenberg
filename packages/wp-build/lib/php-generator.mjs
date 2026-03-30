@@ -16,8 +16,8 @@ const __dirname = path.dirname( fileURLToPath( import.meta.url ) );
  * Get PHP replacements from root package.json.
  *
  * @param {string} rootDir           Root directory path.
- * @param {string} baseUrlExpression PHP expression for base URL (e.g. "includes_url( 'build' )").
- * @return {Promise<Record<string, string>>} Replacements object with {{PREFIX}}, {{VERSION}}, {{BASE_URL}}.
+ * @param {string} baseUrlExpression PHP expression for base URL (e.g. "includes_url( 'build/' )").
+ * @return {Promise<Record<string, string>>} Replacements object with {{PREFIX}}, {{BASE_URL}}.
  */
 export async function getPhpReplacements( rootDir, baseUrlExpression ) {
 	const rootPackageJson = getPackageInfoFromFile(
@@ -29,11 +29,9 @@ export async function getPhpReplacements( rootDir, baseUrlExpression ) {
 
 	// @ts-expect-error specific override to package.json
 	const name = rootPackageJson.wpPlugin?.name || 'gutenberg';
-	const version = rootPackageJson.version;
 
 	return {
 		'{{PREFIX}}': name,
-		'{{VERSION}}': version,
 		'{{BASE_URL}}': baseUrlExpression,
 	};
 }

@@ -117,9 +117,6 @@ function {{PREFIX}}_{{PAGE_SLUG_UNDERSCORE}}_preload_data() {
  * Call this function from add_menu_page or add_submenu_page.
  */
 function {{PREFIX}}_{{PAGE_SLUG_UNDERSCORE}}_render_page() {
-	// Load build constants
-	$build_constants = require __DIR__ . '/../../constants.php';
-
 	// Set current screen
 	set_current_screen();
 
@@ -212,7 +209,7 @@ function {{PREFIX}}_{{PAGE_SLUG_UNDERSCORE}}_render_page() {
 		// Dummy script module to ensure dependencies are loaded
 		wp_register_script_module(
 			'{{PAGE_SLUG}}',
-			$build_constants['build_url'] . 'pages/{{PAGE_SLUG}}/loader.js',
+			{{LOADER_JS_URL}},
 			$boot_dependencies
 		);
 

@@ -20,12 +20,13 @@ if ( file_exists( $build_registration ) ) {
 	require_once $build_registration;
 }
 
-// Define version constant for backwards compatibility.
-// The constants.php file returns an array but doesn't define constants to avoid conflicts.
-$constants_file = plugin_dir_path( __DIR__ ) . 'build/constants.php';
-if ( file_exists( $constants_file ) && ! defined( 'GUTENBERG_VERSION' ) ) {
-	$build_constants = require_once $constants_file;
-	define( 'GUTENBERG_VERSION', $build_constants['version'] );
+// Define version constant from the plugin file header.
+if ( ! defined( 'GUTENBERG_VERSION' ) ) {
+	$plugin_data = get_file_data(
+		plugin_dir_path( __DIR__ ) . 'gutenberg.php',
+		array( 'Version' => 'Version' )
+	);
+	define( 'GUTENBERG_VERSION', $plugin_data['Version'] );
 }
 
 /**
