@@ -50,9 +50,7 @@ function {{PREFIX}}_override_script( $scripts, $handle, $src, $deps = array(), $
  * Register all package scripts.
  */
 function {{PREFIX}}_register_package_scripts( $scripts ) {
-	// Load build constants
-	$build_constants = require __DIR__ . '/constants.php';
-	$default_version = ! SCRIPT_DEBUG ? $build_constants['version'] : time();
+	$default_version = SCRIPT_DEBUG ? time() : ( defined( 'GUTENBERG_VERSION' ) ? GUTENBERG_VERSION : false );
 	$extension       = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '.js' : '.min.js';
 
 	$scripts_dir  = __DIR__ . '/scripts';
@@ -74,7 +72,7 @@ function {{PREFIX}}_register_package_scripts( $scripts ) {
 		{{PREFIX}}_override_script(
 			$scripts,
 			$script_data['handle'],
-			$build_constants['build_url'] . 'scripts/' . $script_data['path'] . $extension,
+			{{BASE_URL}} . 'scripts/' . $script_data['path'] . $extension,
 			$dependencies,
 			$version,
 			true
