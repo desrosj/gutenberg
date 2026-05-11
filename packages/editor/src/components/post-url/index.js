@@ -2,7 +2,7 @@
  * WordPress dependencies
  */
 import { useSelect, useDispatch } from '@wordpress/data';
-import { safeDecodeURIComponent, cleanForSlug } from '@wordpress/url';
+import { safeDecodeURIComponent } from '@wordpress/url';
 import { useState, createInterpolateElement } from '@wordpress/element';
 import { __experimentalInspectorPopoverHeader as InspectorPopoverHeader } from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
@@ -148,12 +148,7 @@ export default function PostURL( { onClose } ) {
 										setForceEmptyField( false );
 									}
 								} }
-								onBlur={ ( event ) => {
-									editPost( {
-										slug: cleanForSlug(
-											event.target.value
-										),
-									} );
+								onBlur={ () => {
 									if ( forceEmptyField ) {
 										setForceEmptyField( false );
 									}
