@@ -27,6 +27,7 @@ import {
 import { Notes } from './notes';
 import { store as editorStore } from '../../store';
 import { AddNoteMenuItem } from './add-note-menu-item';
+import { FloatingAddNote } from './floating-add-note';
 import { NoteAvatarIndicator } from './note-indicator-toolbar';
 import { useGlobalStylesContext } from '../global-styles-provider';
 import {
@@ -186,6 +187,7 @@ function NotesSidebar( { postId } ) {
 					addNewNoteForBlock( menuClientId )
 				}
 			/>
+			<FloatingAddNote />
 			{ showAllNotesSidebar && (
 				<PluginSidebar
 					identifier={ ALL_NOTES_SIDEBAR }

@@ -273,3 +273,15 @@
 		background-color: $gray-200;
 	}
 }
+
+// Floating "Add note" button surfaced next to a live text selection.
+// Mirrors the Medium / Google Docs on-select pattern: a compact capsule that
+// sits above the selection range and complements the rich-text toolbar button
+// registered for the `core/note` format.
+.editor-collab-sidebar__floating-add-note .components-button {
+	gap: $grid-unit-05;
+	padding: $grid-unit-05 $grid-unit-10;
+	border-radius: $radius-round;
+	box-shadow: $elevation-medium;
+	font-size: $helptext-font-size;
+}
