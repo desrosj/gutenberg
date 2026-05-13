@@ -116,7 +116,11 @@ export function FloatingAddNote() {
 
 	return (
 		<Popover
-			placement="top"
+			// Render below the selection: the block toolbar already sits
+			// above the block, and rendering the entry there would collide
+			// with it visually. Below the selection is a clean zone.
+			placement="bottom"
+			offset={ 8 }
 			focusOnMount={ false }
 			anchor={ popoverAnchor }
 			className="editor-collab-sidebar__floating-add-note"
