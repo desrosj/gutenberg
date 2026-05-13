@@ -16,6 +16,8 @@ import {
 	findNoteRange,
 	getNoteIdsFromMetadata,
 	addNoteIdToMetadata,
+	hasNoteFormatInRange,
+	readInlineSelection,
 	removeNoteIdFromMetadata,
 	calculateNotePositions,
 	pickPrimaryNote,
@@ -591,5 +593,131 @@ describe( 'findNoteRange', () => {
 		);
 		expect( findNoteRange( value, null ) ).toBeNull();
 		expect( findNoteRange( value, undefined ) ).toBeNull();
+	} );
+} );
+
+describe( 'hasNoteFormatInRange', () => {
+	const FORMAT_NAME = 'core/note';
+	const isRegistered = () =>
+		!! select( richTextStore ).getFormatType( FORMAT_NAME );
+
+	beforeAll( () => {
+		if ( ! isRegistered() ) {
+			registerFormatType( FORMAT_NAME, {
+				title: 'Note',
+				tagName: 'span',
+				className: 'wp-note',
+				attributes: { 'data-id': 'data-id' },
+				edit: () => null,
+			} );
+		}
+	} );
+
+	afterAll( () => {
+		if ( isRegistered() ) {
+			unregisterFormatType( FORMAT_NAME );
+		}
+	} );
+
+	it( 'returns false for null/undefined values', () => {
+		expect( hasNoteFormatInRange( null, 0, 5 ) ).toBe( false );
+		expect( hasNoteFormatInRange( undefined, 0, 5 ) ).toBe( false );
+	} );
+
+	it( 'returns false when range bounds are not integers', () => {
+		const value = RichTextData.fromHTMLString(
+			'<span class="wp-note" data-id="1">x</span>'
+		);
+		expect( hasNoteFormatInRange( value, '0', 1 ) ).toBe( false );
+		expect( hasNoteFormatInRange( value, 0, null ) ).toBe( false );
+	} );
+
+	it( 'short-circuits when content has no wp-note marker', () => {
+		const value = RichTextData.fromHTMLString( 'plain text content' );
+		expect( hasNoteFormatInRange( value, 0, 5 ) ).toBe( false );
+	} );
+
+	it( 'returns true when the range overlaps a marker (RichTextData)', () => {
+		// "hello <wp-note>marked</wp-note> world" → marker spans offsets 6..12
+		const value = RichTextData.fromHTMLString(
+			'hello <span class="wp-note" data-id="7">marked</span> world'
+		);
+		expect( hasNoteFormatInRange( value, 0, 10 ) ).toBe( true );
+		expect( hasNoteFormatInRange( value, 8, 12 ) ).toBe( true );
+	} );
+
+	it( 'returns true when the range overlaps a marker (string)', () => {
+		const html =
+			'hello <span class="wp-note" data-id="7">marked</span> world';
+		expect( hasNoteFormatInRange( html, 6, 12 ) ).toBe( true );
+	} );
+
+	it( 'returns false when the range sits entirely outside the marker', () => {
+		const value = RichTextData.fromHTMLString(
+			'hello <span class="wp-note" data-id="7">marked</span> world'
+		);
+		expect( hasNoteFormatInRange( value, 0, 5 ) ).toBe( false );
+		expect( hasNoteFormatInRange( value, 13, 18 ) ).toBe( false );
+	} );
+
+	it( 'normalizes reversed ranges', () => {
+		const value = RichTextData.fromHTMLString(
+			'hello <span class="wp-note" data-id="7">marked</span> world'
+		);
+		expect( hasNoteFormatInRange( value, 12, 8 ) ).toBe( true );
+	} );
+} );
+
+describe( 'readInlineSelection', () => {
+	it( 'returns null when start has no clientId', () => {
+		expect(
+			readInlineSelection( {}, { clientId: 'a', offset: 1 } )
+		).toBeNull();
+	} );
+
+	it( 'returns null when start and end are in different blocks', () => {
+		const start = { clientId: 'a', attributeKey: 'content', offset: 0 };
+		const end = { clientId: 'b', attributeKey: 'content', offset: 5 };
+		expect( readInlineSelection( start, end ) ).toBeNull();
+	} );
+
+	it( 'returns null when there is no attributeKey (block-level)', () => {
+		const start = { clientId: 'a', offset: 0 };
+		const end = { clientId: 'a', offset: 5 };
+		expect( readInlineSelection( start, end ) ).toBeNull();
+	} );
+
+	it( 'returns null for a collapsed selection', () => {
+		const start = { clientId: 'a', attributeKey: 'content', offset: 3 };
+		const end = { clientId: 'a', attributeKey: 'content', offset: 3 };
+		expect( readInlineSelection( start, end ) ).toBeNull();
+	} );
+
+	it( 'returns null when an offset is undefined', () => {
+		const start = { clientId: 'a', attributeKey: 'content' };
+		const end = { clientId: 'a', attributeKey: 'content', offset: 5 };
+		expect( readInlineSelection( start, end ) ).toBeNull();
+	} );
+
+	it( 'returns normalized range for a forward selection', () => {
+		const start = { clientId: 'a', attributeKey: 'content', offset: 2 };
+		const end = { clientId: 'a', attributeKey: 'content', offset: 8 };
+		expect( readInlineSelection( start, end ) ).toEqual( {
+			clientId: 'a',
+			attributeKey: 'content',
+			start: 2,
+			end: 8,
+		} );
+	} );
+
+	it( 'normalizes reversed selections so end >= start', () => {
+		const start = { clientId: 'a', attributeKey: 'content', offset: 8 };
+		const end = { clientId: 'a', attributeKey: 'content', offset: 2 };
+		expect( readInlineSelection( start, end ) ).toEqual( {
+			clientId: 'a',
+			attributeKey: 'content',
+			start: 2,
+			end: 8,
+		} );
 	} );
 } );

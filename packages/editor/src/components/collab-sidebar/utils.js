@@ -183,6 +183,75 @@ export function findNoteRange( value, noteId ) {
 }
 
 /**
+ * Returns true when any `core/note` format covers an offset that overlaps the
+ * given range. Used to suppress the floating add-note button when the selection
+ * already sits on an existing inline note marker (the rich-text toolbar
+ * already handles re-selecting an existing note).
+ *
+ * @param {*}      value Block attribute value (RichTextData, string, or other).
+ * @param {number} start Range start offset.
+ * @param {number} end   Range end offset.
+ * @return {boolean} True when the range overlaps a `core/note` format.
+ */
+export function hasNoteFormatInRange( value, start, end ) {
+	if ( ! Number.isInteger( start ) || ! Number.isInteger( end ) ) {
+		return false;
+	}
+	let html = null;
+	if ( value instanceof RichTextData ) {
+		html = value.toHTMLString();
+	} else if ( typeof value === 'string' ) {
+		html = value;
+	}
+	if ( ! html || html.indexOf( 'wp-note' ) === -1 ) {
+		return false;
+	}
+	const record = create( { html } );
+	const formats = record.formats;
+	const lo = Math.min( start, end );
+	const hi = Math.max( start, end );
+	for ( let i = lo; i < hi && i < formats.length; i++ ) {
+		const stack = formats[ i ];
+		if ( stack?.some( ( f ) => f.type === NOTE_FORMAT_TYPE ) ) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
+ * Read an inline selection from block-editor selection state, returning
+ * normalized anchor data when a non-collapsed selection sits inside a single
+ * rich-text attribute. Returns null for block-level or collapsed selections.
+ *
+ * @param {Object} start Selection start (from `getSelectionStart`).
+ * @param {Object} end   Selection end (from `getSelectionEnd`).
+ * @return {?Object} { clientId, attributeKey, start, end } or null.
+ */
+export function readInlineSelection( start, end ) {
+	if (
+		! start?.clientId ||
+		start.clientId !== end?.clientId ||
+		! start.attributeKey ||
+		start.offset === undefined ||
+		end.offset === undefined ||
+		start.offset === end.offset
+	) {
+		return null;
+	}
+	const [ startOffset, endOffset ] =
+		start.offset < end.offset
+			? [ start.offset, end.offset ]
+			: [ end.offset, start.offset ];
+	return {
+		clientId: start.clientId,
+		attributeKey: start.attributeKey,
+		start: startOffset,
+		end: endOffset,
+	};
+}
+
+/**
  * Picks the most relevant thread from a list: first unresolved, else first.
  *
  * @param {Array} threads Ordered list of thread objects.
