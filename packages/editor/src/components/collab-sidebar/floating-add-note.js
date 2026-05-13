@@ -2,7 +2,12 @@
  * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
-import { Button, Popover } from '@wordpress/components';
+import {
+	Popover,
+	Toolbar,
+	ToolbarButton,
+	ToolbarGroup,
+} from '@wordpress/components';
 import { useDispatch, useSelect } from '@wordpress/data';
 import {
 	store as blockEditorStore,
@@ -115,22 +120,23 @@ export function FloatingAddNote() {
 			focusOnMount={ false }
 			anchor={ popoverAnchor }
 			className="editor-collab-sidebar__floating-add-note"
-			variant="unstyled"
 		>
-			<Button
-				size="small"
-				variant="primary"
-				icon={ commentIcon }
-				label={ __( 'Add note' ) }
-				showTooltip
-				// Prevent the mousedown from stealing focus from the editor; the
-				// captured rich-text selection in the block-editor store must
-				// survive long enough for `useNoteActions.onCreate` to read it.
-				onMouseDown={ ( event ) => event.preventDefault() }
-				onClick={ onClick }
-			>
-				{ __( 'Add note' ) }
-			</Button>
+			<Toolbar label={ __( 'Notes' ) }>
+				<ToolbarGroup>
+					<ToolbarButton
+						icon={ commentIcon }
+						label={ __( 'Add note' ) }
+						// Prevent the mousedown from stealing focus from the
+						// editor; the captured rich-text selection in the
+						// block-editor store must survive long enough for
+						// `useNoteActions.onCreate` to read it.
+						onMouseDown={ ( event ) => event.preventDefault() }
+						onClick={ onClick }
+					>
+						{ __( 'Add note' ) }
+					</ToolbarButton>
+				</ToolbarGroup>
+			</Toolbar>
 		</Popover>
 	);
 }
