@@ -116,10 +116,12 @@ export function FloatingAddNote() {
 
 	return (
 		<Popover
-			// Render below the selection: the block toolbar already sits
-			// above the block, and rendering the entry there would collide
-			// with it visually. Below the selection is a clean zone.
-			placement="bottom"
+			// Anchor at the top-right of the selection: matches the
+			// Medium / Notion on-select pattern and reads as the natural
+			// continuation point at the end of what the user just
+			// highlighted. The Popover auto-flips to the bottom edge
+			// when the selection sits flush against the block toolbar.
+			placement="top-end"
 			offset={ 8 }
 			focusOnMount={ false }
 			anchor={ popoverAnchor }
