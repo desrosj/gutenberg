@@ -57,20 +57,27 @@ const REVISION_REMOVED_FILTER_SVG = `
  */
 const REVISION_DIFF_STYLES = `
 	.is-revision-added {
-		box-shadow: inset 0 0 0 9999px color-mix(in srgb, currentColor 5%, #00a32a 15%), 0 0 0 4px color-mix(in srgb, currentColor 5%, #00a32a 15%);
+		box-shadow: inset 0 0 0 9999px color-mix(in srgb, currentColor 5%, #00a32a 15%), 0 0 0 3px color-mix(in srgb, currentColor 5%, #00a32a 15%);
+		outline: 3px solid color-mix(in srgb, currentColor 30%, #00a32a 70%) !important;
+		outline-offset: 3px;
 	}
-	.is-revision-removed,
-	.revision-diff-removed {
-		text-decoration: line-through;
-		filter: url(#revision-removed-filter);
+	.is-revision-removed{
+		outline: 3px dashed color-mix(in srgb, currentColor 30%, #d63638 70%) !important;
+    text-decoration: line-through;
+    filter: url(#revision-removed-filter);
+    outline-offset: 3px;
 	}
 	.is-revision-modified {
-		outline: 2px solid color-mix(in srgb, currentColor 30%, #dba617 70%) !important;
-		outline-offset: 2px;
+		outline: 3px solid color-mix(in srgb, currentColor 30%, #dba617 70%) !important;
+		outline-offset: 3px;
 	}
 	.revision-diff-added {
 		background-color: color-mix(in srgb, currentColor 5%, #00a32a 15%);
 		text-decoration: none;
+	}
+	.revision-diff-removed {
+		text-decoration: line-through;
+		filter: url(#revision-removed-filter);
 	}
 	.revision-diff-format-added {
 		text-decoration: underline wavy color-mix(in srgb, currentColor 30%, #00a32a 70%);
