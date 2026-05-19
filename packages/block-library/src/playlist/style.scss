@@ -42,6 +42,41 @@ $waveform-player-height: 100px;
 		margin-bottom: 0;
 	}
 
+	// Playlist control buttons (prev, shuffle, next).
+	.wp-block-playlist__controls {
+		display: flex;
+		gap: 0;
+		width: $waveform-player-height;
+		justify-content: center;
+	}
+
+	.wp-block-playlist__control-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: calc($waveform-player-height / 3);
+		height: calc($waveform-player-height / 3);
+		padding: 0;
+		border: none;
+		background: none;
+		color: currentColor;
+		opacity: 0.5;
+		cursor: pointer;
+
+		&:hover {
+			opacity: 0.8;
+		}
+
+		&.is-active {
+			opacity: 1;
+		}
+
+		svg {
+			width: 14px;
+			height: 14px;
+		}
+	}
+
 	// Override WaveformPlayer's inline text colors to inherit from the block.
 	.waveform-title,
 	.waveform-subtitle {

@@ -108,7 +108,7 @@ function render_block_core_playlist( $attributes, $content, $block ) {
 	$processor->set_attribute( 'data-wp-interactive', 'core/playlist' );
 	// Extract the waveform style from the block style variation class.
 	$waveform_style = 'bars';
-	if ( ! empty( $attributes['className'] ) && preg_match( '/is-style-([\w-]+)/', $attributes['className'], $matches ) ) {
+	if ( ! empty( $attributes['className'] ) && preg_match( '/is-style-(\w+)/', $attributes['className'], $matches ) ) {
 		$waveform_style = $matches[1];
 	}
 
@@ -116,10 +116,12 @@ function render_block_core_playlist( $attributes, $content, $block ) {
 		'data-wp-context',
 		wp_json_encode(
 			array(
-				'playlistId'    => $playlist_id,
-				'currentId'     => $playlist_tracks[0],
-				'tracks'        => $playlist_tracks,
-				'waveformStyle' => $waveform_style,
+				'playlistId'         => $playlist_id,
+				'currentId'          => $playlist_tracks[0],
+				'tracks'             => $playlist_tracks,
+				'waveformStyle'      => $waveform_style,
+				'visualizationStyle' => $waveform_style,
+				'isShuffled'         => false,
 			)
 		)
 	);

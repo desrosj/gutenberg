@@ -97,6 +97,19 @@ function initPlayer( ref, track, shouldAutoPlay, context ) {
 		pause: ref.dataset.labelPause,
 	};
 
+	// Pick a random track that isn't the current one.
+	const getRandomTrackId = () => {
+		const otherTracks = context.tracks.filter(
+			( uniqueId ) => uniqueId !== context.currentId
+		);
+		if ( otherTracks.length === 0 ) {
+			return context.tracks[ 0 ];
+		}
+		return otherTracks[
+			Math.floor( Math.random() * otherTracks.length )
+		];
+	};
+
 	// Initialize using the shared core.
 	const player = initWaveformPlayer( ref, {
 		src: track.url,
@@ -105,8 +118,12 @@ function initPlayer( ref, track, shouldAutoPlay, context ) {
 		image: track.image,
 		autoPlay: shouldAutoPlay,
 		labels,
-		waveformStyle: context.waveformStyle,
+		visualizationStyle: context.visualizationStyle,
 		onEnded: () => {
+			if ( context.isShuffled ) {
+				context.currentId = getRandomTrackId();
+				return;
+			}
 			// Advance to next track (autoPlay handles playback).
 			const currentIndex = context.tracks.findIndex(
 				( trackId ) => trackId === context.currentId
@@ -116,6 +133,35 @@ function initPlayer( ref, track, shouldAutoPlay, context ) {
 				context.currentId = nextTrack;
 			}
 		},
+		onPrev: () => {
+			const currentIndex = context.tracks.findIndex(
+				( uniqueId ) => uniqueId === context.currentId
+			);
+			const prevTrack =
+				context.tracks[ currentIndex - 1 ] ||
+				context.tracks[ context.tracks.length - 1 ];
+			if ( prevTrack ) {
+				context.currentId = prevTrack;
+			}
+		},
+		onNext: () => {
+			if ( context.isShuffled ) {
+				context.currentId = getRandomTrackId();
+				return;
+			}
+			const currentIndex = context.tracks.findIndex(
+				( uniqueId ) => uniqueId === context.currentId
+			);
+			const nextTrack =
+				context.tracks[ currentIndex + 1 ] || context.tracks[ 0 ];
+			if ( nextTrack ) {
+				context.currentId = nextTrack;
+			}
+		},
+		onShuffleToggle: () => {
+			context.isShuffled = ! context.isShuffled;
+		},
+		isShuffled: context.isShuffled,
 	} );
 
 	// Store state for cleanup, including instance for loadTrack reuse.

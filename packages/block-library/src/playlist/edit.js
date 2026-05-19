@@ -58,6 +58,8 @@ const PlaylistEdit = ( {
 		showTrackLength,
 	} = attributes;
 
+	const [ isShuffled, setIsShuffled ] = useState( false );
+
 	// Extract the waveform style from the block style variation class.
 	const waveformStyle =
 		attributes.className?.match( /is-style-([\w-]+)/ )?.[ 1 ] || 'bars';
@@ -146,8 +148,26 @@ const PlaylistEdit = ( {
 		tracks.find( ( track ) => track.clientId === currentTrackClientId ) ??
 		tracks[ 0 ];
 
-	// Handle track end - advance to next track or loop to first.
+	// Pick a random track that isn't the current one.
+	const getRandomTrack = useCallback( () => {
+		const otherTracks = tracks.filter(
+			( track ) => track.clientId !== currentTrackClientId
+		);
+		if ( otherTracks.length === 0 ) {
+			return tracks[ 0 ];
+		}
+		return otherTracks[ Math.floor( Math.random() * otherTracks.length ) ];
+	}, [ currentTrackClientId, tracks ] );
+
+	// Handle track end - advance to next track, respecting shuffle.
 	const onTrackEnded = useCallback( () => {
+		if ( isShuffled ) {
+			const randomTrack = getRandomTrack();
+			if ( randomTrack?.clientId ) {
+				setCurrentTrackClientId( randomTrack.clientId );
+			}
+			return;
+		}
 		const currentIndex = tracks.findIndex(
 			( track ) => track.clientId === currentTrackClientId
 		);
@@ -155,7 +175,51 @@ const PlaylistEdit = ( {
 		if ( nextTrack?.clientId ) {
 			setCurrentTrackClientId( nextTrack.clientId );
 		}
+	}, [
+		currentTrackClientId,
+		getRandomTrack,
+		isShuffled,
+		setCurrentTrackClientId,
+		tracks,
+	] );
+
+	const onPrev = useCallback( () => {
+		const currentIndex = tracks.findIndex(
+			( track ) => track.clientId === currentTrackClientId
+		);
+		const prevTrack =
+			tracks[ currentIndex - 1 ] || tracks[ tracks.length - 1 ];
+		if ( prevTrack?.clientId ) {
+			setCurrentTrackClientId( prevTrack.clientId );
+		}
 	}, [ currentTrackClientId, setCurrentTrackClientId, tracks ] );
+
+	const onNext = useCallback( () => {
+		if ( isShuffled ) {
+			const randomTrack = getRandomTrack();
+			if ( randomTrack?.clientId ) {
+				setCurrentTrackClientId( randomTrack.clientId );
+			}
+			return;
+		}
+		const currentIndex = tracks.findIndex(
+			( track ) => track.clientId === currentTrackClientId
+		);
+		const nextTrack = tracks[ currentIndex + 1 ] || tracks[ 0 ];
+		if ( nextTrack?.clientId ) {
+			setCurrentTrackClientId( nextTrack.clientId );
+		}
+	}, [
+		currentTrackClientId,
+		getRandomTrack,
+		isShuffled,
+		setCurrentTrackClientId,
+		tracks,
+	] );
+
+	const onShuffleToggle = useCallback( () => {
+		setIsShuffled( ( prev ) => ! prev );
+	}, [] );
 
 	const onChangeOrder = useCallback(
 		( trackOrder ) => {
@@ -368,6 +432,10 @@ const PlaylistEdit = ( {
 						image={ currentTrackData?.image }
 						waveformStyle={ waveformStyle }
 						onEnded={ onTrackEnded }
+						onPrev={ onPrev }
+						onNext={ onNext }
+						onShuffleToggle={ onShuffleToggle }
+						isShuffled={ isShuffled }
 					/>
 				</Disabled>
 				{ showTracklist && (

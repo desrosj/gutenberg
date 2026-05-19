@@ -68,6 +68,10 @@ function updatePlayerMetadata( instance, { title, artist, image } ) {
  * @param {boolean}  props.showProgressBackground - Whether to show progress background.
  * @param {string}   props.progressColor          - Custom progress background color.
  * @param {Function} props.onEnded                - Callback when the track finishes playing.
+ * @param {Function} props.onPrev                 - Callback for previous track.
+ * @param {Function} props.onNext                 - Callback for next track.
+ * @param {Function} props.onShuffleToggle        - Callback for shuffle toggle.
+ * @param {boolean}  props.isShuffled             - Whether shuffle is active.
  * @return {Element} The WaveformPlayer element.
  */
 export function WaveformPlayer( {
@@ -81,6 +85,10 @@ export function WaveformPlayer( {
 	showProgressBackground,
 	progressColor,
 	onEnded,
+	onPrev,
+	onNext,
+	onShuffleToggle,
+	isShuffled,
 } ) {
 	const playerWaveformStyle = visualizationStyle || waveformStyle || 'bars';
 
@@ -113,6 +121,15 @@ export function WaveformPlayer( {
 		}
 	}, [ title, artist, image ] );
 
+	const onPrevRef = useRef( onPrev );
+	onPrevRef.current = onPrev;
+	const onNextRef = useRef( onNext );
+	onNextRef.current = onNext;
+	const onShuffleToggleRef = useRef( onShuffleToggle );
+	onShuffleToggleRef.current = onShuffleToggle;
+	const isShuffledRef = useRef( isShuffled );
+	isShuffledRef.current = isShuffled;
+
 	const ref = useRefEffect(
 		( element ) => {
 			if ( ! src ) {
@@ -137,13 +154,18 @@ export function WaveformPlayer( {
 					src,
 					...metadata,
 					album,
-					waveformStyle: playerWaveformStyle,
+					visualizationStyle: playerWaveformStyle,
 					artist:
 						metadata.artist || EMPTY_ARTIST_PLACEHOLDER,
 					showProgressBackground,
 					progressBackgroundColor: progressBgColor,
 					bgColor,
 					onEnded: () => onEndedEvent?.(),
+					onPrev: () => onPrevRef.current?.(),
+					onNext: () => onNextRef.current?.(),
+					onShuffleToggle: () =>
+						onShuffleToggleRef.current?.(),
+					isShuffled: isShuffledRef.current,
 				} );
 				playerRef.current = player;
 				updatePlayerMetadata( player.instance, metadata );

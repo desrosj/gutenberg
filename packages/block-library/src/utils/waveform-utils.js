@@ -168,26 +168,209 @@ export function logPlayError( error ) {
 }
 
 /**
+ * Compute a hover color by increasing the alpha channel.
+ *
+ * @param {string} color       - The original rgba color string.
+ * @param {number} alphaBoost  - The amount to increase alpha by.
+ * @return {string} The adjusted color as an rgba string.
+ */
+function getHoverColor( color, alphaBoost = 0.2 ) {
+	const parsed = colord( color );
+	if ( ! parsed.isValid() ) {
+		return color;
+	}
+	const { r, g, b, a } = parsed.toRgb();
+	const newAlpha = Math.min( a + alphaBoost, 1 );
+	return colord( { r, g, b, a: newAlpha } ).toRgbString();
+}
+
+/**
+ * Set up hover effect on the waveform bars area.
+ * On mouseenter, increases bar color intensity; on mouseleave, restores.
+ *
+ * @param {Object}  instance       - The WaveformPlayer library instance.
+ * @param {Element} container      - The waveform container element.
+ * @param {string}  waveformColor  - The original waveform bar color.
+ * @param {string}  progressColor  - The original progress bar color.
+ * @return {Function} Cleanup function to remove listeners.
+ */
+function setupWaveformHover(
+	instance,
+	container,
+	waveformColor,
+	progressColor
+) {
+	const waveformArea = container.querySelector( '.waveform-container' );
+	if ( ! waveformArea ) {
+		return () => {};
+	}
+
+	const hoverWaveformColor = getHoverColor( waveformColor );
+	const hoverProgressColor = getHoverColor( progressColor );
+
+	const onMouseEnter = () => {
+		instance.options.waveformColor = hoverWaveformColor;
+		instance.options.progressColor = hoverProgressColor;
+		instance.drawWaveform();
+	};
+
+	const onMouseLeave = () => {
+		instance.options.waveformColor = waveformColor;
+		instance.options.progressColor = progressColor;
+		instance.drawWaveform();
+	};
+
+	waveformArea.addEventListener( 'mouseenter', onMouseEnter );
+	waveformArea.addEventListener( 'mouseleave', onMouseLeave );
+
+	return () => {
+		waveformArea.removeEventListener( 'mouseenter', onMouseEnter );
+		waveformArea.removeEventListener( 'mouseleave', onMouseLeave );
+	};
+}
+
+// SVG paths for playlist control icons (24x24 viewBox).
+const ICON_PREV =
+	'M6 6h2v12H6zm3.5 6l8.5 6V6z';
+const ICON_NEXT =
+	'M6 18l8.5-6L6 6v12zm10-12v12h2V6z';
+const ICON_SHUFFLE =
+	'M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z';
+
+/**
+ * Create an SVG icon element.
+ *
+ * @param {string} pathD - The SVG path d attribute.
+ * @return {SVGElement} The SVG element.
+ */
+function createSvgIcon( pathD ) {
+	const svg = document.createElementNS( 'http://www.w3.org/2000/svg', 'svg' );
+	svg.setAttribute( 'viewBox', '0 0 24 24' );
+	svg.setAttribute( 'width', '16' );
+	svg.setAttribute( 'height', '16' );
+	svg.setAttribute( 'aria-hidden', 'true' );
+	const path = document.createElementNS(
+		'http://www.w3.org/2000/svg',
+		'path'
+	);
+	path.setAttribute( 'fill', 'currentColor' );
+	path.setAttribute( 'd', pathD );
+	svg.appendChild( path );
+	return svg;
+}
+
+/**
+ * Create playlist control buttons (prev, shuffle, next) and insert them
+ * into the waveform player container.
+ *
+ * @param {Element}  container       - The waveform player container.
+ * @param {Object}   callbacks       - Button click callbacks.
+ * @param {Function} callbacks.onPrev          - Called when previous is clicked.
+ * @param {Function} callbacks.onNext          - Called when next is clicked.
+ * @param {Function} callbacks.onShuffleToggle - Called when shuffle is toggled.
+ * @param {boolean}  isShuffled      - Initial shuffle state.
+ * @return {Object} Object with setShuffled function and cleanup function.
+ */
+function setupPlaylistControls(
+	container,
+	{ onPrev, onNext, onShuffleToggle },
+	isShuffled = false
+) {
+	const controlsDiv = document.createElement( 'div' );
+	controlsDiv.className = 'wp-block-playlist__controls';
+
+	const prevBtn = document.createElement( 'button' );
+	prevBtn.className = 'wp-block-playlist__control-btn';
+	prevBtn.setAttribute( 'aria-label', 'Previous track' );
+	prevBtn.appendChild( createSvgIcon( ICON_PREV ) );
+
+	const shuffleBtn = document.createElement( 'button' );
+	shuffleBtn.className = 'wp-block-playlist__control-btn';
+	shuffleBtn.setAttribute( 'aria-label', 'Shuffle' );
+	if ( isShuffled ) {
+		shuffleBtn.classList.add( 'is-active' );
+	}
+	shuffleBtn.appendChild( createSvgIcon( ICON_SHUFFLE ) );
+
+	const nextBtn = document.createElement( 'button' );
+	nextBtn.className = 'wp-block-playlist__control-btn';
+	nextBtn.setAttribute( 'aria-label', 'Next track' );
+	nextBtn.appendChild( createSvgIcon( ICON_NEXT ) );
+
+	controlsDiv.appendChild( prevBtn );
+	controlsDiv.appendChild( shuffleBtn );
+	controlsDiv.appendChild( nextBtn );
+
+	const onPrevClick = () => onPrev?.();
+	const onShuffleClick = () => {
+		shuffleBtn.classList.toggle( 'is-active' );
+		onShuffleToggle?.();
+	};
+	const onNextClick = () => onNext?.();
+
+	prevBtn.addEventListener( 'click', onPrevClick );
+	shuffleBtn.addEventListener( 'click', onShuffleClick );
+	nextBtn.addEventListener( 'click', onNextClick );
+
+	// Insert controls after the waveform track row.
+	const waveformTrack = container.querySelector( '.waveform-track' );
+	if ( waveformTrack ) {
+		waveformTrack.after( controlsDiv );
+	} else {
+		container.appendChild( controlsDiv );
+	}
+
+	return {
+		setShuffled: ( shuffled ) => {
+			shuffleBtn.classList.toggle( 'is-active', shuffled );
+		},
+		cleanup: () => {
+			prevBtn.removeEventListener( 'click', onPrevClick );
+			shuffleBtn.removeEventListener( 'click', onShuffleClick );
+			nextBtn.removeEventListener( 'click', onNextClick );
+			controlsDiv.remove();
+		},
+	};
+}
+
+/**
  * Initialize a WaveformPlayer instance on an element.
  *
  * This is the shared core logic used by both the React component (editor)
  * and the Interactivity API (frontend).
  *
- * @param {Element}  element               - The container element (must be in DOM).
- * @param {Object}   options               - Configuration options.
- * @param {string}   options.src           - The audio file URL.
- * @param {string}   options.title         - The track title.
- * @param {string}   options.artist        - The artist name.
- * @param {string}   options.image         - The artwork image URL.
- * @param {boolean}  options.autoPlay      - Whether to auto-play when ready.
- * @param {Function} options.onEnded       - Callback when track ends.
- * @param {Object}   options.labels        - Translated button labels.
- * @param {string}   options.waveformStyle - Waveform style (bars, mirror, line, blocks, dots, seekbar).
+ * @param {Element}  element                    - The container element (must be in DOM).
+ * @param {Object}   options                    - Configuration options.
+ * @param {string}   options.src                - The audio file URL.
+ * @param {string}   options.title              - The track title.
+ * @param {string}   options.artist             - The artist name.
+ * @param {string}   options.image              - The artwork image URL.
+ * @param {boolean}  options.autoPlay           - Whether to auto-play when ready.
+ * @param {Function} options.onEnded            - Callback when track ends.
+ * @param {Object}   options.labels             - Translated button labels.
+ * @param {string}   options.visualizationStyle - Waveform style (bars, mirror, line, blocks, dots, seekbar).
+ * @param {Function} options.onPrev             - Callback for previous track.
+ * @param {Function} options.onNext             - Callback for next track.
+ * @param {Function} options.onShuffleToggle    - Callback for shuffle toggle.
+ * @param {boolean}  options.isShuffled         - Initial shuffle state.
  * @return {Object} Object with instance, container, and destroy function.
  */
 export function initWaveformPlayer(
 	element,
-	{ src, title, artist, image, autoPlay, onEnded, labels, waveformStyle }
+	{
+		src,
+		title,
+		artist,
+		image,
+		autoPlay,
+		onEnded,
+		labels,
+		visualizationStyle,
+		onPrev,
+		onNext,
+		onShuffleToggle,
+		isShuffled,
+	}
 ) {
 	// Get colors from computed styles.
 	const { textColor, waveformColor, progressColor } =
@@ -202,7 +385,7 @@ export function initWaveformPlayer(
 		waveformColor,
 		progressColor,
 		buttonColor: textColor,
-		waveformStyle,
+		waveformStyle: visualizationStyle,
 	} );
 	element.appendChild( container );
 
@@ -211,6 +394,8 @@ export function initWaveformPlayer(
 
 	// Set up event handlers.
 	let cleanupAccessibility;
+	let cleanupHover;
+	let cleanupControls;
 	const handlers = {
 		ready: () => {
 			styleSvgIcons( container, textColor );
@@ -218,6 +403,23 @@ export function initWaveformPlayer(
 				container,
 				labels
 			);
+			cleanupHover = setupWaveformHover(
+				instance,
+				container,
+				waveformColor,
+				progressColor
+			);
+
+			// Set up playlist controls if callbacks are provided.
+			if ( onPrev || onNext || onShuffleToggle ) {
+				const controls = setupPlaylistControls(
+					container,
+					{ onPrev, onNext, onShuffleToggle },
+					isShuffled
+				);
+				cleanupControls = controls.cleanup;
+			}
+
 			if ( autoPlay ) {
 				instance.play()?.catch( logPlayError );
 			}
@@ -234,6 +436,8 @@ export function initWaveformPlayer(
 		container,
 		destroy: () => {
 			cleanupAccessibility?.();
+			cleanupHover?.();
+			cleanupControls?.();
 			container.removeEventListener(
 				'waveformplayer:ready',
 				handlers.ready
