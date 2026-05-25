@@ -6,6 +6,7 @@ import { WidgetDashboardUIProvider } from './context/ui-context';
 import { Actions } from './components/actions';
 import { Inserter } from './components/inserter';
 import { WidgetChrome } from './components/widget-chrome';
+import { WidgetSettings } from './components/widget-settings';
 import { Widgets } from './components/widgets';
 import type { WidgetDashboardProps } from './types';
 import { NoWidgetsState } from './components/no-widgets-state';
@@ -47,6 +48,7 @@ export const WidgetDashboard = Object.assign(
 		onEditChange,
 		resolveWidgetModule,
 		gridSettings,
+		onGridSettingsChange,
 		children,
 	}: WidgetDashboardProps ) {
 		return (
@@ -59,6 +61,7 @@ export const WidgetDashboard = Object.assign(
 				onEditChange={ onEditChange }
 				resolveWidgetModule={ resolveWidgetModule }
 				gridSettings={ gridSettings }
+				onGridSettingsChange={ onGridSettingsChange }
 			>
 				<WidgetDashboardUIProvider>
 					{ children ?? (
@@ -70,6 +73,7 @@ export const WidgetDashboard = Object.assign(
 					) }
 
 					<Inserter />
+					<WidgetSettings />
 				</WidgetDashboardUIProvider>
 			</WidgetDashboardProvider>
 		);
