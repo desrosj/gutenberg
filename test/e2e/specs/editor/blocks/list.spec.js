@@ -1541,6 +1541,70 @@ test.describe( 'List (@firefox)', () => {
 		} );
 	} );
 
+	test( 'should delete text selected across a nested list item with Backspace', async ( {
+		editor,
+		page,
+		pageUtils,
+	} ) => {
+		await editor.canvas
+			.locator( 'role=button[name="Add default block"i]' )
+			.click();
+		await page.keyboard.type( '* ab' );
+		await page.keyboard.press( 'Enter' );
+		// Leading space at the start of an empty list item triggers indent.
+		await page.keyboard.type( ' cd' );
+
+		// Verify setup: list[outer "ab"[list[inner "cd"]]], caret at end of "cd".
+		await page.keyboard.type( '‸' );
+		await expect.poll( editor.getBlocks ).toMatchObject( [
+			{
+				name: 'core/list',
+				innerBlocks: [
+					{
+						name: 'core/list-item',
+						attributes: { content: 'ab' },
+						innerBlocks: [
+							{
+								name: 'core/list',
+								innerBlocks: [
+									{
+										name: 'core/list-item',
+										attributes: { content: 'cd‸' },
+									},
+								],
+							},
+						],
+					},
+				],
+			},
+		] );
+		await page.keyboard.press( 'Backspace' );
+
+		// Caret at offset 2 of "cd". Move to offset 1 (middle).
+		await page.keyboard.press( 'ArrowLeft' );
+
+		// Extend selection backward to offset 1 (middle) of "ab".
+		await pageUtils.pressKeys( 'shift+ArrowLeft', { times: 3 } );
+
+		await page.keyboard.press( 'Backspace' );
+
+		// Expected: the selected range across both items is removed
+		// and the remaining content is merged. Caret lands at the
+		// merge boundary.
+		await page.keyboard.type( '‸' );
+		await expect.poll( editor.getBlocks ).toMatchObject( [
+			{
+				name: 'core/list',
+				innerBlocks: [
+					{
+						name: 'core/list-item',
+						attributes: { content: 'a‸d' },
+					},
+				],
+			},
+		] );
+	} );
+
 	test( 'should leave nested list intact when deleting the parent item', async ( {
 		editor,
 		page,
