@@ -1608,6 +1608,72 @@ test.describe( 'List (@firefox)', () => {
 		] );
 	} );
 
+	test( 'should delete text selected across a nested list item with Delete', async ( {
+		editor,
+		page,
+		pageUtils,
+	} ) => {
+		await editor.canvas
+			.locator( 'role=button[name="Add default block"i]' )
+			.click();
+		await page.keyboard.type( '* ab' );
+		await page.keyboard.press( 'Enter' );
+		// Leading space at the start of an empty list item triggers indent.
+		await page.keyboard.type( ' cd' );
+
+		// Verify setup: list[outer "ab"[list[inner "cd"]]], caret at end of "cd".
+		await page.keyboard.type( '‸' );
+		await expect.poll( editor.getBlocks ).toMatchObject( [
+			{
+				name: 'core/list',
+				innerBlocks: [
+					{
+						name: 'core/list-item',
+						attributes: { content: 'ab' },
+						innerBlocks: [
+							{
+								name: 'core/list',
+								innerBlocks: [
+									{
+										name: 'core/list-item',
+										attributes: { content: 'cd‸' },
+									},
+								],
+							},
+						],
+					},
+				],
+			},
+		] );
+		await page.keyboard.press( 'Backspace' );
+
+		// Caret at offset 2 of "cd". Move to offset 1 (middle).
+		await page.keyboard.press( 'ArrowLeft' );
+
+		// Extend selection backward to offset 1 (middle) of "ab", then
+		// yield to an idle callback so the multi-block selection can
+		// catch up before deleting.
+		await pageUtils.pressKeys( 'shift+ArrowLeft', { times: 3 } );
+		await page.evaluate( () => new Promise( window.requestIdleCallback ) );
+
+		await page.keyboard.press( 'Delete' );
+
+		// Expected: forward delete of the same range produces the same
+		// merged result as Backspace.
+		await page.keyboard.type( '‸' );
+		await expect.poll( editor.getBlocks ).toMatchObject( [
+			{
+				name: 'core/list',
+				innerBlocks: [
+					{
+						name: 'core/list-item',
+						attributes: { content: 'a‸d' },
+					},
+				],
+			},
+		] );
+	} );
+
 	test( 'should delete text selected from level 3 to level 1 with Backspace', async ( {
 		editor,
 		page,
