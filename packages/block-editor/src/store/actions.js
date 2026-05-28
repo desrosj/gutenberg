@@ -751,7 +751,15 @@ export const __unstableDeleteSelection =
 			return;
 		}
 
-		const targetSelection = isForward ? selectionEnd : selectionStart;
+		// For an ancestor/descendant selection the ancestor is always
+		// `selectionStart` in document order, and the merged content
+		// must land there (with the descendant chain removed) no matter
+		// which key was pressed. Forward delete would otherwise target
+		// the descendant and orphan the ancestor, so force a
+		// backward-style merge whenever the endpoints aren't siblings.
+		const isForwardMerge = isForward && sameParent;
+
+		const targetSelection = isForwardMerge ? selectionEnd : selectionStart;
 		const targetBlock = select.getBlock( targetSelection.clientId );
 		const targetBlockType = getBlockType( targetBlock.name );
 
@@ -782,7 +790,7 @@ export const __unstableDeleteSelection =
 			[ selectionB.attributeKey ]: toHTMLString( { value: valueB } ),
 		} );
 
-		const followingBlock = isForward ? cloneA : cloneB;
+		const followingBlock = isForwardMerge ? cloneA : cloneB;
 
 		// We can only merge blocks with similar types
 		// thus, we transform the block to merge first
@@ -798,7 +806,7 @@ export const __unstableDeleteSelection =
 
 		let updatedAttributes;
 
-		if ( isForward ) {
+		if ( isForwardMerge ) {
 			const blockToMerge = blocksWithTheSameType.pop();
 			updatedAttributes = targetBlockType.merge(
 				blockToMerge.attributes,
@@ -836,7 +844,7 @@ export const __unstableDeleteSelection =
 			? [ targetBlock.clientId ]
 			: select.getSelectedBlockClientIds();
 		const replacement = [
-			...( isForward ? blocksWithTheSameType : [] ),
+			...( isForwardMerge ? blocksWithTheSameType : [] ),
 			{
 				// Preserve the original client ID.
 				...targetBlock,
@@ -846,7 +854,7 @@ export const __unstableDeleteSelection =
 				},
 				...( targetIsAncestor ? { innerBlocks: [] } : {} ),
 			},
-			...( isForward ? [] : blocksWithTheSameType ),
+			...( isForwardMerge ? [] : blocksWithTheSameType ),
 		];
 
 		registry.batch( () => {
