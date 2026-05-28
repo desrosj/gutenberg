@@ -1583,8 +1583,18 @@ test.describe( 'List (@firefox)', () => {
 		// Caret at offset 2 of "cd". Move to offset 1 (middle).
 		await page.keyboard.press( 'ArrowLeft' );
 
-		// Extend selection backward to offset 1 (middle) of "ab".
-		await pageUtils.pressKeys( 'shift+ArrowLeft', { times: 3 } );
+		// Extend selection backward to offset 1 (middle) of "ab". Yield
+		// to an idle callback between keystrokes so the multi-block
+		// selection can catch up, the same way the multi-block
+		// selection keyboard tests do (see writing-flow.spec.js and
+		// multi-block-selection.spec.js, which use requestIdleCallback /
+		// a keystroke delay for the same reason).
+		for ( let i = 0; i < 3; i++ ) {
+			await pageUtils.pressKeys( 'shift+ArrowLeft' );
+			await page.evaluate(
+				() => new Promise( window.requestIdleCallback )
+			);
+		}
 
 		await page.keyboard.press( 'Backspace' );
 
@@ -1599,6 +1609,93 @@ test.describe( 'List (@firefox)', () => {
 					{
 						name: 'core/list-item',
 						attributes: { content: 'a‸d' },
+					},
+				],
+			},
+		] );
+	} );
+
+	test( 'should delete text selected from level 3 to level 1 with Backspace', async ( {
+		editor,
+		page,
+		pageUtils,
+	} ) => {
+		await editor.canvas
+			.locator( 'role=button[name="Add default block"i]' )
+			.click();
+		await page.keyboard.type( '* ab' );
+		await page.keyboard.press( 'Enter' );
+		await page.keyboard.type( ' cd' );
+		await page.keyboard.press( 'Enter' );
+		await page.keyboard.type( ' ef' );
+
+		// Verify setup: three-level nesting, caret at end of "ef".
+		await page.keyboard.type( '‸' );
+		await expect.poll( editor.getBlocks ).toMatchObject( [
+			{
+				name: 'core/list',
+				innerBlocks: [
+					{
+						name: 'core/list-item',
+						attributes: { content: 'ab' },
+						innerBlocks: [
+							{
+								name: 'core/list',
+								innerBlocks: [
+									{
+										name: 'core/list-item',
+										attributes: { content: 'cd' },
+										innerBlocks: [
+											{
+												name: 'core/list',
+												innerBlocks: [
+													{
+														name: 'core/list-item',
+														attributes: {
+															content: 'ef‸',
+														},
+													},
+												],
+											},
+										],
+									},
+								],
+							},
+						],
+					},
+				],
+			},
+		] );
+		await page.keyboard.press( 'Backspace' );
+
+		// Caret at offset 2 of "ef". Move to offset 1 (middle).
+		await page.keyboard.press( 'ArrowLeft' );
+
+		// Extend selection back to offset 1 (middle) of "ab". Yield to
+		// an idle callback between keystrokes so the multi-block
+		// selection can catch up, the same way the multi-block
+		// selection keyboard tests do (see writing-flow.spec.js and
+		// multi-block-selection.spec.js, which use requestIdleCallback /
+		// a keystroke delay for the same reason).
+		for ( let i = 0; i < 6; i++ ) {
+			await pageUtils.pressKeys( 'shift+ArrowLeft' );
+			await page.evaluate(
+				() => new Promise( window.requestIdleCallback )
+			);
+		}
+
+		await page.keyboard.press( 'Backspace' );
+
+		// Expected: the entire nested chain collapses; "a" from level 1
+		// and "f" from level 3 are merged into a single outer-level item.
+		await page.keyboard.type( '‸' );
+		await expect.poll( editor.getBlocks ).toMatchObject( [
+			{
+				name: 'core/list',
+				innerBlocks: [
+					{
+						name: 'core/list-item',
+						attributes: { content: 'a‸f' },
 					},
 				],
 			},
