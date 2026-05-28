@@ -1583,15 +1583,17 @@ test.describe( 'List (@firefox)', () => {
 		// Caret at offset 2 of "cd". Move to offset 1 (middle).
 		await page.keyboard.press( 'ArrowLeft' );
 
-		// Extend selection backward to offset 1 (middle) of "ab". The
-		// delay lets the multi-block selection catch up when the
-		// selection crosses the nesting boundary, matching the pacing
-		// used by other multi-block selection keyboard tests (see
-		// copy-cut-paste.spec.js, multi-block-selection.spec.js).
-		await pageUtils.pressKeys( 'shift+ArrowLeft', {
-			times: 3,
-			delay: 50,
-		} );
+		// Extend selection backward to offset 1 (middle) of "ab". Yield
+		// to an idle callback after each keystroke so the multi-block
+		// selection settles at every nesting-boundary crossing before
+		// the next key (a single trailing wait can't fix an
+		// intermediate crossing that already desynced).
+		for ( let i = 0; i < 3; i++ ) {
+			await pageUtils.pressKeys( 'shift+ArrowLeft' );
+			await page.evaluate(
+				() => new Promise( window.requestIdleCallback )
+			);
+		}
 
 		await page.keyboard.press( 'Backspace' );
 
@@ -1668,15 +1670,17 @@ test.describe( 'List (@firefox)', () => {
 		// Caret at offset 2 of "ef". Move to offset 1 (middle).
 		await page.keyboard.press( 'ArrowLeft' );
 
-		// Extend selection back to offset 1 (middle) of "ab". The delay
-		// lets the multi-block selection catch up when the selection
-		// crosses each nesting boundary, matching the pacing used by
-		// other multi-block selection keyboard tests (see
-		// copy-cut-paste.spec.js, multi-block-selection.spec.js).
-		await pageUtils.pressKeys( 'shift+ArrowLeft', {
-			times: 6,
-			delay: 50,
-		} );
+		// Extend selection back to offset 1 (middle) of "ab". Yield to
+		// an idle callback after each keystroke so the multi-block
+		// selection settles at every nesting-boundary crossing before
+		// the next key (a single trailing wait can't fix an
+		// intermediate crossing that already desynced).
+		for ( let i = 0; i < 6; i++ ) {
+			await pageUtils.pressKeys( 'shift+ArrowLeft' );
+			await page.evaluate(
+				() => new Promise( window.requestIdleCallback )
+			);
+		}
 
 		await page.keyboard.press( 'Backspace' );
 
