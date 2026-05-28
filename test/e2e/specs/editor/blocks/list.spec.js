@@ -1583,17 +1583,11 @@ test.describe( 'List (@firefox)', () => {
 		// Caret at offset 2 of "cd". Move to offset 1 (middle).
 		await page.keyboard.press( 'ArrowLeft' );
 
-		// Extend selection backward to offset 1 (middle) of "ab". Yield
-		// to an idle callback after each keystroke so the multi-block
-		// selection settles at every nesting-boundary crossing before
-		// the next key (a single trailing wait can't fix an
-		// intermediate crossing that already desynced).
-		for ( let i = 0; i < 3; i++ ) {
-			await pageUtils.pressKeys( 'shift+ArrowLeft' );
-			await page.evaluate(
-				() => new Promise( window.requestIdleCallback )
-			);
-		}
+		// Extend selection backward to offset 1 (middle) of "ab", then
+		// yield to an idle callback so the multi-block selection can
+		// catch up before deleting.
+		await pageUtils.pressKeys( 'shift+ArrowLeft', { times: 3 } );
+		await page.evaluate( () => new Promise( window.requestIdleCallback ) );
 
 		await page.keyboard.press( 'Backspace' );
 
@@ -1670,17 +1664,11 @@ test.describe( 'List (@firefox)', () => {
 		// Caret at offset 2 of "ef". Move to offset 1 (middle).
 		await page.keyboard.press( 'ArrowLeft' );
 
-		// Extend selection back to offset 1 (middle) of "ab". Yield to
-		// an idle callback after each keystroke so the multi-block
-		// selection settles at every nesting-boundary crossing before
-		// the next key (a single trailing wait can't fix an
-		// intermediate crossing that already desynced).
-		for ( let i = 0; i < 6; i++ ) {
-			await pageUtils.pressKeys( 'shift+ArrowLeft' );
-			await page.evaluate(
-				() => new Promise( window.requestIdleCallback )
-			);
-		}
+		// Extend selection back to offset 1 (middle) of "ab", then yield
+		// to an idle callback so the multi-block selection can catch up
+		// before deleting.
+		await pageUtils.pressKeys( 'shift+ArrowLeft', { times: 6 } );
+		await page.evaluate( () => new Promise( window.requestIdleCallback ) );
 
 		await page.keyboard.press( 'Backspace' );
 
