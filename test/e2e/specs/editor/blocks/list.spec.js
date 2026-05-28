@@ -1583,18 +1583,15 @@ test.describe( 'List (@firefox)', () => {
 		// Caret at offset 2 of "cd". Move to offset 1 (middle).
 		await page.keyboard.press( 'ArrowLeft' );
 
-		// Extend selection backward to offset 1 (middle) of "ab". Yield
-		// to an idle callback between keystrokes so the multi-block
-		// selection can catch up, the same way the multi-block
-		// selection keyboard tests do (see writing-flow.spec.js and
-		// multi-block-selection.spec.js, which use requestIdleCallback /
-		// a keystroke delay for the same reason).
-		for ( let i = 0; i < 3; i++ ) {
-			await pageUtils.pressKeys( 'shift+ArrowLeft' );
-			await page.evaluate(
-				() => new Promise( window.requestIdleCallback )
-			);
-		}
+		// Extend selection backward to offset 1 (middle) of "ab". The
+		// delay lets the multi-block selection catch up when the
+		// selection crosses the nesting boundary, matching the pacing
+		// used by other multi-block selection keyboard tests (see
+		// copy-cut-paste.spec.js, multi-block-selection.spec.js).
+		await pageUtils.pressKeys( 'shift+ArrowLeft', {
+			times: 3,
+			delay: 50,
+		} );
 
 		await page.keyboard.press( 'Backspace' );
 
@@ -1671,18 +1668,15 @@ test.describe( 'List (@firefox)', () => {
 		// Caret at offset 2 of "ef". Move to offset 1 (middle).
 		await page.keyboard.press( 'ArrowLeft' );
 
-		// Extend selection back to offset 1 (middle) of "ab". Yield to
-		// an idle callback between keystrokes so the multi-block
-		// selection can catch up, the same way the multi-block
-		// selection keyboard tests do (see writing-flow.spec.js and
-		// multi-block-selection.spec.js, which use requestIdleCallback /
-		// a keystroke delay for the same reason).
-		for ( let i = 0; i < 6; i++ ) {
-			await pageUtils.pressKeys( 'shift+ArrowLeft' );
-			await page.evaluate(
-				() => new Promise( window.requestIdleCallback )
-			);
-		}
+		// Extend selection back to offset 1 (middle) of "ab". The delay
+		// lets the multi-block selection catch up when the selection
+		// crosses each nesting boundary, matching the pacing used by
+		// other multi-block selection keyboard tests (see
+		// copy-cut-paste.spec.js, multi-block-selection.spec.js).
+		await pageUtils.pressKeys( 'shift+ArrowLeft', {
+			times: 6,
+			delay: 50,
+		} );
 
 		await page.keyboard.press( 'Backspace' );
 
