@@ -19,8 +19,7 @@ export const unstyledButton = ( as: 'a' | 'button' ) => {
 		text-align: start;
 		text-decoration: ${ as === 'a' ? 'none' : undefined };
 
-		svg,
-		path {
+		svg {
 			fill: currentColor;
 		}
 

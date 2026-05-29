@@ -63,13 +63,7 @@ export default function SidebarNavigationItem( {
 			{ ...props }
 		>
 			<HStack justify="flex-start">
-				{ icon && (
-					<Icon
-						style={ { fill: 'currentcolor' } }
-						icon={ icon }
-						size={ 24 }
-					/>
-				) }
+				{ icon && <Icon icon={ icon } size={ 24 } /> }
 				<FlexBlock>{ children }</FlexBlock>
 				{ withChevron && (
 					<Icon
