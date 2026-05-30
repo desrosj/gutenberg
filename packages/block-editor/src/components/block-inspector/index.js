@@ -49,13 +49,12 @@ import {
 import { onViewportStateChangeKey } from '../../store/private-keys';
 
 function StyleInspectorSlots( {
-	blockName,
 	clientId,
 	showAdvancedControls = true,
 	showPositionControls = true,
 	showBindingsControls = true,
 } ) {
-	const borderPanelLabel = useBorderPanelLabel( { blockName, clientId } );
+	const borderPanelLabel = useBorderPanelLabel( { clientId } );
 	return (
 		<>
 			<InspectorControls.Slot />
@@ -93,12 +92,8 @@ function StyleInspectorSlots( {
 	);
 }
 
-function StyleStateInspectorSlots( {
-	blockName,
-	clientId,
-	selectedBlockStyleState,
-} ) {
-	const borderPanelLabel = useBorderPanelLabel( { blockName, clientId } );
+function StyleStateInspectorSlots( { clientId, selectedBlockStyleState } ) {
+	const borderPanelLabel = useBorderPanelLabel( { clientId } );
 	const showLayoutControls =
 		hasViewportBlockStyleState( selectedBlockStyleState ) &&
 		! hasPseudoBlockStyleState( selectedBlockStyleState );
@@ -281,7 +276,6 @@ function BlockInspector() {
 					<InspectorControlsTabs tabs={ availableTabs } />
 				) : (
 					<StyleInspectorSlots
-						blockName={ renderedBlockName }
 						showAdvancedControls={ false }
 						showPositionControls={ false }
 						showBindingsControls={ false }
@@ -496,7 +490,6 @@ const BlockInspectorSingleBlock = ( {
 			<BlockInspectorPreTabsSlot />
 			{ isBlockStyleStateSelected && ! isSectionBlock && (
 				<StyleStateInspectorSlots
-					blockName={ blockName }
 					clientId={ renderedBlockClientId }
 					selectedBlockStyleState={ selectedBlockStyleState }
 				/>
@@ -524,7 +517,6 @@ const BlockInspectorSingleBlock = ( {
 					<ListViewContentPopover listViewRef={ listViewRef } />
 					{ ! isSectionBlock && (
 						<StyleInspectorSlots
-							blockName={ blockName }
 							clientId={ renderedBlockClientId }
 						/>
 					) }
