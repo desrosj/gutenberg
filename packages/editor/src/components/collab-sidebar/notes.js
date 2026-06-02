@@ -23,10 +23,106 @@ import {
 import { useFloatingBoard, useNoteActions } from './hooks';
 import { AddNote } from './add-note';
 import { store as editorStore } from '../../store';
+import { useNoteItems } from '../document-annotations';
 
 const { useBlockElement } = unlock( blockEditorPrivateApis );
 
-export function Notes( { notes, sidebarRef, isFloating = false, styles } ) {
+// Builds the list of threads to render in the panel by grouping annotation
+// items by block. Each block-with-annotations becomes one thread containing
+// an ordered list of its annotations (notes first, then lints).
+//
+// Orphan notes (those whose block was deleted) remain per-note threads at
+// the end. A pending 'new' note in floating mode is appended as its own
+// thread for the selected block — the existing AddNote shortcut still
+// applies.
+function buildThreads( {
+	noteItems,
+	lintItems,
+	orderedBlockIds,
+	isFloating,
+	selectedNote,
+	selectedBlockClientId,
+} ) {
+	const noteItemsByBlock = new Map();
+	const orphanNoteItems = [];
+	for ( const noteItem of noteItems ) {
+		if ( noteItem.blockClientId ) {
+			if ( ! noteItemsByBlock.has( noteItem.blockClientId ) ) {
+				noteItemsByBlock.set( noteItem.blockClientId, [] );
+			}
+			noteItemsByBlock.get( noteItem.blockClientId ).push( noteItem );
+		} else {
+			orphanNoteItems.push( noteItem );
+		}
+	}
+
+	const lintItemsByBlock = new Map();
+	for ( const lintItem of lintItems ) {
+		if ( ! lintItemsByBlock.has( lintItem.blockClientId ) ) {
+			lintItemsByBlock.set( lintItem.blockClientId, [] );
+		}
+		lintItemsByBlock.get( lintItem.blockClientId ).push( lintItem );
+	}
+
+	const threads = [];
+	for ( const blockId of orderedBlockIds ) {
+		const blockNotes = noteItemsByBlock.get( blockId ) || [];
+		const blockLints = lintItemsByBlock.get( blockId ) || [];
+		const annotations = [ ...blockNotes, ...blockLints ];
+		if ( annotations.length === 0 ) {
+			continue;
+		}
+		const primaryNote = annotations.find(
+			( a ) => a.kind === 'note' && a.id !== 'new'
+		);
+		threads.push( {
+			id: primaryNote ? primaryNote.id : `lint-thread:${ blockId }`,
+			blockClientId: blockId,
+			annotations,
+		} );
+	}
+
+	// Orphans (notes whose block was deleted): one thread per note, appended.
+	for ( const orphan of orphanNoteItems ) {
+		threads.push( {
+			id: orphan.id,
+			blockClientId: null,
+			annotations: [ orphan ],
+		} );
+	}
+
+	// Pending 'new' note placeholder in floating mode: appended as its own
+	// thread. The NoteThread shell short-circuits to render AddNote directly
+	// for this case.
+	if ( isFloating && selectedNote === 'new' && selectedBlockClientId ) {
+		threads.push( {
+			id: 'new',
+			blockClientId: selectedBlockClientId,
+			annotations: [
+				{
+					kind: 'note',
+					id: 'new',
+					blockClientId: selectedBlockClientId,
+					note: {
+						id: 'new',
+						blockClientId: selectedBlockClientId,
+						content: { rendered: '' },
+					},
+				},
+			],
+		} );
+	}
+
+	return threads;
+}
+
+export function Notes( {
+	notes,
+	lintItems = [],
+	sidebarRef,
+	isFloating = false,
+	styles,
+} ) {
 	const {
 		onCreate: onAddReply,
 		onEdit: onEditNote,
@@ -67,42 +163,39 @@ export function Notes( { notes, sidebarRef, isFloating = false, styles } ) {
 
 	const relatedBlockElement = useBlockElement( selectedBlockClientId );
 
-	const threads = useMemo( () => {
-		// In floating mode with a pending new note, splice a placeholder
-		// entry at the selected block's position so the board can float it
-		// alongside regular threads.
-		if ( ! isFloating || selectedNote !== 'new' ) {
-			return notes;
-		}
-		const newNoteThread = {
-			id: 'new',
-			blockClientId: selectedBlockClientId,
-			content: { rendered: '' },
-		};
-		const out = [];
-		orderedBlockIds.forEach( ( blockId ) => {
-			// Blocks can carry multiple notes — surface them all.
-			const threadsForBlock = notes.filter(
-				( t ) => t.blockClientId === blockId
-			);
-			out.push( ...threadsForBlock );
-			if ( blockId === selectedBlockClientId ) {
-				// Place the new note placeholder after the block's existing
-				// threads so the form appears alongside them.
-				out.push( newNoteThread );
-			}
-		} );
-		return out;
-	}, [
-		notes,
-		isFloating,
-		selectedNote,
-		selectedBlockClientId,
-		orderedBlockIds,
-	] );
+	const noteItems = useNoteItems( notes );
+
+	const threads = useMemo(
+		() =>
+			buildThreads( {
+				noteItems,
+				lintItems,
+				orderedBlockIds,
+				isFloating,
+				selectedNote,
+				selectedBlockClientId,
+			} ),
+		[
+			noteItems,
+			lintItems,
+			orderedBlockIds,
+			isFloating,
+			selectedNote,
+			selectedBlockClientId,
+		]
+	);
+
+	// Convenience: thread index by primary-note id, so we can find a thread
+	// after deleting a note.
+	const findThreadIndexByNoteId = ( noteRecordId ) =>
+		threads.findIndex( ( t ) =>
+			t.annotations.some(
+				( a ) => a.kind === 'note' && a.id === noteRecordId
+			)
+		);
 
 	const handleDelete = async ( note ) => {
-		const currentIndex = threads.findIndex( ( t ) => t.id === note.id );
+		const currentIndex = findThreadIndexByNoteId( note.id );
 		const nextThread = threads[ currentIndex + 1 ];
 		const prevThread = threads[ currentIndex - 1 ];
 
@@ -117,7 +210,12 @@ export function Notes( { notes, sidebarRef, isFloating = false, styles } ) {
 
 		const adjacentThread = nextThread ?? prevThread;
 		if ( adjacentThread ) {
-			selectNote( adjacentThread.id );
+			const adjacentPrimary = adjacentThread.annotations.find(
+				( a ) => a.kind === 'note' && a.id !== 'new'
+			);
+			if ( adjacentPrimary ) {
+				selectNote( adjacentPrimary.id );
+			}
 			focusNoteThread( adjacentThread.id, sidebarRef.current );
 			if ( adjacentThread.blockClientId ) {
 				toggleBlockSpotlight( adjacentThread.blockClientId, true );
@@ -176,7 +274,21 @@ export function Notes( { notes, sidebarRef, isFloating = false, styles } ) {
 			sidebarRef,
 		} );
 
-	const hasThreads = Array.isArray( threads ) && threads.length > 0;
+	const hasThreads = threads.length > 0;
+
+	const isThreadSelected = ( thread ) => {
+		const primary = thread.annotations.find(
+			( a ) => a.kind === 'note' && a.id !== 'new'
+		);
+		if ( primary ) {
+			return selectedNote === primary.id;
+		}
+		// Lint-only threads: visually "active" when their block is selected.
+		return (
+			!! thread.blockClientId &&
+			thread.blockClientId === selectedBlockClientId
+		);
+	};
 
 	const navigate = ( event, thread, isSelected ) => {
 		if ( event.defaultPrevented ) {
@@ -186,13 +298,65 @@ export function Notes( { notes, sidebarRef, isFloating = false, styles } ) {
 		const currentIndex = threads.findIndex( ( t ) => t.id === thread.id );
 		const isSelfTarget = event.currentTarget === event.target;
 
+		// Arrow / Home / End navigation is uniform across thread kinds.
+		if (
+			event.key === 'ArrowDown' &&
+			currentIndex < threads.length - 1 &&
+			isSelfTarget
+		) {
+			focusNoteThread(
+				threads[ currentIndex + 1 ].id,
+				sidebarRef.current
+			);
+			return;
+		}
+		if ( event.key === 'ArrowUp' && currentIndex > 0 && isSelfTarget ) {
+			focusNoteThread(
+				threads[ currentIndex - 1 ].id,
+				sidebarRef.current
+			);
+			return;
+		}
+		if ( event.key === 'Home' && isSelfTarget ) {
+			focusNoteThread( threads[ 0 ].id, sidebarRef.current );
+			return;
+		}
+		if ( event.key === 'End' && isSelfTarget ) {
+			focusNoteThread(
+				threads[ threads.length - 1 ].id,
+				sidebarRef.current
+			);
+			return;
+		}
+
+		const primaryNote = thread.annotations.find(
+			( a ) => a.kind === 'note' && a.id !== 'new'
+		);
+		const isExpandable = !! primaryNote;
+
+		if ( ! isExpandable ) {
+			// Lint-only thread: Enter / ArrowRight selects the block;
+			// Escape clears spotlight.
+			if (
+				( event.key === 'Enter' || event.key === 'ArrowRight' ) &&
+				isSelfTarget &&
+				thread.blockClientId
+			) {
+				selectBlock( thread.blockClientId, null );
+				toggleBlockSpotlight( thread.blockClientId, true );
+			} else if ( event.key === 'Escape' && thread.blockClientId ) {
+				toggleBlockSpotlight( thread.blockClientId, false );
+			}
+			return;
+		}
+
+		// Expandable thread: expand/collapse via selectedNote state.
 		if (
 			( event.key === 'Enter' || event.key === 'ArrowRight' ) &&
 			isSelfTarget &&
 			! isSelected
 		) {
-			// Expand thread.
-			selectNote( thread.id );
+			selectNote( primaryNote.id );
 			if ( !! thread.blockClientId ) {
 				// Pass `null` as the second parameter to prevent focusing the block.
 				selectBlock( thread.blockClientId, null );
@@ -204,37 +368,11 @@ export function Notes( { notes, sidebarRef, isFloating = false, styles } ) {
 				isSelected ) ||
 			event.key === 'Escape'
 		) {
-			// Collapse thread.
 			selectNote( undefined );
 			if ( thread.blockClientId ) {
 				toggleBlockSpotlight( thread.blockClientId, false );
 			}
 			focusNoteThread( thread.id, sidebarRef.current );
-		} else if (
-			event.key === 'ArrowDown' &&
-			currentIndex < threads.length - 1 &&
-			isSelfTarget
-		) {
-			focusNoteThread(
-				threads[ currentIndex + 1 ].id,
-				sidebarRef.current
-			);
-		} else if (
-			event.key === 'ArrowUp' &&
-			currentIndex > 0 &&
-			isSelfTarget
-		) {
-			focusNoteThread(
-				threads[ currentIndex - 1 ].id,
-				sidebarRef.current
-			);
-		} else if ( event.key === 'Home' && isSelfTarget ) {
-			focusNoteThread( threads[ 0 ].id, sidebarRef.current );
-		} else if ( event.key === 'End' && isSelfTarget ) {
-			focusNoteThread(
-				threads[ threads.length - 1 ].id,
-				sidebarRef.current
-			);
 		}
 	};
 
@@ -270,11 +408,11 @@ export function Notes( { notes, sidebarRef, isFloating = false, styles } ) {
 					{ threads.map( ( thread ) => (
 						<NoteThread
 							key={ thread.id }
-							note={ thread }
+							thread={ thread }
 							onAddReply={ onAddReply }
 							onDeleteNote={ handleDelete }
 							onEditNote={ onEditNote }
-							isSelected={ selectedNote === thread.id }
+							isSelected={ isThreadSelected( thread ) }
 							sidebarRef={ sidebarRef }
 							floating={
 								isFloating
@@ -289,7 +427,7 @@ export function Notes( { notes, sidebarRef, isFloating = false, styles } ) {
 								navigate(
 									event,
 									thread,
-									selectedNote === thread.id
+									isThreadSelected( thread )
 								)
 							}
 						/>

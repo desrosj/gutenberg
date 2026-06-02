@@ -181,15 +181,21 @@ export function calculateNotePositions( {
 } ) {
 	const offsets = {};
 
-	const anchorIndex = Math.max(
-		0,
-		threads.findIndex( ( thread ) => thread.id === selectedNoteId )
+	// Prefer the explicitly-selected thread as the anchor. If that thread
+	// has no measurable block rect (e.g. its block is hidden or hasn't
+	// mounted yet), fall back to the first thread that does. Without this
+	// fallback a single "unmeasurable" thread anywhere in the list would
+	// collapse positions for all threads.
+	let anchorIndex = threads.findIndex(
+		( thread ) => thread.id === selectedNoteId
 	);
-
-	const anchorThread = threads[ anchorIndex ];
-
+	let anchorThread = anchorIndex >= 0 ? threads[ anchorIndex ] : null;
 	if ( ! anchorThread || ! blockRects[ anchorThread.id ] ) {
-		return { positions: {} };
+		anchorIndex = threads.findIndex( ( t ) => !! blockRects[ t.id ] );
+		if ( anchorIndex < 0 ) {
+			return { positions: {} };
+		}
+		anchorThread = threads[ anchorIndex ];
 	}
 
 	const anchorRect = blockRects[ anchorThread.id ];

@@ -29,6 +29,7 @@ import { useNoteThreads, useEnableFloatingSidebar } from './hooks';
 import { getNoteIdsFromMetadata, pickPrimaryNote } from './utils';
 import PostTypeSupportCheck from '../post-type-support-check';
 import { unlock } from '../../lock-unlock';
+import { useLintItems } from '../document-annotations';
 
 function NotesSidebar( { postId } ) {
 	const { getActiveComplementaryArea } = useSelect( interfaceStore );
@@ -68,14 +69,20 @@ function NotesSidebar( { postId } ) {
 	);
 
 	const { notes, unresolvedNotes } = useNoteThreads( postId );
+	const lintItems = useLintItems();
 
 	// Only enable the floating sidebar for large viewports.
 	const showFloatingSidebar = isLargeViewport;
-	// Fallback to "All notes" sidebar on smaller viewports.
-	const showAllNotesSidebar = notes.length > 0 || ! showFloatingSidebar;
+	// Register the "All notes" sidebar whenever there's anything to show in it.
+	// On small viewports the floating sidebar is unavailable, so the all-notes
+	// sidebar is the only host.
+	const showAllNotesSidebar =
+		notes.length > 0 || lintItems.length > 0 || ! showFloatingSidebar;
 	useEnableFloatingSidebar(
 		showFloatingSidebar &&
-			( unresolvedNotes.length > 0 || selectedNote !== undefined )
+			( unresolvedNotes.length > 0 ||
+				lintItems.length > 0 ||
+				selectedNote !== undefined )
 	);
 
 	async function focusNote( {
@@ -183,7 +190,11 @@ function NotesSidebar( { postId } ) {
 					icon={ commentIcon }
 					closeLabel={ __( 'Close Notes' ) }
 				>
-					<Notes notes={ notes } sidebarRef={ sidebarRef } />
+					<Notes
+						notes={ notes }
+						lintItems={ lintItems }
+						sidebarRef={ sidebarRef }
+					/>
 				</PluginSidebar>
 			) }
 			{ isLargeViewport && (
@@ -197,6 +208,7 @@ function NotesSidebar( { postId } ) {
 				>
 					<Notes
 						notes={ unresolvedNotes }
+						lintItems={ lintItems }
 						sidebarRef={ sidebarRef }
 						styles={ { backgroundColor } }
 						isFloating
