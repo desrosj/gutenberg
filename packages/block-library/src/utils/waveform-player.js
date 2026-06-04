@@ -3,15 +3,12 @@
  */
 import { useEffect, useRef } from '@wordpress/element';
 import { useEvent, useRefEffect } from '@wordpress/compose';
+import { __ } from '@wordpress/i18n';
 
 /**
  * Internal dependencies
  */
 import { initWaveformPlayer } from './waveform-utils';
-import {
-	getEffectiveBackgroundColor,
-	getProgressBackgroundColor,
-} from '../playlist/utils';
 
 const EMPTY_ARTIST_PLACEHOLDER = '\u00a0';
 
@@ -55,36 +52,30 @@ function updatePlayerMetadata( instance, { title, artist, image } ) {
  * A reusable WaveformPlayer component for the block editor.
  *
  * Renders an audio waveform visualization with dual layers (base + hover),
- * time elements, control buttons, and progress background.
+ * time elements, and control buttons.
  * Automatically inherits colors from the parent block's text color.
  *
- * @param {Object}   props                        - Component props.
- * @param {string}   props.src                    - The audio file URL.
- * @param {string}   props.title                  - The track title.
- * @param {string}   props.artist                 - The artist name.
- * @param {string}   props.album                  - The album name.
- * @param {string}   props.image                  - The artwork image URL.
- * @param {string}   props.waveformStyle          - Waveform style (bars, mirror, etc).
- * @param {boolean}  props.showProgressBackground - Whether to show progress background.
- * @param {string}   props.progressColor          - Custom progress background color.
- * @param {Function} props.onEnded                - Callback when the track finishes playing.
- * @param {Function} props.onPrev                 - Callback for previous track.
- * @param {Function} props.onNext                 - Callback for next track.
- * @param {Function} props.onShuffleToggle        - Callback for shuffle toggle.
- * @param {Function} props.onRepeatToggle         - Callback for repeat toggle.
- * @param {boolean}  props.isShuffled             - Whether shuffle is active.
- * @param {boolean}  props.isRepeating            - Whether repeat is active.
+ * @param {Object}   props                 - Component props.
+ * @param {string}   props.src             - The audio file URL.
+ * @param {string}   props.title           - The track title.
+ * @param {string}   props.artist          - The artist name.
+ * @param {string}   props.image           - The artwork image URL.
+ * @param {string}   props.waveformStyle   - Waveform style (bars, mirror, etc).
+ * @param {Function} props.onEnded         - Callback when the track finishes playing.
+ * @param {Function} props.onPrev          - Callback for previous track.
+ * @param {Function} props.onNext          - Callback for next track.
+ * @param {Function} props.onShuffleToggle - Callback for shuffle toggle.
+ * @param {Function} props.onRepeatToggle  - Callback for repeat toggle.
+ * @param {boolean}  props.isShuffled      - Whether shuffle is active.
+ * @param {boolean}  props.isRepeating     - Whether repeat is active.
  * @return {Element} The WaveformPlayer element.
  */
 export function WaveformPlayer( {
 	src,
 	title,
 	artist,
-	album,
 	image,
 	waveformStyle,
-	showProgressBackground,
-	progressColor,
 	onEnded,
 	onPrev,
 	onNext,
@@ -149,22 +140,21 @@ export function WaveformPlayer( {
 					return;
 				}
 
-				// Compute colors from the element's position in the DOM.
-				const bgColor = getEffectiveBackgroundColor( element );
-				const progressBgColor =
-					progressColor || getProgressBackgroundColor( bgColor );
-
 				const metadata = metadataRef.current;
 				const player = initWaveformPlayer( element, {
 					src,
 					...metadata,
-					album,
 					waveformStyle,
+					labels: {
+						play: __( 'Play' ),
+						pause: __( 'Pause' ),
+						previous: __( 'Previous track' ),
+						next: __( 'Next track' ),
+						shuffle: __( 'Shuffle' ),
+						repeat: __( 'Repeat' ),
+					},
 					artist:
 						metadata.artist || EMPTY_ARTIST_PLACEHOLDER,
-					showProgressBackground,
-					progressBackgroundColor: progressBgColor,
-					bgColor,
 					onEnded: ( playerInstance ) =>
 						onEndedEvent?.( playerInstance ),
 					onPrev: () => onPrevRef.current?.(),
@@ -198,15 +188,7 @@ export function WaveformPlayer( {
 				playerDestroy?.();
 			};
 		},
-		[
-			onEndedEvent,
-			src,
-			album,
-			waveformStyle,
-			hasImage,
-			showProgressBackground,
-			progressColor,
-		]
+		[ onEndedEvent, src, waveformStyle, hasImage ]
 	);
 
 	return (

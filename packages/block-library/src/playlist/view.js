@@ -104,6 +104,10 @@ function initPlayer( ref, track, shouldAutoPlay, context ) {
 	const labels = {
 		play: ref.dataset.labelPlay,
 		pause: ref.dataset.labelPause,
+		previous: ref.dataset.labelPrevious,
+		next: ref.dataset.labelNext,
+		shuffle: ref.dataset.labelShuffle,
+		repeat: ref.dataset.labelRepeat,
 	};
 
 	// Pick a random track that isn't the current one.

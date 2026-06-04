@@ -407,25 +407,32 @@ function setupPlaylistMetadata( container, instance ) {
  * @param {Function} callbacks.onRepeatToggle  - Called when repeat is toggled.
  * @param {boolean}  isShuffled      - Initial shuffle state.
  * @param {boolean}  isRepeating     - Initial repeat state.
+ * @param {Object}   labels          - Translated control labels (previous, next, shuffle, repeat).
  * @return {Object} Object with setShuffled function and cleanup function.
  */
 function setupPlaylistControls(
 	container,
 	{ onPrev, onNext, onShuffleToggle, onRepeatToggle },
 	isShuffled = false,
-	isRepeating = false
+	isRepeating = false,
+	{
+		previous: previousLabel = 'Previous track',
+		next: nextLabel = 'Next track',
+		shuffle: shuffleLabel = 'Shuffle',
+		repeat: repeatLabel = 'Repeat',
+	} = {}
 ) {
 	const controlsDiv = document.createElement( 'div' );
 	controlsDiv.className = 'wp-block-playlist__controls';
 
 	const prevBtn = document.createElement( 'button' );
 	prevBtn.className = 'wp-block-playlist__control-btn';
-	prevBtn.setAttribute( 'aria-label', 'Previous track' );
+	prevBtn.setAttribute( 'aria-label', previousLabel );
 	prevBtn.appendChild( createSvgIcon( ICON_PREV ) );
 
 	const shuffleBtn = document.createElement( 'button' );
 	shuffleBtn.className = 'wp-block-playlist__control-btn';
-	shuffleBtn.setAttribute( 'aria-label', 'Shuffle' );
+	shuffleBtn.setAttribute( 'aria-label', shuffleLabel );
 	if ( isShuffled ) {
 		shuffleBtn.classList.add( 'is-active' );
 	}
@@ -433,7 +440,7 @@ function setupPlaylistControls(
 
 	const repeatBtn = document.createElement( 'button' );
 	repeatBtn.className = 'wp-block-playlist__control-btn';
-	repeatBtn.setAttribute( 'aria-label', 'Repeat' );
+	repeatBtn.setAttribute( 'aria-label', repeatLabel );
 	if ( isRepeating ) {
 		repeatBtn.classList.add( 'is-active' );
 	}
@@ -441,7 +448,7 @@ function setupPlaylistControls(
 
 	const nextBtn = document.createElement( 'button' );
 	nextBtn.className = 'wp-block-playlist__control-btn';
-	nextBtn.setAttribute( 'aria-label', 'Next track' );
+	nextBtn.setAttribute( 'aria-label', nextLabel );
 	nextBtn.appendChild( createSvgIcon( ICON_NEXT ) );
 
 	controlsDiv.appendChild( prevBtn );
@@ -576,7 +583,8 @@ export function initWaveformPlayer(
 					container,
 					{ onPrev, onNext, onShuffleToggle, onRepeatToggle },
 					isShuffled,
-					isRepeating
+					isRepeating,
+					labels
 				);
 				cleanupControls = controls.cleanup;
 			}
