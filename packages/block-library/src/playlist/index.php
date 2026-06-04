@@ -130,6 +130,7 @@ function render_block_core_playlist( $attributes, $content, $block ) {
 				'waveformStyle' => $waveform_style,
 				'isShuffled'    => false,
 				'isRepeating'   => false,
+				'playedTracks'  => array(),
 			)
 		)
 	);

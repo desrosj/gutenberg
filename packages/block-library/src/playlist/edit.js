@@ -38,7 +38,7 @@ import { Caption } from '../utils/caption';
 import { useToolsPanelDropdownMenuProps } from '../utils/hooks';
 import { WaveformPlayer } from '../utils/waveform-player';
 import { PlaylistContext } from './context';
-import { logPlayError } from '../utils/waveform-utils';
+import { logPlayError, getNextShuffledTrack } from '../utils/waveform-utils';
 import { getTrackAttributes } from './utils';
 
 const ALLOWED_MEDIA_TYPES = [ 'audio' ];
@@ -61,6 +61,9 @@ const PlaylistEdit = ( {
 
 	const [ isShuffled, setIsShuffled ] = useState( false );
 	const [ isRepeating, setIsRepeating ] = useState( false );
+	// Track IDs already played in the current shuffle cycle, so no track
+	// repeats until every other track has played once.
+	const [ playedTracks, setPlayedTracks ] = useState( [] );
 
 	// Extract the waveform style from the block style variation class.
 	const waveformStyle =
@@ -150,16 +153,24 @@ const PlaylistEdit = ( {
 		tracks.find( ( track ) => track.clientId === currentTrackClientId ) ??
 		tracks[ 0 ];
 
-	// Pick a random track that isn't the current one.
-	const getRandomTrack = useCallback( () => {
-		const otherTracks = tracks.filter(
-			( track ) => track.clientId !== currentTrackClientId
+	// Advance to the next shuffled track, recording it so no track repeats
+	// until every other track has played once.
+	const advanceShuffled = useCallback( () => {
+		const { nextId, playedIds } = getNextShuffledTrack(
+			tracks.map( ( track ) => track.clientId ),
+			currentTrackClientId,
+			playedTracks
 		);
-		if ( otherTracks.length === 0 ) {
-			return tracks[ 0 ];
+		setPlayedTracks( playedIds );
+		if ( nextId ) {
+			setCurrentTrackClientId( nextId );
 		}
-		return otherTracks[ Math.floor( Math.random() * otherTracks.length ) ];
-	}, [ currentTrackClientId, tracks ] );
+	}, [
+		currentTrackClientId,
+		playedTracks,
+		setCurrentTrackClientId,
+		tracks,
+	] );
 
 	// Handle track end - advance to next track, respecting shuffle.
 	const onTrackEnded = useCallback( ( playerInstance ) => {
@@ -168,10 +179,7 @@ const PlaylistEdit = ( {
 			return;
 		}
 		if ( isShuffled ) {
-			const randomTrack = getRandomTrack();
-			if ( randomTrack?.clientId ) {
-				setCurrentTrackClientId( randomTrack.clientId );
-			}
+			advanceShuffled();
 			return;
 		}
 		const currentIndex = tracks.findIndex(
@@ -182,8 +190,8 @@ const PlaylistEdit = ( {
 			setCurrentTrackClientId( nextTrack.clientId );
 		}
 	}, [
+		advanceShuffled,
 		currentTrackClientId,
-		getRandomTrack,
 		isRepeating,
 		isShuffled,
 		setCurrentTrackClientId,
@@ -203,10 +211,7 @@ const PlaylistEdit = ( {
 
 	const onNext = useCallback( () => {
 		if ( isShuffled ) {
-			const randomTrack = getRandomTrack();
-			if ( randomTrack?.clientId ) {
-				setCurrentTrackClientId( randomTrack.clientId );
-			}
+			advanceShuffled();
 			return;
 		}
 		const currentIndex = tracks.findIndex(
@@ -217,8 +222,8 @@ const PlaylistEdit = ( {
 			setCurrentTrackClientId( nextTrack.clientId );
 		}
 	}, [
+		advanceShuffled,
 		currentTrackClientId,
-		getRandomTrack,
 		isShuffled,
 		setCurrentTrackClientId,
 		tracks,
@@ -226,6 +231,8 @@ const PlaylistEdit = ( {
 
 	const onShuffleToggle = useCallback( () => {
 		setIsShuffled( ( prev ) => ! prev );
+		// Start a fresh shuffle cycle whenever shuffle is toggled.
+		setPlayedTracks( [] );
 	}, [] );
 
 	const onRepeatToggle = useCallback( () => {

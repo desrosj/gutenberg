@@ -14,6 +14,7 @@ import {
 	logPlayError,
 	formatTime,
 	WAVEFORM_BUTTON_WIDTH,
+	getNextShuffledTrack,
 } from '../waveform-utils';
 
 // Base player data used across tests
@@ -416,6 +417,66 @@ describe( 'Waveform utilities', () => {
 		it( 'should handle large values', () => {
 			expect( formatTime( 3600 ) ).toBe( '60:00' );
 			expect( formatTime( 3661 ) ).toBe( '61:01' );
+		} );
+	} );
+
+	describe( 'getNextShuffledTrack', () => {
+		it( 'should never return the current track for a multi-track list', () => {
+			const ids = [ 'a', 'b', 'c', 'd' ];
+			let current = 'a';
+			let played = [];
+			for ( let i = 0; i < 100; i++ ) {
+				const result = getNextShuffledTrack( ids, current, played );
+				expect( result.nextId ).not.toBe( current );
+				current = result.nextId;
+				played = result.playedIds;
+			}
+		} );
+
+		it( 'should play every track once before any repeats', () => {
+			const ids = [ 'a', 'b', 'c', 'd' ];
+			let current = 'a';
+			let played = [ 'a' ];
+			const cycle = [ 'a' ];
+			// Advance three times to complete the first cycle of four tracks.
+			for ( let i = 0; i < 3; i++ ) {
+				const result = getNextShuffledTrack( ids, current, played );
+				cycle.push( result.nextId );
+				current = result.nextId;
+				played = result.playedIds;
+			}
+			// All four tracks appear exactly once in the completed cycle.
+			expect( [ ...cycle ].sort() ).toEqual( [ 'a', 'b', 'c', 'd' ] );
+		} );
+
+		it( 'should not repeat the just-played track across a cycle boundary', () => {
+			const ids = [ 'a', 'b', 'c' ];
+			// All three have played; current is the last one played.
+			const result = getNextShuffledTrack( ids, 'c', [ 'a', 'b', 'c' ] );
+			expect( result.nextId ).not.toBe( 'c' );
+			// New cycle starts fresh with just the chosen track.
+			expect( result.playedIds ).toEqual( [ result.nextId ] );
+		} );
+
+		it( 'should alternate deterministically for two tracks', () => {
+			const first = getNextShuffledTrack( [ 'a', 'b' ], 'a', [] );
+			expect( first.nextId ).toBe( 'b' );
+			expect( first.playedIds ).toEqual( [ 'a', 'b' ] );
+
+			const second = getNextShuffledTrack(
+				[ 'a', 'b' ],
+				'b',
+				first.playedIds
+			);
+			expect( second.nextId ).toBe( 'a' );
+			expect( second.playedIds ).toEqual( [ 'a' ] );
+		} );
+
+		it( 'should return the only track when the list has one entry', () => {
+			expect( getNextShuffledTrack( [ 'a' ], 'a', [] ) ).toEqual( {
+				nextId: 'a',
+				playedIds: [ 'a' ],
+			} );
 		} );
 	} );
 

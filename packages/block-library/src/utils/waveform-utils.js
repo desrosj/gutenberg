@@ -29,6 +29,42 @@ export function formatTime( seconds ) {
 }
 
 /**
+ * Pick the next track for shuffle playback so that no track repeats until
+ * every other track has played once.
+ *
+ * The current track is treated as already played. The next track is chosen at
+ * random from the tracks not yet played in this cycle. Once every track has
+ * played, a new cycle starts and the just-played track is excluded from the
+ * first pick so it never plays twice in a row across the cycle boundary.
+ *
+ * @param {string[]} trackIds  - All track unique IDs, in playlist order.
+ * @param {string}   currentId - The currently (or just) played track ID.
+ * @param {string[]} playedIds - Track IDs already played in the current cycle.
+ * @return {{nextId: string, playedIds: string[]}} The next track ID and the updated played list.
+ */
+export function getNextShuffledTrack( trackIds, currentId, playedIds = [] ) {
+	const played = playedIds.includes( currentId )
+		? playedIds
+		: [ ...playedIds, currentId ];
+	const remaining = trackIds.filter( ( id ) => ! played.includes( id ) );
+
+	// Every track has played: start a new cycle, excluding the just-played
+	// track so it doesn't repeat back-to-back across the cycle boundary.
+	if ( remaining.length === 0 ) {
+		const candidates = trackIds.filter( ( id ) => id !== currentId );
+		if ( candidates.length === 0 ) {
+			return { nextId: currentId, playedIds: [ currentId ] };
+		}
+		const nextId =
+			candidates[ Math.floor( Math.random() * candidates.length ) ];
+		return { nextId, playedIds: [ nextId ] };
+	}
+
+	const nextId = remaining[ Math.floor( Math.random() * remaining.length ) ];
+	return { nextId, playedIds: [ ...played, nextId ] };
+}
+
+/**
  * Get computed style for an element, using ownerDocument for iframe compatibility.
  *
  * @param {Element} element - The element to get styles from.
@@ -175,6 +211,9 @@ export function setupPlayButtonArtwork( container, instance, artworkUrl ) {
 	if ( ! artworkUrl ) {
 		existingButtonArtwork?.remove();
 		playBtn.classList.remove( 'has-artwork' );
+		// The button background reverts from the dark artwork to its themed
+		// color, so recolor the icon to keep it legible (it was forced white).
+		styleSvgIcons( playBtn, getComputedStyle( playBtn ).backgroundColor );
 		return;
 	}
 
@@ -291,16 +330,20 @@ const ICON_REPEAT =
 /**
  * Create an SVG icon element.
  *
- * @param {string} pathD - The SVG path d attribute.
+ * @param {Document} ownerDocument - The document used to create the nodes.
+ * @param {string}   pathD         - The SVG path d attribute.
  * @return {SVGElement} The SVG element.
  */
-function createSvgIcon( pathD ) {
-	const svg = document.createElementNS( 'http://www.w3.org/2000/svg', 'svg' );
+function createSvgIcon( ownerDocument, pathD ) {
+	const svg = ownerDocument.createElementNS(
+		'http://www.w3.org/2000/svg',
+		'svg'
+	);
 	svg.setAttribute( 'viewBox', '0 0 24 24' );
 	svg.setAttribute( 'width', '16' );
 	svg.setAttribute( 'height', '16' );
 	svg.setAttribute( 'aria-hidden', 'true' );
-	const path = document.createElementNS(
+	const path = ownerDocument.createElementNS(
 		'http://www.w3.org/2000/svg',
 		'path'
 	);
@@ -322,7 +365,7 @@ function getPlaylistFooter( container ) {
 		return footerDiv;
 	}
 
-	footerDiv = document.createElement( 'div' );
+	footerDiv = container.ownerDocument.createElement( 'div' );
 	footerDiv.className = 'wp-block-playlist__footer';
 
 	const waveformTrack = container.querySelector( '.waveform-track' );
@@ -364,7 +407,7 @@ function setupPlaylistMetadata( container, instance ) {
 	}
 
 	const footerDiv = getPlaylistFooter( container );
-	const metadataDiv = document.createElement( 'div' );
+	const metadataDiv = container.ownerDocument.createElement( 'div' );
 	metadataDiv.className = 'wp-block-playlist__metadata';
 
 	if ( titleEl ) {
@@ -383,8 +426,8 @@ function setupPlaylistMetadata( container, instance ) {
 }
 
 /**
- * Create playlist control buttons (prev, shuffle, next) and insert them
- * into the waveform player container.
+ * Create playlist control buttons (prev, shuffle, repeat, next) and insert
+ * them into the waveform player container.
  *
  * @param {Element}  container                 - The waveform player container.
  * @param {Object}   callbacks                 - Button click callbacks.
@@ -413,34 +456,35 @@ function setupPlaylistControls(
 		repeat: repeatLabel = 'Repeat',
 	} = {}
 ) {
-	const controlsDiv = document.createElement( 'div' );
+	const doc = container.ownerDocument;
+	const controlsDiv = doc.createElement( 'div' );
 	controlsDiv.className = 'wp-block-playlist__controls';
 
-	const prevBtn = document.createElement( 'button' );
+	const prevBtn = doc.createElement( 'button' );
 	prevBtn.className = 'wp-block-playlist__control-btn';
 	prevBtn.setAttribute( 'aria-label', previousLabel );
-	prevBtn.appendChild( createSvgIcon( ICON_PREV ) );
+	prevBtn.appendChild( createSvgIcon( doc, ICON_PREV ) );
 
-	const shuffleBtn = document.createElement( 'button' );
+	const shuffleBtn = doc.createElement( 'button' );
 	shuffleBtn.className = 'wp-block-playlist__control-btn';
 	shuffleBtn.setAttribute( 'aria-label', shuffleLabel );
 	if ( isShuffled ) {
 		shuffleBtn.classList.add( 'is-active' );
 	}
-	shuffleBtn.appendChild( createSvgIcon( ICON_SHUFFLE ) );
+	shuffleBtn.appendChild( createSvgIcon( doc, ICON_SHUFFLE ) );
 
-	const repeatBtn = document.createElement( 'button' );
+	const repeatBtn = doc.createElement( 'button' );
 	repeatBtn.className = 'wp-block-playlist__control-btn';
 	repeatBtn.setAttribute( 'aria-label', repeatLabel );
 	if ( isRepeating ) {
 		repeatBtn.classList.add( 'is-active' );
 	}
-	repeatBtn.appendChild( createSvgIcon( ICON_REPEAT ) );
+	repeatBtn.appendChild( createSvgIcon( doc, ICON_REPEAT ) );
 
-	const nextBtn = document.createElement( 'button' );
+	const nextBtn = doc.createElement( 'button' );
 	nextBtn.className = 'wp-block-playlist__control-btn';
 	nextBtn.setAttribute( 'aria-label', nextLabel );
-	nextBtn.appendChild( createSvgIcon( ICON_NEXT ) );
+	nextBtn.appendChild( createSvgIcon( doc, ICON_NEXT ) );
 
 	controlsDiv.appendChild( prevBtn );
 	controlsDiv.appendChild( shuffleBtn );

@@ -10,6 +10,7 @@ import {
 	initWaveformPlayer,
 	logPlayError,
 	setupPlayButtonArtwork,
+	getNextShuffledTrack,
 } from '../utils/waveform-utils';
 
 /**
@@ -110,15 +111,16 @@ function initPlayer( ref, track, shouldAutoPlay, context ) {
 		repeat: ref.dataset.labelRepeat,
 	};
 
-	// Pick a random track that isn't the current one.
-	const getRandomTrackId = () => {
-		const otherTracks = context.tracks.filter(
-			( uniqueId ) => uniqueId !== context.currentId
+	// Advance to the next shuffled track, recording it so no track repeats
+	// until every other track has played once.
+	const advanceShuffled = () => {
+		const { nextId, playedIds } = getNextShuffledTrack(
+			context.tracks,
+			context.currentId,
+			context.playedTracks
 		);
-		if ( otherTracks.length === 0 ) {
-			return context.tracks[ 0 ];
-		}
-		return otherTracks[ Math.floor( Math.random() * otherTracks.length ) ];
+		context.playedTracks = playedIds;
+		context.currentId = nextId;
 	};
 
 	// Initialize using the shared core.
@@ -136,7 +138,7 @@ function initPlayer( ref, track, shouldAutoPlay, context ) {
 				return;
 			}
 			if ( context.isShuffled ) {
-				context.currentId = getRandomTrackId();
+				advanceShuffled();
 				return;
 			}
 			// Advance to next track (autoPlay handles playback).
@@ -161,7 +163,7 @@ function initPlayer( ref, track, shouldAutoPlay, context ) {
 		},
 		onNext: () => {
 			if ( context.isShuffled ) {
-				context.currentId = getRandomTrackId();
+				advanceShuffled();
 				return;
 			}
 			const currentIndex = context.tracks.findIndex(
@@ -175,6 +177,8 @@ function initPlayer( ref, track, shouldAutoPlay, context ) {
 		},
 		onShuffleToggle: () => {
 			context.isShuffled = ! context.isShuffled;
+			// Start a fresh shuffle cycle whenever shuffle is toggled.
+			context.playedTracks = [];
 		},
 		onRepeatToggle: () => {
 			context.isRepeating = ! context.isRepeating;

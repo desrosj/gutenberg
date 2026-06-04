@@ -51,9 +51,9 @@ function updatePlayerMetadata( instance, { title, artist, image } ) {
 /**
  * A reusable WaveformPlayer component for the block editor.
  *
- * Renders an audio waveform visualization with dual layers (base + hover),
- * time elements, and control buttons.
- * Automatically inherits colors from the parent block's text color.
+ * Renders an audio waveform with play/pause, a hover effect (the bar and
+ * progress colors brighten on hover and redraw), and prev/shuffle/repeat/next
+ * controls. Automatically inherits colors from the parent block's text color.
  *
  * @param {Object}   props                 - Component props.
  * @param {string}   props.src             - The audio file URL.
