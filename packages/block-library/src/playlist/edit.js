@@ -56,7 +56,6 @@ const PlaylistEdit = ( {
 		showNumbers,
 		showImages,
 		showArtists,
-		showTrackLength,
 	} = attributes;
 
 	const [ isShuffled, setIsShuffled ] = useState( false );
@@ -331,7 +330,6 @@ const PlaylistEdit = ( {
 							showTracklist: true,
 							showArtists: true,
 							showNumbers: true,
-							showTrackLength: true,
 							showImages: true,
 							order: 'asc',
 						} );
@@ -386,24 +384,6 @@ const PlaylistEdit = ( {
 										'showNumbers'
 									) }
 									checked={ showNumbers }
-								/>
-							</ToolsPanelItem>
-							<ToolsPanelItem
-								label={ __( 'Show track length in Tracklist' ) }
-								isShownByDefault
-								hasValue={ () => showTrackLength !== true }
-								onDeselect={ () =>
-									setAttributes( { showTrackLength: true } )
-								}
-							>
-								<ToggleControl
-									label={ __(
-										'Show track length in Tracklist'
-									) }
-									onChange={ toggleAttribute(
-										'showTrackLength'
-									) }
-									checked={ showTrackLength }
 								/>
 							</ToolsPanelItem>
 						</>
@@ -463,8 +443,6 @@ const PlaylistEdit = ( {
 						className={ clsx( 'wp-block-playlist__tracklist', {
 							'wp-block-playlist__tracklist-show-numbers':
 								showNumbers,
-							'wp-block-playlist__tracklist-length-is-hidden':
-								! showTrackLength,
 						} ) }
 					>
 						<PlaylistContext.Provider value={ playlistContext }>
