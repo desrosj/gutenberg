@@ -501,7 +501,7 @@ function setupPlaylistControls(
  * @param {boolean}  options.autoPlay           - Whether to auto-play when ready.
  * @param {Function} options.onEnded            - Callback when track ends.
  * @param {Object}   options.labels             - Translated button labels.
- * @param {string}   options.visualizationStyle - Waveform style (bars, mirror, line, blocks, dots, seekbar).
+ * @param {string}   options.waveformStyle      - Waveform style (bars, mirror, line, blocks, dots, seekbar).
  * @param {Function} options.onPrev             - Callback for previous track.
  * @param {Function} options.onNext             - Callback for next track.
  * @param {Function} options.onShuffleToggle    - Callback for shuffle toggle.
@@ -520,7 +520,7 @@ export function initWaveformPlayer(
 		autoPlay,
 		onEnded,
 		labels,
-		visualizationStyle,
+		waveformStyle,
 		onPrev,
 		onNext,
 		onShuffleToggle,
@@ -542,7 +542,7 @@ export function initWaveformPlayer(
 		waveformColor,
 		progressColor,
 		buttonColor: textColor,
-		waveformStyle: visualizationStyle,
+		waveformStyle,
 	} );
 	element.appendChild( container );
 

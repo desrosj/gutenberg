@@ -64,7 +64,7 @@ function updatePlayerMetadata( instance, { title, artist, image } ) {
  * @param {string}   props.artist                 - The artist name.
  * @param {string}   props.album                  - The album name.
  * @param {string}   props.image                  - The artwork image URL.
- * @param {string}   props.visualizationStyle     - Waveform style (bars, mirror, etc).
+ * @param {string}   props.waveformStyle          - Waveform style (bars, mirror, etc).
  * @param {boolean}  props.showProgressBackground - Whether to show progress background.
  * @param {string}   props.progressColor          - Custom progress background color.
  * @param {Function} props.onEnded                - Callback when the track finishes playing.
@@ -83,7 +83,6 @@ export function WaveformPlayer( {
 	album,
 	image,
 	waveformStyle,
-	visualizationStyle,
 	showProgressBackground,
 	progressColor,
 	onEnded,
@@ -94,8 +93,6 @@ export function WaveformPlayer( {
 	isShuffled,
 	isRepeating,
 } ) {
-	const playerWaveformStyle = visualizationStyle || waveformStyle || 'bars';
-
 	// Store onEnded in a stable callback so it doesn't need to be a useRefEffect dependency.
 	// The callback changes reference on every render (its dependency chain
 	// includes an unstable array), which would cause useRefEffect to destroy
@@ -162,7 +159,7 @@ export function WaveformPlayer( {
 					src,
 					...metadata,
 					album,
-					visualizationStyle: playerWaveformStyle,
+					waveformStyle,
 					artist:
 						metadata.artist || EMPTY_ARTIST_PLACEHOLDER,
 					showProgressBackground,
@@ -205,7 +202,7 @@ export function WaveformPlayer( {
 			onEndedEvent,
 			src,
 			album,
-			playerWaveformStyle,
+			waveformStyle,
 			hasImage,
 			showProgressBackground,
 			progressColor,
@@ -216,7 +213,7 @@ export function WaveformPlayer( {
 		<div
 			ref={ ref }
 			className="wp-block-playlist__waveform-player"
-			data-waveform-style={ playerWaveformStyle }
+			data-waveform-style={ waveformStyle || 'bars' }
 		/>
 	);
 }

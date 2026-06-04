@@ -120,7 +120,6 @@ function render_block_core_playlist( $attributes, $content, $block ) {
 				'currentId'          => $playlist_tracks[0],
 				'tracks'             => $playlist_tracks,
 				'waveformStyle'      => $waveform_style,
-				'visualizationStyle' => $waveform_style,
 				'isShuffled'         => false,
 				'isRepeating'        => false,
 			)

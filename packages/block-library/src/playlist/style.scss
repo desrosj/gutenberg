@@ -58,6 +58,8 @@ $waveform-player-height: 100px;
 			svg {
 				position: relative;
 				z-index: 2;
+				width: 32px;
+				height: 32px;
 				filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
 			}
 		}
@@ -124,8 +126,8 @@ $waveform-player-height: 100px;
 		}
 
 		svg {
-			width: 22px;
-			height: 22px;
+			width: 18px;
+			height: 18px;
 		}
 	}
 

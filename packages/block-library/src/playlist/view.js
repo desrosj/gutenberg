@@ -128,7 +128,7 @@ function initPlayer( ref, track, shouldAutoPlay, context ) {
 		image: track.image,
 		autoPlay: shouldAutoPlay,
 		labels,
-		visualizationStyle: context.visualizationStyle,
+		waveformStyle: context.waveformStyle,
 		onEnded: () => {
 			if ( context.isRepeating ) {
 				player.instance.play()?.catch( logPlayError );
