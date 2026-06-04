@@ -379,8 +379,7 @@ describe( 'Waveform utilities', () => {
 			const playBtn = document.createElement( 'button' );
 			playBtn.className = 'waveform-btn has-artwork';
 			const artworkEl = document.createElement( 'img' );
-			artworkEl.className =
-				'wp-block-playlist__play-button-artwork';
+			artworkEl.className = 'wp-block-playlist__play-button-artwork';
 			playBtn.appendChild( artworkEl );
 			container.appendChild( playBtn );
 

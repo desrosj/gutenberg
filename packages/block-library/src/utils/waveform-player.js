@@ -113,18 +113,14 @@ export function WaveformPlayer( {
 		}
 	}, [ title, artist, image ] );
 
-	const onPrevRef = useRef( onPrev );
-	onPrevRef.current = onPrev;
-	const onNextRef = useRef( onNext );
-	onNextRef.current = onNext;
-	const onShuffleToggleRef = useRef( onShuffleToggle );
-	onShuffleToggleRef.current = onShuffleToggle;
-	const onRepeatToggleRef = useRef( onRepeatToggle );
-	onRepeatToggleRef.current = onRepeatToggle;
-	const isShuffledRef = useRef( isShuffled );
-	isShuffledRef.current = isShuffled;
-	const isRepeatingRef = useRef( isRepeating );
-	isRepeatingRef.current = isRepeating;
+	// Wrap callbacks and state reads in stable event handlers so the player
+	// isn't recreated when they change, while always seeing the latest value.
+	const onPrevEvent = useEvent( () => onPrev?.() );
+	const onNextEvent = useEvent( () => onNext?.() );
+	const onShuffleToggleEvent = useEvent( () => onShuffleToggle?.() );
+	const onRepeatToggleEvent = useEvent( () => onRepeatToggle?.() );
+	const getIsShuffled = useEvent( () => isShuffled );
+	const getIsRepeating = useEvent( () => isRepeating );
 
 	const ref = useRefEffect(
 		( element ) => {
@@ -153,18 +149,14 @@ export function WaveformPlayer( {
 						shuffle: __( 'Shuffle' ),
 						repeat: __( 'Repeat' ),
 					},
-					artist:
-						metadata.artist || EMPTY_ARTIST_PLACEHOLDER,
-					onEnded: ( playerInstance ) =>
-						onEndedEvent?.( playerInstance ),
-					onPrev: () => onPrevRef.current?.(),
-					onNext: () => onNextRef.current?.(),
-					onShuffleToggle: () =>
-						onShuffleToggleRef.current?.(),
-					onRepeatToggle: () =>
-						onRepeatToggleRef.current?.(),
-					isShuffled: isShuffledRef.current,
-					isRepeating: isRepeatingRef.current,
+					artist: metadata.artist || EMPTY_ARTIST_PLACEHOLDER,
+					onEnded: onEndedEvent,
+					onPrev: onPrevEvent,
+					onNext: onNextEvent,
+					onShuffleToggle: onShuffleToggleEvent,
+					onRepeatToggle: onRepeatToggleEvent,
+					isShuffled: getIsShuffled(),
+					isRepeating: getIsRepeating(),
 				} );
 				playerRef.current = player;
 				updatePlayerMetadata( player.instance, metadata );
@@ -188,7 +180,18 @@ export function WaveformPlayer( {
 				playerDestroy?.();
 			};
 		},
-		[ onEndedEvent, src, waveformStyle, hasImage ]
+		[
+			onEndedEvent,
+			onPrevEvent,
+			onNextEvent,
+			onShuffleToggleEvent,
+			onRepeatToggleEvent,
+			getIsShuffled,
+			getIsRepeating,
+			src,
+			waveformStyle,
+			hasImage,
+		]
 	);
 
 	return (

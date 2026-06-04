@@ -118,14 +118,11 @@ function initPlayer( ref, track, shouldAutoPlay, context ) {
 		if ( otherTracks.length === 0 ) {
 			return context.tracks[ 0 ];
 		}
-		return otherTracks[
-			Math.floor( Math.random() * otherTracks.length )
-		];
+		return otherTracks[ Math.floor( Math.random() * otherTracks.length ) ];
 	};
 
 	// Initialize using the shared core.
-	let player;
-	player = initWaveformPlayer( ref, {
+	const player = initWaveformPlayer( ref, {
 		src: track.url,
 		title: track.title,
 		artist: track.artist,

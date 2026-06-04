@@ -182,10 +182,7 @@ export function setupPlayButtonArtwork( container, instance, artworkUrl ) {
 		artworkEl = container.ownerDocument.createElement( 'img' );
 	}
 
-	if (
-		existingButtonArtwork &&
-		existingButtonArtwork !== artworkEl
-	) {
+	if ( existingButtonArtwork && existingButtonArtwork !== artworkEl ) {
 		existingButtonArtwork.remove();
 	}
 
@@ -232,8 +229,8 @@ export function logPlayError( error ) {
 /**
  * Compute a hover color by increasing the alpha channel.
  *
- * @param {string} color       - The original rgba color string.
- * @param {number} alphaBoost  - The amount to increase alpha by.
+ * @param {string} color      - The original rgba color string.
+ * @param {number} alphaBoost - The amount to increase alpha by.
  * @return {string} The adjusted color as an rgba string.
  */
 function getHoverColor( color, alphaBoost = 0.2 ) {
@@ -250,10 +247,10 @@ function getHoverColor( color, alphaBoost = 0.2 ) {
  * Set up hover effect on the waveform bars area.
  * On mouseenter, increases bar color intensity; on mouseleave, restores.
  *
- * @param {Object}  instance       - The WaveformPlayer library instance.
- * @param {Element} container      - The waveform container element.
- * @param {string}  waveformColor  - The original waveform bar color.
- * @param {string}  progressColor  - The original progress bar color.
+ * @param {Object}  instance      - The WaveformPlayer library instance.
+ * @param {Element} container     - The waveform container element.
+ * @param {string}  waveformColor - The original waveform bar color.
+ * @param {string}  progressColor - The original progress bar color.
  * @return {Function} Cleanup function to remove listeners.
  */
 function setupWaveformHover(
@@ -292,10 +289,8 @@ function setupWaveformHover(
 }
 
 // SVG paths for playlist control icons (24x24 viewBox).
-const ICON_PREV =
-	'M6 6h2v12H6zm3.5 6l8.5 6V6z';
-const ICON_NEXT =
-	'M6 18l8.5-6L6 6v12zm10-12v12h2V6z';
+const ICON_PREV = 'M6 6h2v12H6zm3.5 6l8.5 6V6z';
+const ICON_NEXT = 'M6 18l8.5-6L6 6v12zm10-12v12h2V6z';
 const ICON_SHUFFLE =
 	'M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z';
 const ICON_REPEAT =
@@ -399,15 +394,19 @@ function setupPlaylistMetadata( container, instance ) {
  * Create playlist control buttons (prev, shuffle, next) and insert them
  * into the waveform player container.
  *
- * @param {Element}  container       - The waveform player container.
- * @param {Object}   callbacks       - Button click callbacks.
+ * @param {Element}  container                 - The waveform player container.
+ * @param {Object}   callbacks                 - Button click callbacks.
  * @param {Function} callbacks.onPrev          - Called when previous is clicked.
  * @param {Function} callbacks.onNext          - Called when next is clicked.
  * @param {Function} callbacks.onShuffleToggle - Called when shuffle is toggled.
  * @param {Function} callbacks.onRepeatToggle  - Called when repeat is toggled.
- * @param {boolean}  isShuffled      - Initial shuffle state.
- * @param {boolean}  isRepeating     - Initial repeat state.
- * @param {Object}   labels          - Translated control labels (previous, next, shuffle, repeat).
+ * @param {boolean}  isShuffled                - Initial shuffle state.
+ * @param {boolean}  isRepeating               - Initial repeat state.
+ * @param {Object}   labels                    - Translated control labels.
+ * @param {string}   labels.previous           - Label for the previous-track button.
+ * @param {string}   labels.next               - Label for the next-track button.
+ * @param {string}   labels.shuffle            - Label for the shuffle button.
+ * @param {string}   labels.repeat             - Label for the repeat button.
  * @return {Object} Object with setShuffled function and cleanup function.
  */
 function setupPlaylistControls(
@@ -499,22 +498,22 @@ function setupPlaylistControls(
  * This is the shared core logic used by both the React component (editor)
  * and the Interactivity API (frontend).
  *
- * @param {Element}  element                    - The container element (must be in DOM).
- * @param {Object}   options                    - Configuration options.
- * @param {string}   options.src                - The audio file URL.
- * @param {string}   options.title              - The track title.
- * @param {string}   options.artist             - The artist name.
- * @param {string}   options.image              - The artwork image URL.
- * @param {boolean}  options.autoPlay           - Whether to auto-play when ready.
- * @param {Function} options.onEnded            - Callback when track ends.
- * @param {Object}   options.labels             - Translated button labels.
- * @param {string}   options.waveformStyle      - Waveform style (bars, mirror, line, blocks, dots, seekbar).
- * @param {Function} options.onPrev             - Callback for previous track.
- * @param {Function} options.onNext             - Callback for next track.
- * @param {Function} options.onShuffleToggle    - Callback for shuffle toggle.
- * @param {Function} options.onRepeatToggle     - Callback for repeat toggle.
- * @param {boolean}  options.isShuffled         - Initial shuffle state.
- * @param {boolean}  options.isRepeating        - Initial repeat state.
+ * @param {Element}  element                 - The container element (must be in DOM).
+ * @param {Object}   options                 - Configuration options.
+ * @param {string}   options.src             - The audio file URL.
+ * @param {string}   options.title           - The track title.
+ * @param {string}   options.artist          - The artist name.
+ * @param {string}   options.image           - The artwork image URL.
+ * @param {boolean}  options.autoPlay        - Whether to auto-play when ready.
+ * @param {Function} options.onEnded         - Callback when track ends.
+ * @param {Object}   options.labels          - Translated button labels.
+ * @param {string}   options.waveformStyle   - Waveform style (bars, mirror, line, blocks, dots, seekbar).
+ * @param {Function} options.onPrev          - Callback for previous track.
+ * @param {Function} options.onNext          - Callback for next track.
+ * @param {Function} options.onShuffleToggle - Callback for shuffle toggle.
+ * @param {Function} options.onRepeatToggle  - Callback for repeat toggle.
+ * @param {boolean}  options.isShuffled      - Initial shuffle state.
+ * @param {boolean}  options.isRepeating     - Initial repeat state.
  * @return {Object} Object with instance, container, and destroy function.
  */
 export function initWaveformPlayer(
