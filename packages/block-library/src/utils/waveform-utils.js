@@ -192,16 +192,8 @@ export function setupPlayButtonArtwork( container, instance, artworkUrl ) {
 	artworkEl.alt = '';
 	artworkEl.removeAttribute( 'width' );
 	artworkEl.removeAttribute( 'height' );
-	Object.assign( artworkEl.style, {
-		position: 'absolute',
-		inset: '0',
-		display: 'block',
-		width: '100%',
-		height: '100%',
-		maxWidth: 'none',
-		maxHeight: 'none',
-		objectFit: 'cover',
-	} );
+	// Layout/sizing is enforced by the .wp-block-playlist__play-button-artwork
+	// rule (with !important) so it overrides the library's inline styles.
 	playBtn.classList.add( 'has-artwork' );
 	playBtn.prepend( artworkEl );
 

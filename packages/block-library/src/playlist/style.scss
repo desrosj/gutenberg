@@ -67,13 +67,15 @@ $waveform-player-height: 100px;
 		position: absolute;
 		inset: 0;
 		z-index: 0;
-		display: block !important;
-		border-radius: 0 !important;
+		display: block;
+		max-width: none;
+		max-height: none;
+		object-fit: cover;
+		// The library renders the artwork <img> with inline width/height/
+		// border-radius, so !important is required to override those here.
 		width: 100% !important;
 		height: 100% !important;
-		max-width: none !important;
-		max-height: none !important;
-		object-fit: cover !important;
+		border-radius: 0 !important;
 	}
 
 	.waveform-track.waveform-align-bottom .waveform-btn {
