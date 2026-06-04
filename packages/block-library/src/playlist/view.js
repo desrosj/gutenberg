@@ -6,7 +6,11 @@ import { store, getContext, getElement } from '@wordpress/interactivity';
 /**
  * Internal dependencies
  */
-import { initWaveformPlayer, logPlayError } from '../utils/waveform-utils';
+import {
+	initWaveformPlayer,
+	logPlayError,
+	setupPlayButtonArtwork,
+} from '../utils/waveform-utils';
 
 /**
  * Store player state for each element.
@@ -83,6 +87,11 @@ function initPlayer( ref, track, shouldAutoPlay, context ) {
 			} )
 			.then( () => {
 				existing.url = track.url;
+				setupPlayButtonArtwork(
+					existing.container,
+					existing.instance,
+					track.image
+				);
 				if ( shouldAutoPlay ) {
 					existing.instance.play()?.catch( logPlayError );
 				}
@@ -111,7 +120,8 @@ function initPlayer( ref, track, shouldAutoPlay, context ) {
 	};
 
 	// Initialize using the shared core.
-	const player = initWaveformPlayer( ref, {
+	let player;
+	player = initWaveformPlayer( ref, {
 		src: track.url,
 		title: track.title,
 		artist: track.artist,
@@ -120,6 +130,10 @@ function initPlayer( ref, track, shouldAutoPlay, context ) {
 		labels,
 		visualizationStyle: context.visualizationStyle,
 		onEnded: () => {
+			if ( context.isRepeating ) {
+				player.instance.play()?.catch( logPlayError );
+				return;
+			}
 			if ( context.isShuffled ) {
 				context.currentId = getRandomTrackId();
 				return;
@@ -161,12 +175,17 @@ function initPlayer( ref, track, shouldAutoPlay, context ) {
 		onShuffleToggle: () => {
 			context.isShuffled = ! context.isShuffled;
 		},
+		onRepeatToggle: () => {
+			context.isRepeating = ! context.isRepeating;
+		},
 		isShuffled: context.isShuffled,
+		isRepeating: context.isRepeating,
 	} );
 
 	// Store state for cleanup, including instance for loadTrack reuse.
 	playerState.set( ref, {
 		url: track.url,
+		container: player.container,
 		instance: player.instance,
 		destroy: player.destroy,
 	} );

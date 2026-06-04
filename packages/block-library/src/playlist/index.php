@@ -122,6 +122,7 @@ function render_block_core_playlist( $attributes, $content, $block ) {
 				'waveformStyle'      => $waveform_style,
 				'visualizationStyle' => $waveform_style,
 				'isShuffled'         => false,
+				'isRepeating'        => false,
 			)
 		)
 	);

@@ -71,7 +71,9 @@ function updatePlayerMetadata( instance, { title, artist, image } ) {
  * @param {Function} props.onPrev                 - Callback for previous track.
  * @param {Function} props.onNext                 - Callback for next track.
  * @param {Function} props.onShuffleToggle        - Callback for shuffle toggle.
+ * @param {Function} props.onRepeatToggle         - Callback for repeat toggle.
  * @param {boolean}  props.isShuffled             - Whether shuffle is active.
+ * @param {boolean}  props.isRepeating            - Whether repeat is active.
  * @return {Element} The WaveformPlayer element.
  */
 export function WaveformPlayer( {
@@ -88,7 +90,9 @@ export function WaveformPlayer( {
 	onPrev,
 	onNext,
 	onShuffleToggle,
+	onRepeatToggle,
 	isShuffled,
+	isRepeating,
 } ) {
 	const playerWaveformStyle = visualizationStyle || waveformStyle || 'bars';
 
@@ -127,8 +131,12 @@ export function WaveformPlayer( {
 	onNextRef.current = onNext;
 	const onShuffleToggleRef = useRef( onShuffleToggle );
 	onShuffleToggleRef.current = onShuffleToggle;
+	const onRepeatToggleRef = useRef( onRepeatToggle );
+	onRepeatToggleRef.current = onRepeatToggle;
 	const isShuffledRef = useRef( isShuffled );
 	isShuffledRef.current = isShuffled;
+	const isRepeatingRef = useRef( isRepeating );
+	isRepeatingRef.current = isRepeating;
 
 	const ref = useRefEffect(
 		( element ) => {
@@ -160,12 +168,16 @@ export function WaveformPlayer( {
 					showProgressBackground,
 					progressBackgroundColor: progressBgColor,
 					bgColor,
-					onEnded: () => onEndedEvent?.(),
+					onEnded: ( playerInstance ) =>
+						onEndedEvent?.( playerInstance ),
 					onPrev: () => onPrevRef.current?.(),
 					onNext: () => onNextRef.current?.(),
 					onShuffleToggle: () =>
 						onShuffleToggleRef.current?.(),
+					onRepeatToggle: () =>
+						onRepeatToggleRef.current?.(),
 					isShuffled: isShuffledRef.current,
+					isRepeating: isRepeatingRef.current,
 				} );
 				playerRef.current = player;
 				updatePlayerMetadata( player.instance, metadata );

@@ -38,6 +38,7 @@ import { Caption } from '../utils/caption';
 import { useToolsPanelDropdownMenuProps } from '../utils/hooks';
 import { WaveformPlayer } from '../utils/waveform-player';
 import { PlaylistContext } from './context';
+import { logPlayError } from '../utils/waveform-utils';
 import { getTrackAttributes } from './utils';
 
 const ALLOWED_MEDIA_TYPES = [ 'audio' ];
@@ -59,6 +60,7 @@ const PlaylistEdit = ( {
 	} = attributes;
 
 	const [ isShuffled, setIsShuffled ] = useState( false );
+	const [ isRepeating, setIsRepeating ] = useState( false );
 
 	// Extract the waveform style from the block style variation class.
 	const waveformStyle =
@@ -160,7 +162,11 @@ const PlaylistEdit = ( {
 	}, [ currentTrackClientId, tracks ] );
 
 	// Handle track end - advance to next track, respecting shuffle.
-	const onTrackEnded = useCallback( () => {
+	const onTrackEnded = useCallback( ( playerInstance ) => {
+		if ( isRepeating ) {
+			playerInstance?.play()?.catch( logPlayError );
+			return;
+		}
 		if ( isShuffled ) {
 			const randomTrack = getRandomTrack();
 			if ( randomTrack?.clientId ) {
@@ -178,6 +184,7 @@ const PlaylistEdit = ( {
 	}, [
 		currentTrackClientId,
 		getRandomTrack,
+		isRepeating,
 		isShuffled,
 		setCurrentTrackClientId,
 		tracks,
@@ -219,6 +226,10 @@ const PlaylistEdit = ( {
 
 	const onShuffleToggle = useCallback( () => {
 		setIsShuffled( ( prev ) => ! prev );
+	}, [] );
+
+	const onRepeatToggle = useCallback( () => {
+		setIsRepeating( ( prev ) => ! prev );
 	}, [] );
 
 	const onChangeOrder = useCallback(
@@ -435,7 +446,9 @@ const PlaylistEdit = ( {
 						onPrev={ onPrev }
 						onNext={ onNext }
 						onShuffleToggle={ onShuffleToggle }
+						onRepeatToggle={ onRepeatToggle }
 						isShuffled={ isShuffled }
+						isRepeating={ isRepeating }
 					/>
 				</Disabled>
 				{ showTracklist && (

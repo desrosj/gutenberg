@@ -152,6 +152,68 @@ export function setupPlayButtonAccessibility(
 }
 
 /**
+ * Move the waveform player's artwork image into the play button.
+ *
+ * @param {Element} container  - The waveform player container element.
+ * @param {Object}  instance   - The WaveformPlayer library instance.
+ * @param {string}  artworkUrl - The album artwork URL.
+ */
+export function setupPlayButtonArtwork( container, instance, artworkUrl ) {
+	const playBtn = container.querySelector( '.waveform-btn' );
+	if ( ! playBtn ) {
+		return;
+	}
+
+	const existingButtonArtwork = playBtn.querySelector(
+		'.wp-block-playlist__play-button-artwork'
+	);
+	let artworkEl =
+		instance?.artworkEl ||
+		existingButtonArtwork ||
+		container.querySelector( '.waveform-artwork' );
+
+	if ( ! artworkUrl ) {
+		existingButtonArtwork?.remove();
+		playBtn.classList.remove( 'has-artwork' );
+		return;
+	}
+
+	if ( ! artworkEl ) {
+		artworkEl = container.ownerDocument.createElement( 'img' );
+	}
+
+	if (
+		existingButtonArtwork &&
+		existingButtonArtwork !== artworkEl
+	) {
+		existingButtonArtwork.remove();
+	}
+
+	artworkEl.src = artworkUrl;
+	artworkEl.classList.add( 'wp-block-playlist__play-button-artwork' );
+	artworkEl.setAttribute( 'aria-hidden', 'true' );
+	artworkEl.alt = '';
+	artworkEl.removeAttribute( 'width' );
+	artworkEl.removeAttribute( 'height' );
+	Object.assign( artworkEl.style, {
+		position: 'absolute',
+		inset: '0',
+		display: 'block',
+		width: '100%',
+		height: '100%',
+		maxWidth: 'none',
+		maxHeight: 'none',
+		objectFit: 'cover',
+	} );
+	playBtn.classList.add( 'has-artwork' );
+	playBtn.prepend( artworkEl );
+
+	playBtn.querySelectorAll( 'svg path' ).forEach( ( path ) => {
+		path.style.fill = '#ffffff';
+	} );
+}
+
+/**
  * Log play errors, filtering out expected AbortError.
  *
  * @param {Error} error - The error from play().
@@ -236,6 +298,8 @@ const ICON_NEXT =
 	'M6 18l8.5-6L6 6v12zm10-12v12h2V6z';
 const ICON_SHUFFLE =
 	'M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z';
+const ICON_REPEAT =
+	'M17 2l4 4-4 4V7H7a3 3 0 0 0-3 3v1H2v-1a5 5 0 0 1 5-5h10V2zM7 22l-4-4 4-4v3h10a3 3 0 0 0 3-3v-1h2v1a5 5 0 0 1-5 5H7v3z';
 
 /**
  * Create an SVG icon element.
@@ -260,6 +324,78 @@ function createSvgIcon( pathD ) {
 }
 
 /**
+ * Get or create the row displayed below the waveform.
+ *
+ * @param {Element} container - The waveform player container.
+ * @return {Element} The footer row.
+ */
+function getPlaylistFooter( container ) {
+	let footerDiv = container.querySelector( '.wp-block-playlist__footer' );
+	if ( footerDiv ) {
+		return footerDiv;
+	}
+
+	footerDiv = document.createElement( 'div' );
+	footerDiv.className = 'wp-block-playlist__footer';
+
+	const waveformTrack = container.querySelector( '.waveform-track' );
+	if ( waveformTrack ) {
+		waveformTrack.after( footerDiv );
+	} else {
+		container.appendChild( footerDiv );
+	}
+
+	return footerDiv;
+}
+
+/**
+ * Remove the footer row when all custom footer content has been removed.
+ *
+ * @param {Element} footerDiv - The footer row.
+ */
+function removeEmptyPlaylistFooter( footerDiv ) {
+	if ( footerDiv.children.length === 0 ) {
+		footerDiv.remove();
+	}
+}
+
+/**
+ * Move the player metadata into the footer row below the waveform.
+ *
+ * @param {Element} container - The waveform player container.
+ * @param {Object}  instance  - The WaveformPlayer library instance.
+ * @return {Function} Cleanup function.
+ */
+function setupPlaylistMetadata( container, instance ) {
+	const titleEl =
+		instance?.titleEl || container.querySelector( '.waveform-title' );
+	const subtitleEl =
+		instance?.subtitleEl || container.querySelector( '.waveform-subtitle' );
+
+	if ( ! titleEl && ! subtitleEl ) {
+		return () => {};
+	}
+
+	const footerDiv = getPlaylistFooter( container );
+	const metadataDiv = document.createElement( 'div' );
+	metadataDiv.className = 'wp-block-playlist__metadata';
+
+	if ( titleEl ) {
+		metadataDiv.appendChild( titleEl );
+	}
+	if ( subtitleEl ) {
+		metadataDiv.appendChild( subtitleEl );
+	}
+
+	footerDiv.appendChild( metadataDiv );
+
+	return () => {
+		metadataDiv.remove();
+		removeEmptyPlaylistFooter( footerDiv );
+	};
+}
+
+/**
  * Create playlist control buttons (prev, shuffle, next) and insert them
  * into the waveform player container.
  *
@@ -268,13 +404,16 @@ function createSvgIcon( pathD ) {
  * @param {Function} callbacks.onPrev          - Called when previous is clicked.
  * @param {Function} callbacks.onNext          - Called when next is clicked.
  * @param {Function} callbacks.onShuffleToggle - Called when shuffle is toggled.
+ * @param {Function} callbacks.onRepeatToggle  - Called when repeat is toggled.
  * @param {boolean}  isShuffled      - Initial shuffle state.
+ * @param {boolean}  isRepeating     - Initial repeat state.
  * @return {Object} Object with setShuffled function and cleanup function.
  */
 function setupPlaylistControls(
 	container,
-	{ onPrev, onNext, onShuffleToggle },
-	isShuffled = false
+	{ onPrev, onNext, onShuffleToggle, onRepeatToggle },
+	isShuffled = false,
+	isRepeating = false
 ) {
 	const controlsDiv = document.createElement( 'div' );
 	controlsDiv.className = 'wp-block-playlist__controls';
@@ -292,6 +431,14 @@ function setupPlaylistControls(
 	}
 	shuffleBtn.appendChild( createSvgIcon( ICON_SHUFFLE ) );
 
+	const repeatBtn = document.createElement( 'button' );
+	repeatBtn.className = 'wp-block-playlist__control-btn';
+	repeatBtn.setAttribute( 'aria-label', 'Repeat' );
+	if ( isRepeating ) {
+		repeatBtn.classList.add( 'is-active' );
+	}
+	repeatBtn.appendChild( createSvgIcon( ICON_REPEAT ) );
+
 	const nextBtn = document.createElement( 'button' );
 	nextBtn.className = 'wp-block-playlist__control-btn';
 	nextBtn.setAttribute( 'aria-label', 'Next track' );
@@ -299,6 +446,7 @@ function setupPlaylistControls(
 
 	controlsDiv.appendChild( prevBtn );
 	controlsDiv.appendChild( shuffleBtn );
+	controlsDiv.appendChild( repeatBtn );
 	controlsDiv.appendChild( nextBtn );
 
 	const onPrevClick = () => onPrev?.();
@@ -306,29 +454,34 @@ function setupPlaylistControls(
 		shuffleBtn.classList.toggle( 'is-active' );
 		onShuffleToggle?.();
 	};
+	const onRepeatClick = () => {
+		repeatBtn.classList.toggle( 'is-active' );
+		onRepeatToggle?.();
+	};
 	const onNextClick = () => onNext?.();
 
 	prevBtn.addEventListener( 'click', onPrevClick );
 	shuffleBtn.addEventListener( 'click', onShuffleClick );
+	repeatBtn.addEventListener( 'click', onRepeatClick );
 	nextBtn.addEventListener( 'click', onNextClick );
 
-	// Insert controls after the waveform track row.
-	const waveformTrack = container.querySelector( '.waveform-track' );
-	if ( waveformTrack ) {
-		waveformTrack.after( controlsDiv );
-	} else {
-		container.appendChild( controlsDiv );
-	}
+	const footerDiv = getPlaylistFooter( container );
+	footerDiv.prepend( controlsDiv );
 
 	return {
 		setShuffled: ( shuffled ) => {
 			shuffleBtn.classList.toggle( 'is-active', shuffled );
 		},
+		setRepeating: ( repeating ) => {
+			repeatBtn.classList.toggle( 'is-active', repeating );
+		},
 		cleanup: () => {
 			prevBtn.removeEventListener( 'click', onPrevClick );
 			shuffleBtn.removeEventListener( 'click', onShuffleClick );
+			repeatBtn.removeEventListener( 'click', onRepeatClick );
 			nextBtn.removeEventListener( 'click', onNextClick );
 			controlsDiv.remove();
+			removeEmptyPlaylistFooter( footerDiv );
 		},
 	};
 }
@@ -352,7 +505,9 @@ function setupPlaylistControls(
  * @param {Function} options.onPrev             - Callback for previous track.
  * @param {Function} options.onNext             - Callback for next track.
  * @param {Function} options.onShuffleToggle    - Callback for shuffle toggle.
+ * @param {Function} options.onRepeatToggle     - Callback for repeat toggle.
  * @param {boolean}  options.isShuffled         - Initial shuffle state.
+ * @param {boolean}  options.isRepeating        - Initial repeat state.
  * @return {Object} Object with instance, container, and destroy function.
  */
 export function initWaveformPlayer(
@@ -369,7 +524,9 @@ export function initWaveformPlayer(
 		onPrev,
 		onNext,
 		onShuffleToggle,
+		onRepeatToggle,
 		isShuffled,
+		isRepeating,
 	}
 ) {
 	// Get colors from computed styles.
@@ -396,9 +553,12 @@ export function initWaveformPlayer(
 	let cleanupAccessibility;
 	let cleanupHover;
 	let cleanupControls;
+	let cleanupMetadata;
 	const handlers = {
 		ready: () => {
 			styleSvgIcons( container, textColor );
+			setupPlayButtonArtwork( container, instance, image );
+			cleanupMetadata = setupPlaylistMetadata( container, instance );
 			cleanupAccessibility = setupPlayButtonAccessibility(
 				container,
 				labels
@@ -411,11 +571,12 @@ export function initWaveformPlayer(
 			);
 
 			// Set up playlist controls if callbacks are provided.
-			if ( onPrev || onNext || onShuffleToggle ) {
+			if ( onPrev || onNext || onShuffleToggle || onRepeatToggle ) {
 				const controls = setupPlaylistControls(
 					container,
-					{ onPrev, onNext, onShuffleToggle },
-					isShuffled
+					{ onPrev, onNext, onShuffleToggle, onRepeatToggle },
+					isShuffled,
+					isRepeating
 				);
 				cleanupControls = controls.cleanup;
 			}
@@ -424,7 +585,7 @@ export function initWaveformPlayer(
 				instance.play()?.catch( logPlayError );
 			}
 		},
-		ended: () => onEnded?.(),
+		ended: () => onEnded?.( instance ),
 	};
 
 	container.addEventListener( 'waveformplayer:ready', handlers.ready );
@@ -438,6 +599,7 @@ export function initWaveformPlayer(
 			cleanupAccessibility?.();
 			cleanupHover?.();
 			cleanupControls?.();
+			cleanupMetadata?.();
 			container.removeEventListener(
 				'waveformplayer:ready',
 				handlers.ready
