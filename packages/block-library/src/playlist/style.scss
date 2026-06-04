@@ -30,8 +30,6 @@ $waveform-player-height: 100px;
 		position: relative;
 		overflow: hidden;
 		border-radius: 0;
-		border-end-start-radius: 0;
-		border-start-start-radius: 0;
 		border: 0;
 		width: $waveform-player-height;
 		height: $waveform-player-height;
@@ -99,9 +97,6 @@ $waveform-player-height: 100px;
 		align-self: flex-start;
 		align-items: flex-start;
 		flex: 0 0 $waveform-player-height;
-		gap: 0;
-		width: $waveform-player-height;
-		justify-content: center;
 	}
 
 	.wp-block-playlist__control-btn {
