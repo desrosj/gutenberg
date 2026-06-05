@@ -14,19 +14,6 @@ import WaveformPlayerLib from '@arraypress/waveform-player';
  * Note: DEFAULT_WAVEFORM_HEIGHT should match $waveform-player-height in style.scss.
  */
 const DEFAULT_WAVEFORM_HEIGHT = 120;
-export const WAVEFORM_BUTTON_WIDTH = 120;
-
-/**
- * Format a time in seconds to a "m:ss" string.
- *
- * @param {number} seconds - The time in seconds.
- * @return {string} The formatted time string.
- */
-export function formatTime( seconds ) {
-	const mins = Math.floor( seconds / 60 );
-	const secs = Math.floor( seconds % 60 );
-	return `${ mins }:${ String( secs ).padStart( 2, '0' ) }`;
-}
 
 /**
  * Pick the next track for shuffle playback so that no track repeats until
