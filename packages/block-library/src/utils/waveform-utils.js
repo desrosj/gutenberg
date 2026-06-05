@@ -172,9 +172,14 @@ export function setupPlayButtonAccessibility(
 	}
 
 	playBtn.setAttribute( 'aria-label', playLabel );
+	playBtn.setAttribute( 'title', playLabel );
 
-	const onPlay = () => playBtn.setAttribute( 'aria-label', pauseLabel );
-	const onPause = () => playBtn.setAttribute( 'aria-label', playLabel );
+	const setLabel = ( label ) => {
+		playBtn.setAttribute( 'aria-label', label );
+		playBtn.setAttribute( 'title', label );
+	};
+	const onPlay = () => setLabel( pauseLabel );
+	const onPause = () => setLabel( playLabel );
 
 	container.addEventListener( 'waveformplayer:play', onPlay );
 	container.addEventListener( 'waveformplayer:pause', onPause );
@@ -468,12 +473,14 @@ function setupPlaylistControls(
 	prevBtn.type = 'button';
 	prevBtn.className = 'wp-block-playlist__control-btn';
 	prevBtn.setAttribute( 'aria-label', previousLabel );
+	prevBtn.setAttribute( 'title', previousLabel );
 	prevBtn.appendChild( createSvgIcon( doc, ICON_PREV ) );
 
 	const shuffleBtn = doc.createElement( 'button' );
 	shuffleBtn.type = 'button';
 	shuffleBtn.className = 'wp-block-playlist__control-btn';
 	shuffleBtn.setAttribute( 'aria-label', shuffleLabel );
+	shuffleBtn.setAttribute( 'title', shuffleLabel );
 	if ( isShuffled ) {
 		shuffleBtn.classList.add( 'is-active' );
 	}
@@ -483,6 +490,7 @@ function setupPlaylistControls(
 	repeatBtn.type = 'button';
 	repeatBtn.className = 'wp-block-playlist__control-btn';
 	repeatBtn.setAttribute( 'aria-label', repeatLabel );
+	repeatBtn.setAttribute( 'title', repeatLabel );
 	if ( isRepeating ) {
 		repeatBtn.classList.add( 'is-active' );
 	}
@@ -492,6 +500,7 @@ function setupPlaylistControls(
 	nextBtn.type = 'button';
 	nextBtn.className = 'wp-block-playlist__control-btn';
 	nextBtn.setAttribute( 'aria-label', nextLabel );
+	nextBtn.setAttribute( 'title', nextLabel );
 	nextBtn.appendChild( createSvgIcon( doc, ICON_NEXT ) );
 
 	controlsDiv.appendChild( prevBtn );
