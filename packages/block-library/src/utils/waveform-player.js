@@ -8,7 +8,10 @@ import { __ } from '@wordpress/i18n';
 /**
  * Internal dependencies
  */
-import { initWaveformPlayer } from './waveform-utils';
+import {
+	initWaveformPlayer,
+	refreshWaveformPlayerColors,
+} from './waveform-utils';
 
 const EMPTY_ARTIST_PLACEHOLDER = '\u00a0';
 
@@ -91,6 +94,7 @@ export function WaveformPlayer( {
 	// during editor resizes.
 	const onEndedEvent = useEvent( onEnded );
 	const metadataRef = useRef( { title, artist, image } );
+	const elementRef = useRef();
 	const playerRef = useRef();
 	// Remembers which control had keyboard focus when the player is torn down,
 	// so the rebuilt player (the editor recreates it on track change) can
@@ -117,6 +121,18 @@ export function WaveformPlayer( {
 		}
 	}, [ title, artist, image ] );
 
+	// The block color controls update the parent figure's classes/styles, not
+	// this player component's props. Refresh the canvas colors after each
+	// editor render so the live player follows inherited color changes.
+	useEffect( () => {
+		if ( elementRef.current && playerRef.current ) {
+			refreshWaveformPlayerColors(
+				playerRef.current,
+				elementRef.current
+			);
+		}
+	} );
+
 	// Wrap callbacks and state reads in stable event handlers so the player
 	// isn't recreated when they change, while always seeing the latest value.
 	const onPrevEvent = useEvent( () => onPrev?.() );
@@ -128,8 +144,12 @@ export function WaveformPlayer( {
 
 	const ref = useRefEffect(
 		( element ) => {
+			elementRef.current = element;
+
 			if ( ! src ) {
-				return;
+				return () => {
+					elementRef.current = undefined;
+				};
 			}
 
 			let cancelled = false;
@@ -208,6 +228,7 @@ export function WaveformPlayer( {
 					}
 				}
 				playerRef.current = undefined;
+				elementRef.current = undefined;
 				playerDestroy?.();
 			};
 		},
