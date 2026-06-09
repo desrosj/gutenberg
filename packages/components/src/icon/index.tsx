@@ -1,7 +1,7 @@
 /**
  * External dependencies
  */
-import type { ComponentType, HTMLProps, SVGProps } from 'react';
+import type { ComponentType, CSSProperties, HTMLProps, SVGProps } from 'react';
 
 /**
  * WordPress dependencies
@@ -111,12 +111,21 @@ function Icon( {
 	}
 
 	if ( isValidElement( icon ) ) {
+		const { style: consumerStyle, ...restProps } =
+			additionalProps as SVGProps< SVGSVGElement >;
+
 		return cloneElement( icon, {
 			// @ts-ignore Just forwarding the size prop along
 			size,
 			width: size,
 			height: size,
-			...additionalProps,
+			// Merge styles so the icon's intrinsic style is preserved unless
+			// the consumer overrides the same property explicitly.
+			style: {
+				...( icon.props as { style?: CSSProperties } ).style,
+				...consumerStyle,
+			},
+			...restProps,
 		} );
 	}
 
