@@ -39,6 +39,7 @@ import { getAllowedFormats } from './utils';
 import { Content, valueToHTMLString } from './content';
 import { withDeprecations } from './with-deprecations';
 import BlockContext from '../block-context';
+import { useHasEditableRoot } from '../writing-flow/use-editable-root';
 import { unlock } from '../../lock-unlock';
 
 const { useRichText } = unlock( richTextPrivateApis );
@@ -238,6 +239,7 @@ export function RichTextWrapper(
 	const shouldDisableEditing =
 		readOnly || disableBoundBlock || shouldDisableForPattern;
 
+	const { hasEditableRoot } = useHasEditableRoot();
 	const { getSelectionStart, getSelectionEnd, getBlockRootClientId } =
 		useSelect( blockEditorStore );
 	const { selectionChange } = useDispatch( blockEditorStore );
@@ -350,6 +352,24 @@ export function RichTextWrapper(
 		anchorRef.current?.focus();
 	}
 
+	// Setting tabIndex to 0 is unnecessary, the element is already focusable
+	// because it's contentEditable. This also fixes a Safari bug where it's
+	// not possible to Shift+Click multi select blocks when Shift Clicking
+	// into an element with tabIndex because Safari will focus the element.
+	// However, Safari will correctly ignore nested contentEditable elements.
+	// While the writing flow wrapper is contentEditable (the selected block
+	// supports `editableRoot`), nested editable elements are no longer
+	// focusable areas on their own, so an explicit tabIndex restores their
+	// focusability.
+	let tabIndex = props.tabIndex;
+	if ( ! shouldDisableEditing ) {
+		if ( hasEditableRoot ) {
+			tabIndex = props.tabIndex ?? 0;
+		} else if ( props.tabIndex === 0 ) {
+			tabIndex = null;
+		}
+	}
+
 	const TagName = tagName;
 	return (
 		<>
@@ -433,17 +453,7 @@ export function RichTextWrapper(
 					props.className,
 					'rich-text'
 				) }
-				// Setting tabIndex to 0 is unnecessary, the element is already
-				// focusable because it's contentEditable. This also fixes a
-				// Safari bug where it's not possible to Shift+Click multi
-				// select blocks when Shift Clicking into an element with
-				// tabIndex because Safari will focus the element. However,
-				// Safari will correctly ignore nested contentEditable elements.
-				tabIndex={
-					props.tabIndex === 0 && ! shouldDisableEditing
-						? null
-						: props.tabIndex
-				}
+				tabIndex={ tabIndex }
 				data-wp-block-attribute-key={ identifier }
 			/>
 		</>

@@ -9,7 +9,9 @@ import { privateApis as composePrivateApis } from '@wordpress/compose';
 import { toHTMLString } from '../../to-html-string';
 import { isCollapsed } from '../../is-collapsed';
 import { slice } from '../../slice';
+import { remove } from '../../remove';
 import { getTextContent } from '../../get-text-content';
+import { ownsSelection } from '../../owns-selection';
 import { unlock } from '../../lock-unlock';
 
 const { subscribeDelegatedListener } = unlock( composePrivateApis );
@@ -20,7 +22,8 @@ export default ( props ) => ( element ) => {
 		const { ownerDocument } = element;
 		if (
 			isCollapsed( record.current ) ||
-			! element.contains( ownerDocument.activeElement )
+			( ! element.contains( ownerDocument.activeElement ) &&
+				! ownsSelection( element ) )
 		) {
 			return;
 		}
@@ -34,7 +37,16 @@ export default ( props ) => ( element ) => {
 		event.preventDefault();
 
 		if ( event.type === 'cut' ) {
-			ownerDocument.execCommand( 'delete' );
+			if ( ownerDocument.activeElement === element ) {
+				ownerDocument.execCommand( 'delete' );
+			} else {
+				// `execCommand( 'delete' )` is not reliable when the element
+				// doesn't hold focus itself (a focused editing host owns the
+				// selection): it may remove the element entirely. Remove the
+				// selected content through the record instead.
+				const { handleChange } = props.current;
+				handleChange( remove( record.current ) );
+			}
 		}
 	}
 

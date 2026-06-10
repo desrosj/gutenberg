@@ -9,6 +9,7 @@ import { privateApis as composePrivateApis } from '@wordpress/compose';
 import { getActiveFormats } from '../../get-active-formats';
 import { isCollapsed } from '../../is-collapsed';
 import { updateFormats } from '../../update-formats';
+import { ownsSelection } from '../../owns-selection';
 import { unlock } from '../../lock-unlock';
 
 const { subscribeDelegatedListener } = unlock( composePrivateApis );
@@ -129,10 +130,16 @@ export default ( props ) => ( element ) => {
 			return;
 		}
 
-		// Ensure the active element is the rich text element.
-		if ( ownerDocument.activeElement !== element ) {
+		// Ensure the active element is the rich text element, or that the
+		// element owns the selection through a focused editing host (the
+		// editable block editor canvas wrapper).
+		if (
+			ownerDocument.activeElement !== element &&
+			! ownsSelection( element )
+		) {
 			// If it is not, we can stop listening for selection changes. We
-			// resume listening when the element is focused.
+			// resume listening when the element is focused, or when an event
+			// is redirected to it while the editing host holds focus.
 			ownerDocument.removeEventListener(
 				'selectionchange',
 				handleSelectionChange
@@ -242,8 +249,12 @@ export default ( props ) => ( element ) => {
 			props.current;
 
 		// When the whole editor is editable, let writing flow handle
-		// selection.
+		// selection state, but keep the internal record in sync.
 		if ( element.parentElement.closest( '[contenteditable="true"]' ) ) {
+			ownerDocument.addEventListener(
+				'selectionchange',
+				handleSelectionChange
+			);
 			return;
 		}
 
@@ -276,6 +287,29 @@ export default ( props ) => ( element ) => {
 		);
 	}
 
+	/**
+	 * While a focused editing host (the editable block editor canvas
+	 * wrapper) owns focus, the element doesn't receive focus events, so the
+	 * `selectionchange` listener may not be attached when events are
+	 * redirected to the element. Attach it, and sync immediately so the
+	 * handlers of the very event being processed read a fresh record: the
+	 * native `selectionchange` event is asynchronous and may not have been
+	 * dispatched yet for a preceding selection change.
+	 */
+	function ensureSelectionListener() {
+		if ( ownerDocument.activeElement === element ) {
+			return;
+		}
+		if ( ! ownsSelection( element ) ) {
+			return;
+		}
+		handleSelectionChange();
+		ownerDocument.addEventListener(
+			'selectionchange',
+			handleSelectionChange
+		);
+	}
+
 	// `input` and `compositionend` must run before block-editor's
 	// `input-rules.js` element-level listeners, which call `getValue()`
 	// reading `record.current` updated by our `onInput`. Use capture phase
@@ -284,6 +318,15 @@ export default ( props ) => ( element ) => {
 		element,
 		'input',
 		onInput,
+		true
+	);
+	// Bound to the document so it runs before element-bound capture
+	// listeners (e.g. format boundaries) within the shared delegated
+	// listener, which dispatches document-bound callbacks first.
+	const unsubscribeEnsureSelection = subscribeDelegatedListener(
+		ownerDocument,
+		'keydown',
+		ensureSelectionListener,
 		true
 	);
 	const unsubscribeCompositionStart = subscribeDelegatedListener(
@@ -305,6 +348,7 @@ export default ( props ) => ( element ) => {
 
 	return () => {
 		unsubscribeInput();
+		unsubscribeEnsureSelection();
 		unsubscribeCompositionStart();
 		unsubscribeCompositionEnd();
 		unsubscribeFocus();
