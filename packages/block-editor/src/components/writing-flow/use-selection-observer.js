@@ -176,9 +176,6 @@ export default function useSelectionObserver() {
 					if (
 						! isMultiSelecting() &&
 						collapsedClientId &&
-						// Only a canvas in its own (iframed) document may
-						// become an editing host.
-						ownerDocument !== document &&
 						hasBlockSupport(
 							getBlockName( collapsedClientId ),
 							'editableRoot',
