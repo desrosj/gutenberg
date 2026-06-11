@@ -181,7 +181,14 @@ export function useTypingObserver() {
 				}
 
 				node.addEventListener( 'focus', stopTypingOnNonTextField );
-				node.addEventListener( 'keydown', stopTypingOnEscapeKey );
+				// Attached to the document: when a focused editing host
+				// containing the node holds the selection (`editableRoot`),
+				// key events target the host, which is an ancestor of the
+				// node, so they never reach a node-bound listener.
+				node.ownerDocument.addEventListener(
+					'keydown',
+					stopTypingOnEscapeKey
+				);
 
 				node.ownerDocument.addEventListener(
 					'selectionchange',
@@ -194,7 +201,7 @@ export function useTypingObserver() {
 						'focus',
 						stopTypingOnNonTextField
 					);
-					node.removeEventListener(
+					node.ownerDocument.removeEventListener(
 						'keydown',
 						stopTypingOnEscapeKey
 					);
@@ -216,8 +223,13 @@ export function useTypingObserver() {
 
 				// Abort early if already typing, or key press is incurred outside a
 				// text field (e.g. arrow-ing through toolbar buttons).
-				// Ignore typing if outside the current DOM container
-				if ( ! isTextField( target ) || ! node.contains( target ) ) {
+				// Ignore typing if outside the current DOM container, unless
+				// the target is a focused editing host containing it
+				// (`editableRoot`): key events then target the host.
+				if (
+					! isTextField( target ) ||
+					! ( node.contains( target ) || target.contains( node ) )
+				) {
 					return;
 				}
 
@@ -235,12 +247,23 @@ export function useTypingObserver() {
 				startTyping();
 			}
 
-			node.addEventListener( 'keypress', startTypingInTextField );
-			node.addEventListener( 'keydown', startTypingInTextField );
+			// See the note above about the document-bound keydown listener.
+			const { ownerDocument } = node;
+			ownerDocument.addEventListener(
+				'keypress',
+				startTypingInTextField
+			);
+			ownerDocument.addEventListener( 'keydown', startTypingInTextField );
 
 			return () => {
-				node.removeEventListener( 'keypress', startTypingInTextField );
-				node.removeEventListener( 'keydown', startTypingInTextField );
+				ownerDocument.removeEventListener(
+					'keypress',
+					startTypingInTextField
+				);
+				ownerDocument.removeEventListener(
+					'keydown',
+					startTypingInTextField
+				);
 			};
 		},
 		[ isTyping, startTyping, stopTyping ]

@@ -47,10 +47,11 @@ function extractSelectionStartNode( selection ) {
  * reaches up to but excluding that child node.
  *
  * @param {Selection} selection The selection.
+ * @param {boolean}   isMouse   Whether the selection is mouse driven.
  *
  * @return {Element} The selection start node.
  */
-function extractSelectionEndNode( selection ) {
+function extractSelectionEndNode( selection, isMouse ) {
 	const { focusNode, focusOffset } = selection;
 
 	if ( focusNode.nodeType === focusNode.TEXT_NODE ) {
@@ -61,11 +62,15 @@ function extractSelectionEndNode( selection ) {
 		return focusNode;
 	}
 
-	// When the selection is forward (the selection ends with the focus node),
-	// the selection may extend into the next element with an offset of 0. This
-	// may trigger multi selection even though the selection does not visually
-	// end in the next block.
-	if ( focusOffset === 0 && isSelectionForward( selection ) ) {
+	// When a mouse driven selection is forward (the selection ends with the
+	// focus node), the selection may extend into the next element with an
+	// offset of 0 (e.g. on triple click). This may trigger multi selection
+	// even though the selection does not visually end in the next block.
+	// Keyboard driven selections extending to the same position (e.g.
+	// Shift+ArrowDown) do mean to include the next block: when the element
+	// is focusable, the browser reports the boundary at the element instead
+	// of descending into its first text position.
+	if ( focusOffset === 0 && isSelectionForward( selection ) && isMouse ) {
 		return focusNode.previousSibling ?? focusNode.parentElement;
 	}
 
@@ -127,6 +132,16 @@ export default function useSelectionObserver() {
 			const { ownerDocument } = node;
 			const { defaultView } = ownerDocument;
 
+			let isMouse = false;
+
+			function onMouseDown() {
+				isMouse = true;
+			}
+
+			function onKeyDown() {
+				isMouse = false;
+			}
+
 			function onSelectionChange( event ) {
 				const selection = defaultView.getSelection();
 
@@ -135,7 +150,7 @@ export default function useSelectionObserver() {
 				}
 
 				const startNode = extractSelectionStartNode( selection );
-				const endNode = extractSelectionEndNode( selection );
+				const endNode = extractSelectionEndNode( selection, isMouse );
 
 				if (
 					! node.contains( startNode ) ||
@@ -257,7 +272,6 @@ export default function useSelectionObserver() {
 						return;
 					}
 				}
-
 				const isSingularSelection = startClientId === endClientId;
 				if ( isSingularSelection ) {
 					if ( ! isMultiSelecting() ) {
@@ -387,12 +401,16 @@ export default function useSelectionObserver() {
 				onSelectionChange
 			);
 			defaultView.addEventListener( 'mouseup', onSelectionChange );
+			node.addEventListener( 'mousedown', onMouseDown );
+			node.addEventListener( 'keydown', onKeyDown );
 			return () => {
 				ownerDocument.removeEventListener(
 					'selectionchange',
 					onSelectionChange
 				);
 				defaultView.removeEventListener( 'mouseup', onSelectionChange );
+				node.removeEventListener( 'mousedown', onMouseDown );
+				node.removeEventListener( 'keydown', onKeyDown );
 			};
 		},
 		[ multiSelect, selectBlock, selectionChange, getBlockParents ]
