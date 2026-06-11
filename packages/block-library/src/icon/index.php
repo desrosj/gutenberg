@@ -90,7 +90,14 @@ function render_block_core_icon( $attributes ) {
 	$processor->next_tag( 'svg' );
 
 	if ( ! empty( $styles['css'] ) ) {
-		$processor->set_attribute( 'style', $styles['css'] );
+		// Merge with the SVG's intrinsic style (e.g. `fill: none` on
+		// stroke-based icons) so it is preserved. The block styles come last so
+		// they win on any conflicting property.
+		$existing_style = $processor->get_attribute( 'style' );
+		$merged_style   = $existing_style
+			? rtrim( trim( $existing_style ), ';' ) . '; ' . $styles['css']
+			: $styles['css'];
+		$processor->set_attribute( 'style', $merged_style );
 	}
 	if ( ! empty( $styles['classnames'] ) ) {
 		$processor->add_class( $styles['classnames'] );
