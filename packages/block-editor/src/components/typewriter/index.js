@@ -193,15 +193,50 @@ export function useTypewriter() {
 			}
 
 			/**
+			 * Returns the editable element owning the selection: the active
+			 * element, or, when a focused editing host contains the node
+			 * (a selected block supports `editableRoot`), the editable
+			 * element containing the selection.
+			 */
+			function getActiveEditableElement() {
+				const { activeElement } = ownerDocument;
+
+				if ( ! activeElement ) {
+					return null;
+				}
+
+				if (
+					! activeElement.isContentEditable ||
+					! activeElement.contains( node )
+				) {
+					return activeElement;
+				}
+
+				const { anchorNode } = defaultView.getSelection();
+
+				if ( ! anchorNode ) {
+					return null;
+				}
+
+				const element =
+					anchorNode.nodeType === anchorNode.ELEMENT_NODE
+						? anchorNode
+						: anchorNode.parentElement;
+				return element?.closest( '[contenteditable="true"]' ) ?? null;
+			}
+
+			/**
 			 * Checks if the current situation is eligible for scroll:
 			 * - There should be one and only one block selected.
 			 * - The component must contain the selection.
 			 * - The active element must be contenteditable.
 			 */
 			function isSelectionEligibleForScroll() {
+				const activeEditableElement = getActiveEditableElement();
 				return (
-					node.contains( ownerDocument.activeElement ) &&
-					ownerDocument.activeElement.isContentEditable
+					!! activeEditableElement &&
+					node.contains( activeEditableElement ) &&
+					activeEditableElement.isContentEditable
 				);
 			}
 
@@ -211,16 +246,42 @@ export function useTypewriter() {
 				);
 				const lastEditableNode =
 					editableNodes[ editableNodes.length - 1 ];
-				return lastEditableNode === ownerDocument.activeElement;
+				return lastEditableNode === getActiveEditableElement();
 			}
+
+			/**
+			 * Calls the given listener for events targeting the node's
+			 * subtree, or a focused editing host containing the node, which
+			 * key events target instead of the node (`editableRoot`).
+			 *
+			 * @param {Function} listener Event listener.
+			 */
+			function withOwnedEvents( listener ) {
+				return ( event ) => {
+					const { target } = event;
+					if (
+						node.contains( target ) ||
+						( target.isContentEditable && target.contains( node ) )
+					) {
+						listener( event );
+					}
+				};
+			}
+
+			const onOwnedKeyDown = withOwnedEvents( onKeyDown );
+			const onOwnedKeyUp = withOwnedEvents( maintainCaretPosition );
 
 			// When the user scrolls or resizes, the scroll position should be
 			// reset.
 			defaultView.addEventListener( 'scroll', onScrollResize, true );
 			defaultView.addEventListener( 'resize', onScrollResize, true );
 
-			node.addEventListener( 'keydown', onKeyDown );
-			node.addEventListener( 'keyup', maintainCaretPosition );
+			// Attached to the document: when a focused editing host containing
+			// the node holds the selection, key events target the host, an
+			// ancestor of the node, so they never reach a node-bound
+			// listener.
+			ownerDocument.addEventListener( 'keydown', onOwnedKeyDown );
+			ownerDocument.addEventListener( 'keyup', onOwnedKeyUp );
 			node.addEventListener( 'mousedown', addSelectionChangeListener );
 			node.addEventListener( 'touchstart', addSelectionChangeListener );
 
@@ -236,8 +297,8 @@ export function useTypewriter() {
 					true
 				);
 
-				node.removeEventListener( 'keydown', onKeyDown );
-				node.removeEventListener( 'keyup', maintainCaretPosition );
+				ownerDocument.removeEventListener( 'keydown', onOwnedKeyDown );
+				ownerDocument.removeEventListener( 'keyup', onOwnedKeyUp );
 				node.removeEventListener(
 					'mousedown',
 					addSelectionChangeListener
