@@ -37,6 +37,21 @@ const touchStartEvent = {
 	startTime: 0,
 };
 
+/**
+ * Per-gesture state for the in-progress horizontal drag on the lightbox.
+ *
+ * `direction` latches to 'horizontal' or 'vertical' once the gesture exceeds a
+ * small disambiguation threshold; vertical gestures bypass the drag-tracking
+ * path so native scroll suppression keeps working unchanged.
+ */
+const touchDrag = {
+	isDragging: false,
+	direction: 'unknown',
+	overlayEl: null,
+};
+
+const SLIDE_TRANSITION_MS = 220;
+
 const focusableSelectors = [
 	'.wp-lightbox-close-button',
 	'.wp-lightbox-navigation-button',
@@ -292,14 +307,50 @@ const { state, actions, callbacks } = store(
 				}
 			} ),
 			handleTouchMove: withSyncEvent( ( event ) => {
-				// On mobile devices, prevents triggering the scroll event because
-				// otherwise the page jumps around when it resets the scroll position.
-				// This also means that closing the lightbox requires that a user
-				// perform a simple tap. This may be changed in the future if there is a
-				// better alternative to override or reset the scroll position during
-				// swipe actions.
-				if ( state.overlayEnabled ) {
-					event.preventDefault();
+				if ( ! state.overlayEnabled ) {
+					return;
+				}
+
+				// Prevents triggering the scroll event because otherwise the page
+				// jumps around when it resets the scroll position. This also means
+				// that closing the lightbox requires a simple tap. May change in
+				// the future with a better way to reset scroll during swipes.
+				event.preventDefault();
+
+				const t = event.touches && event.touches[ 0 ];
+				if ( ! t || ! state.hasNavigation ) {
+					return;
+				}
+
+				const deltaX = t.clientX - touchStartEvent.startX;
+				const deltaY = t.clientY - touchStartEvent.startY;
+				const absDeltaX = Math.abs( deltaX );
+				const absDeltaY = Math.abs( deltaY );
+
+				// Latches direction once the user has moved past a small
+				// disambiguation threshold, then sticks with that decision for the
+				// rest of the gesture.
+				if (
+					touchDrag.direction === 'unknown' &&
+					( absDeltaX > 10 || absDeltaY > 10 )
+				) {
+					touchDrag.direction =
+						absDeltaX > absDeltaY ? 'horizontal' : 'vertical';
+					touchDrag.overlayEl = event.currentTarget;
+				}
+
+				if (
+					touchDrag.direction === 'horizontal' &&
+					touchDrag.overlayEl
+				) {
+					touchDrag.isDragging = true;
+					touchDrag.overlayEl.classList.remove(
+						'is-animating-slide'
+					);
+					touchDrag.overlayEl.style.setProperty(
+						'--wp--lightbox-drag-offset',
+						`${ deltaX }px`
+					);
 				}
 			} ),
 			handleTouchStart( event ) {
@@ -310,6 +361,9 @@ const { state, actions, callbacks } = store(
 					touchStartEvent.startY = t.clientY;
 					touchStartEvent.startTime = Date.now();
 				}
+				touchDrag.isDragging = false;
+				touchDrag.direction = 'unknown';
+				touchDrag.overlayEl = null;
 			},
 			handleTouchEnd: withSyncEvent( ( event ) => {
 				const touchEndEvent =
@@ -325,26 +379,73 @@ const { state, actions, callbacks } = store(
 					const absDeltaX = Math.abs( deltaX );
 					const absDeltaY = Math.abs( deltaY );
 					const elapsedMs = now - touchStartEvent.startTime;
-					const isHorizontalSwipe =
-						// Swipe distance is greater than 50px
-						absDeltaX > 50 &&
-						// Horizontal movement is much larger than the vertical movement
-						absDeltaX > absDeltaY * 1.5 &&
-						// Fast action of less than 800ms
-						elapsedMs < 800;
+					const isHorizontalDominant = absDeltaX > absDeltaY * 1.5;
+					const pastDistanceThreshold =
+						absDeltaX > window.innerWidth * 0.2;
+					const isFastFlick = absDeltaX > 50 && elapsedMs < 300;
+					const shouldCommit =
+						touchDrag.isDragging &&
+						isHorizontalDominant &&
+						( pastDistanceThreshold || isFastFlick );
 
-					if ( isHorizontalSwipe ) {
+					if ( touchDrag.isDragging ) {
 						event.preventDefault();
-						if ( deltaX < 0 ) {
-							actions.showNextImage( event );
+						const overlayEl = touchDrag.overlayEl;
+						const prefersReducedMotion = window.matchMedia(
+							'(prefers-reduced-motion: reduce)'
+						).matches;
+						const direction = deltaX < 0 ? 'next' : 'previous';
+
+						const advance = () => {
+							overlayEl.classList.remove( 'is-animating-slide' );
+							overlayEl.style.setProperty(
+								'--wp--lightbox-drag-offset',
+								'0px'
+							);
+							if ( shouldCommit ) {
+								if ( direction === 'next' ) {
+									actions.showNextImage( event );
+								} else {
+									actions.showPreviousImage( event );
+								}
+								// Re-triggers the fade-in animation on rapid
+								// successive swipes by toggling the class with a
+								// forced reflow in between.
+								overlayEl.classList.remove( 'is-fading-in' );
+								// eslint-disable-next-line no-unused-expressions
+								overlayEl.offsetWidth;
+								overlayEl.classList.add( 'is-fading-in' );
+							}
+						};
+
+						if ( prefersReducedMotion ) {
+							advance();
 						} else {
-							actions.showPreviousImage( event );
+							overlayEl.classList.add( 'is-animating-slide' );
+							let commitOffset = 0;
+							if ( shouldCommit ) {
+								commitOffset =
+									deltaX < 0
+										? -window.innerWidth
+										: window.innerWidth;
+							}
+							overlayEl.style.setProperty(
+								'--wp--lightbox-drag-offset',
+								`${ commitOffset }px`
+							);
+							setTimeout(
+								withScope( advance ),
+								SLIDE_TRANSITION_MS
+							);
 						}
 					}
 				}
 
 				lastTouchTime = now;
 				isTouching = false;
+				touchDrag.isDragging = false;
+				touchDrag.direction = 'unknown';
+				touchDrag.overlayEl = null;
 			} ),
 			handleScroll() {
 				// Prevents scrolling behaviors that trigger content shift while the
