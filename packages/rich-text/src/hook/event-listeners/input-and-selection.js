@@ -10,6 +10,7 @@ import { getActiveFormats } from '../../get-active-formats';
 import { isCollapsed } from '../../is-collapsed';
 import { updateFormats } from '../../update-formats';
 import { ownsSelection } from '../../owns-selection';
+import { subscribeOwnedListener } from '../../subscribe-owned-listener';
 import { unlock } from '../../lock-unlock';
 
 const { subscribeDelegatedListener } = unlock( composePrivateApis );
@@ -314,27 +315,35 @@ export default ( props ) => ( element ) => {
 	// `input-rules.js` element-level listeners, which call `getValue()`
 	// reading `record.current` updated by our `onInput`. Use capture phase
 	// so we fire before any ancestor bubble handlers.
-	const unsubscribeInput = subscribeDelegatedListener(
+	const unsubscribeInput = subscribeOwnedListener(
 		element,
 		'input',
 		onInput,
 		true
 	);
-	// Bound to the document so it runs before element-bound capture
-	// listeners (e.g. format boundaries) within the shared delegated
-	// listener, which dispatches document-bound callbacks first.
-	const unsubscribeEnsureSelection = subscribeDelegatedListener(
-		ownerDocument,
+	// Bound to the document with capture so it runs before any other
+	// listener of the event. Subscribed for every event type whose handlers
+	// read the internal record.
+	const unsubscribeEnsureSelection = [
 		'keydown',
-		ensureSelectionListener,
-		true
+		'beforeinput',
+		'copy',
+		'cut',
+		'paste',
+	].map( ( eventType ) =>
+		subscribeDelegatedListener(
+			ownerDocument,
+			eventType,
+			ensureSelectionListener,
+			true
+		)
 	);
-	const unsubscribeCompositionStart = subscribeDelegatedListener(
+	const unsubscribeCompositionStart = subscribeOwnedListener(
 		element,
 		'compositionstart',
 		onCompositionStart
 	);
-	const unsubscribeCompositionEnd = subscribeDelegatedListener(
+	const unsubscribeCompositionEnd = subscribeOwnedListener(
 		element,
 		'compositionend',
 		onCompositionEnd,
@@ -348,7 +357,7 @@ export default ( props ) => ( element ) => {
 
 	return () => {
 		unsubscribeInput();
-		unsubscribeEnsureSelection();
+		unsubscribeEnsureSelection.forEach( ( unsubscribe ) => unsubscribe() );
 		unsubscribeCompositionStart();
 		unsubscribeCompositionEnd();
 		unsubscribeFocus();

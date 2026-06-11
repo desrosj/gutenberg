@@ -29,7 +29,7 @@ export default ( props ) => ( element ) => {
 		const {
 			disableFormats,
 			onChange,
-			value,
+			getValue,
 			formatTypes,
 			tagName,
 			onReplace,
@@ -54,6 +54,10 @@ export default ( props ) => ( element ) => {
 		if ( event.defaultPrevented ) {
 			return;
 		}
+
+		// Read the live record: the value bound at render time may not yet
+		// reflect a selection change that happened in the same task.
+		const value = getValue();
 
 		const { plainText, html } = getPasteEventData( event );
 
