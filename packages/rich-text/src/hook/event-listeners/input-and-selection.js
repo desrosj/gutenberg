@@ -138,13 +138,6 @@ export default ( props ) => ( element ) => {
 			ownerDocument.activeElement !== element &&
 			! ownsSelection( element )
 		) {
-			// If it is not, we can stop listening for selection changes. We
-			// resume listening when the element is focused, or when an event
-			// is redirected to it while the editing host holds focus.
-			ownerDocument.removeEventListener(
-				'selectionchange',
-				handleSelectionChange
-			);
 			return;
 		}
 
@@ -202,14 +195,11 @@ export default ( props ) => ( element ) => {
 	}
 
 	function onCompositionStart() {
-		isComposing = true;
 		// Do not update the selection when characters are being composed as
 		// this rerenders the component and might destroy internal browser
-		// editing state.
-		ownerDocument.removeEventListener(
-			'selectionchange',
-			handleSelectionChange
-		);
+		// editing state. `handleSelectionChange` returns early while
+		// composing.
+		isComposing = true;
 		// Remove the placeholder. Since the rich text value doesn't update
 		// during composition, the placeholder doesn't get removed. There's no
 		// need to re-add it, when the value is updated on compositionend it
@@ -222,11 +212,6 @@ export default ( props ) => ( element ) => {
 		// Ensure the value is up-to-date for browsers that don't emit a final
 		// input event after composition.
 		onInput( { inputType: 'insertText' } );
-		// Tracking selection changes can be resumed.
-		ownerDocument.addEventListener(
-			'selectionchange',
-			handleSelectionChange
-		);
 	}
 
 	function onFocus( event ) {
@@ -250,12 +235,8 @@ export default ( props ) => ( element ) => {
 			props.current;
 
 		// When the whole editor is editable, let writing flow handle
-		// selection state, but keep the internal record in sync.
+		// selection state.
 		if ( element.parentElement.closest( '[contenteditable="true"]' ) ) {
-			ownerDocument.addEventListener(
-				'selectionchange',
-				handleSelectionChange
-			);
 			return;
 		}
 
@@ -281,23 +262,15 @@ export default ( props ) => ( element ) => {
 		// we need to manually trigger it. The selection is also not available
 		// yet in this call stack.
 		window.queueMicrotask( handleSelectionChange );
-
-		ownerDocument.addEventListener(
-			'selectionchange',
-			handleSelectionChange
-		);
 	}
 
 	/**
-	 * While a focused editing host (the editable block editor canvas
-	 * wrapper) owns focus, the element doesn't receive focus events, so the
-	 * `selectionchange` listener may not be attached when events are
-	 * redirected to the element. Attach it, and sync immediately so the
-	 * handlers of the very event being processed read a fresh record: the
-	 * native `selectionchange` event is asynchronous and may not have been
-	 * dispatched yet for a preceding selection change.
+	 * The native `selectionchange` event is asynchronous and may not have
+	 * been dispatched yet for a preceding selection change when the next
+	 * event arrives. Sync the record immediately so the handlers of the very
+	 * event being processed read a fresh record.
 	 */
-	function ensureSelectionListener() {
+	function ensureSelectionSync() {
 		if ( ownerDocument.activeElement === element ) {
 			return;
 		}
@@ -305,10 +278,6 @@ export default ( props ) => ( element ) => {
 			return;
 		}
 		handleSelectionChange();
-		ownerDocument.addEventListener(
-			'selectionchange',
-			handleSelectionChange
-		);
 	}
 
 	// `input` and `compositionend` must run before block-editor's
@@ -334,9 +303,17 @@ export default ( props ) => ( element ) => {
 		subscribeDelegatedListener(
 			ownerDocument,
 			eventType,
-			ensureSelectionListener,
+			ensureSelectionSync,
 			true
 		)
+	);
+	// Permanently subscribed: `handleSelectionChange` checks whether the
+	// element has focus or owns the selection itself. The shared underlying
+	// delegated listener keeps the number of native listeners constant.
+	const unsubscribeSelectionChange = subscribeDelegatedListener(
+		ownerDocument,
+		'selectionchange',
+		handleSelectionChange
 	);
 	const unsubscribeCompositionStart = subscribeOwnedListener(
 		element,
@@ -358,6 +335,7 @@ export default ( props ) => ( element ) => {
 	return () => {
 		unsubscribeInput();
 		unsubscribeEnsureSelection.forEach( ( unsubscribe ) => unsubscribe() );
+		unsubscribeSelectionChange();
 		unsubscribeCompositionStart();
 		unsubscribeCompositionEnd();
 		unsubscribeFocus();
