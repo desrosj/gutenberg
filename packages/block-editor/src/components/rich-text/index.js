@@ -241,6 +241,12 @@ export function RichTextWrapper(
 		readOnly || disableBoundBlock || shouldDisableForPattern;
 
 	const { hasEditableRoot } = useHasEditableRoot();
+	const hasDefaultEditingMode = useSelect(
+		( select ) =>
+			select( blockEditorStore ).getBlockEditingMode( clientId ) ===
+			'default',
+		[ clientId ]
+	);
 	const { getSelectionStart, getSelectionEnd, getBlockRootClientId } =
 		useSelect( blockEditorStore );
 	const { selectionChange } = useDispatch( blockEditorStore );
@@ -413,7 +419,7 @@ export function RichTextWrapper(
 	// focusability.
 	let tabIndex = props.tabIndex;
 	if ( ! shouldDisableEditing ) {
-		if ( hasEditableRoot ) {
+		if ( hasEditableRoot && hasDefaultEditingMode ) {
 			tabIndex = props.tabIndex ?? 0;
 		} else if ( props.tabIndex === 0 ) {
 			tabIndex = null;
