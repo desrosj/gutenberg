@@ -47,14 +47,12 @@ import {
 	getTopLevelStyleBookCategories,
 } from './categories';
 import { getExamples } from './examples';
-import { GlobalStylesRenderer } from '../global-styles-renderer';
 import {
 	STYLE_BOOK_COLOR_GROUPS,
 	STYLE_BOOK_PREVIEW_CATEGORIES,
 } from '../style-book/constants';
 import { useGlobalStylesOutputWithConfig } from '../../hooks/use-global-styles-output';
 import { useStyle, useGlobalStyles } from '../global-styles';
-import { store as editorStore } from '../../store';
 
 const { ExperimentalBlockEditorProvider } = unlock( blockEditorPrivateApis );
 const { Tabs } = unlock( componentsPrivateApis );
@@ -375,7 +373,7 @@ function StyleBook(
  * @param {Function} props.onPathChange Callback when the path changes.
  * @param {Object}   props.userConfig   User configuration.
  * @param {boolean}  props.isStatic     Whether the stylebook is static or clickable.
- * @param {Object}   props.settings     Optional editor settings to use instead of the editor store settings.
+ * @param {Object}   props.settings     Editor settings, including the styles to render in the preview.
  * @return {Object} Style Book Preview component.
  */
 export const StyleBookPreview = ( {
@@ -383,13 +381,8 @@ export const StyleBookPreview = ( {
 	isStatic = false,
 	path,
 	onPathChange,
-	settings: settingsProp,
+	settings: editorSettings = {},
 } ) => {
-	const editorSettings = useSelect(
-		( select ) => settingsProp ?? select( editorStore ).getEditorSettings(),
-		[ settingsProp ]
-	);
-
 	const canUserUploadMedia = useSelect(
 		( select ) =>
 			select( coreStore ).canUser( 'create', {
@@ -544,7 +537,6 @@ export const StyleBookPreview = ( {
 	return (
 		<div className="editor-style-book">
 			<BlockEditorProvider settings={ settings }>
-				<GlobalStylesRenderer disableRootPadding />
 				<StyleBookBody
 					examples={ displayedExamples }
 					settings={ settings }

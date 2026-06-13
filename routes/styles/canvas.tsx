@@ -3,14 +3,26 @@
  */
 import { useNavigate, useSearch } from '@wordpress/route';
 import { privateApis as editorPrivateApis } from '@wordpress/editor';
-import { useEditorAssets } from '@wordpress/lazy-editor';
+import { useEditorAssets, useEditorSettings } from '@wordpress/lazy-editor';
 import { Spinner } from '@wordpress/components';
+import { useSelect } from '@wordpress/data';
+import { store as coreStore } from '@wordpress/core-data';
 import { unlock } from '@wordpress/routes-lock-unlock';
 
 const { StyleBookPreview } = unlock( editorPrivateApis );
 
 function Canvas() {
 	const { isReady: assetsReady } = useEditorAssets();
+	const globalStylesId = useSelect(
+		( select ) =>
+			(
+				select( coreStore ) as any
+			 ).__experimentalGetCurrentGlobalStylesId(),
+		[]
+	);
+	const { editorSettings } = useEditorSettings( {
+		stylesId: globalStylesId,
+	} );
 	const navigate = useNavigate();
 	const search = useSearch( { strict: false } ) as any;
 
@@ -42,7 +54,11 @@ function Canvas() {
 	}
 
 	return (
-		<StyleBookPreview path={ section } onPathChange={ onChangeSection } />
+		<StyleBookPreview
+			path={ section }
+			onPathChange={ onChangeSection }
+			settings={ editorSettings }
+		/>
 	);
 }
 
