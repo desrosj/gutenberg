@@ -160,6 +160,11 @@ export function FloatingAddNote() {
 			offset={ 8 }
 			focusOnMount={ false }
 			anchor={ popoverAnchor }
+			// Render into the slot the inline rich-text popovers use so the
+			// button is clipped to the editor canvas and flips/shifts to stay
+			// within it, instead of floating over the header or footer chrome
+			// when the selection is scrolled to the edge of the viewport.
+			__unstableSlotName="__unstable-block-tools-after"
 			className="editor-collab-sidebar__floating-add-note"
 		>
 			<Toolbar label={ __( 'Notes' ) }>
