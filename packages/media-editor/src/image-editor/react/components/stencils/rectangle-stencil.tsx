@@ -277,6 +277,7 @@ export function RectangleStencil( {
 				}
 				el.removeEventListener( 'pointermove', onMove );
 				el.removeEventListener( 'pointerup', onEnd );
+				el.removeEventListener( 'pointercancel', onEnd );
 				el.removeEventListener( 'lostpointercapture', onEnd );
 				latestHandlersRef.current?.onResizeEnd?.();
 				// Restore focus to the handle so arrow keys work
@@ -288,6 +289,7 @@ export function RectangleStencil( {
 
 			el.addEventListener( 'pointermove', onMove );
 			el.addEventListener( 'pointerup', onEnd );
+			el.addEventListener( 'pointercancel', onEnd );
 			el.addEventListener( 'lostpointercapture', onEnd );
 
 			onResizeStart?.( handle );
