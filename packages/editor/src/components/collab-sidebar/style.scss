@@ -253,27 +253,36 @@
 // inline-toolbar visual language so it sits naturally alongside the rich-text
 // format toolbar instead of competing with it.
 .editor-collab-sidebar__floating-add-note {
+	// Round the popover frame and clip the toolbar to it. `width: auto` keeps
+	// the popover's computed width from forcing a stray scrollbar around the
+	// single icon button; keeping the default popover box-shadow preserves the
+	// rounded border + elevation so the corners read as rounded, not clipped.
 	.components-popover__content {
-		// Size to the single icon button and clip its square corners to the
-		// rounded container. `width: auto` stops the popover's computed width
-		// from forcing a stray scrollbar; `overflow: hidden` both suppresses
-		// that scrollbar and rounds off the button corners.
 		width: auto !important;
+		min-width: 0 !important;
 		overflow: hidden !important;
-		box-shadow: $elevation-medium;
 		border-radius: $radius-large;
 	}
 
+	// Let the rounded popover frame be the only visible surface: the toolbar
+	// must not paint its own near-square border or background over it (that is
+	// what made the corners look notched).
 	.components-toolbar-group,
 	.components-toolbar {
 		border: none;
+		background: transparent;
 	}
 
-	// Slightly smaller than the default toolbar button so the affordance reads
-	// as a light, on-select hint rather than a full toolbar control.
+	// Compact button with a clearly legible glyph, sized as a light on-select
+	// hint rather than a full toolbar control.
 	.components-button.has-icon {
-		min-width: 36px;
-		width: 36px;
-		height: 36px;
+		min-width: 40px;
+		width: 40px;
+		height: 40px;
+
+		svg {
+			width: 28px;
+			height: 28px;
+		}
 	}
 }
