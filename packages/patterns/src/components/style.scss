@@ -31,6 +31,10 @@
 	}
 }
 
+.patterns-create-modal {
+	z-index: z-index(".patterns-menu-items__convert-modal");
+}
+
 .patterns-create-modal__name-input input[type="text"] {
 	margin: 0; // Override the default 1px margin-x.
 }
