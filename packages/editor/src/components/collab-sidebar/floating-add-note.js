@@ -7,15 +7,17 @@ import {
 	Toolbar,
 	ToolbarButton,
 	ToolbarGroup,
+	SVG,
+	Path,
 } from '@wordpress/components';
 import { useDispatch, useSelect } from '@wordpress/data';
+import { useEffect, useState } from '@wordpress/element';
 import {
 	store as blockEditorStore,
 	privateApis as blockEditorPrivateApis,
 } from '@wordpress/block-editor';
 import { store as interfaceStore } from '@wordpress/interface';
 import { useAnchor } from '@wordpress/rich-text';
-import { comment as commentIcon } from '@wordpress/icons';
 
 /**
  * Internal dependencies
@@ -26,6 +28,21 @@ import { unlock } from '../../lock-unlock';
 import { hasNoteFormatInRange, readInlineSelection } from './utils';
 
 const { useBlockElement } = unlock( blockEditorPrivateApis );
+
+// Milliseconds the selection must stay stable before the floating button
+// appears. A short delay keeps the canvas from flickering a button on every
+// transient selection change while the user is still dragging to highlight.
+const SHOW_DELAY_MS = 300;
+
+// Comment bubble with a plus in the middle — the "start a note" affordance,
+// mirroring the on-select entry point in Google Docs. Composed locally rather
+// than added to `@wordpress/icons` since it's specific to this entry point.
+const addNoteIcon = (
+	<SVG xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+		<Path d="M18 4H6c-1.1 0-2 .9-2 2v12.9c0 .6.5 1.1 1.1 1.1.3 0 .5-.1.8-.3L8.5 17H18c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm.5 11c0 .3-.2.5-.5.5H7.9l-2.4 2.4V6c0-.3.2-.5.5-.5h12c.3 0 .5.2.5.5v9z" />
+		<Path d="M11.25 6.75h1.5v2.75h2.75v1.5h-2.75v2.75h-1.5v-2.75H8.5v-1.5h2.75z" />
+	</SVG>
+);
 
 /**
  * Compute whether the current block-editor selection is a candidate for the
@@ -79,6 +96,24 @@ function useFloatingButtonSelection() {
 
 export function FloatingAddNote() {
 	const inlineSelection = useFloatingButtonSelection();
+	// Gate the button behind a short delay so it only surfaces once the
+	// selection has settled. Re-keying on the captured range restarts the timer
+	// whenever the selection changes (e.g. while the user is still dragging),
+	// and clears it the moment the selection collapses.
+	const selectionKey = inlineSelection
+		? `${ inlineSelection.clientId }:${ inlineSelection.attributeKey }:${ inlineSelection.start }:${ inlineSelection.end }`
+		: null;
+	const [ isReady, setIsReady ] = useState( false );
+	useEffect( () => {
+		if ( ! selectionKey ) {
+			setIsReady( false );
+			return;
+		}
+		setIsReady( false );
+		const timer = setTimeout( () => setIsReady( true ), SHOW_DELAY_MS );
+		return () => clearTimeout( timer );
+	}, [ selectionKey ] );
+
 	// `useBlockElement` returns the rich-text wrapper (or null). Passing the
 	// block element to `useAnchor` lets it derive a virtual anchor from the
 	// live DOM range; `useAnchor` reads `ownerDocument.defaultView.getSelection()`,
@@ -94,7 +129,7 @@ export function FloatingAddNote() {
 		[]
 	);
 
-	if ( ! inlineSelection || ! blockElement || ! popoverAnchor ) {
+	if ( ! isReady || ! inlineSelection || ! blockElement || ! popoverAnchor ) {
 		return null;
 	}
 
@@ -130,7 +165,7 @@ export function FloatingAddNote() {
 			<Toolbar label={ __( 'Notes' ) }>
 				<ToolbarGroup>
 					<ToolbarButton
-						icon={ commentIcon }
+						icon={ addNoteIcon }
 						label={ __( 'Add note' ) }
 						// Prevent the mousedown from stealing focus from the
 						// editor; the captured rich-text selection in the
@@ -138,9 +173,7 @@ export function FloatingAddNote() {
 						// `useNoteActions.onCreate` to read it.
 						onMouseDown={ ( event ) => event.preventDefault() }
 						onClick={ onClick }
-					>
-						{ __( 'Add note' ) }
-					</ToolbarButton>
+					/>
 				</ToolbarGroup>
 			</Toolbar>
 		</Popover>

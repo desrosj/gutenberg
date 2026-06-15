@@ -255,9 +255,9 @@
 .editor-collab-sidebar__floating-add-note {
 	.components-popover__content {
 		// The popover-positioning logic sets a computed `width` and
-		// `overflow: auto` on the content wrapper, which clips the
-		// toolbar's "Add note" label and surfaces a scrollbar. Let the
-		// content size to its toolbar children.
+		// `overflow: auto` on the content wrapper, which surfaces a stray
+		// scrollbar around the single icon button. Let the content size to
+		// its toolbar child instead.
 		width: auto !important;
 		overflow: visible !important;
 		box-shadow: $elevation-medium;
