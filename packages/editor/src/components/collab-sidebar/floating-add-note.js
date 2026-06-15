@@ -160,6 +160,10 @@ export function FloatingAddNote() {
 			offset={ 8 }
 			focusOnMount={ false }
 			anchor={ popoverAnchor }
+			// Drop the default popover background/border/shadow so the toolbar
+			// frame is the only visible surface, matching the block toolbar
+			// (which renders its popover with this same variant).
+			variant="unstyled"
 			// Render into the slot the inline rich-text popovers use so the
 			// button is clipped to the editor canvas and flips/shifts to stay
 			// within it, instead of floating over the header or footer chrome

@@ -253,36 +253,55 @@
 // inline-toolbar visual language so it sits naturally alongside the rich-text
 // format toolbar instead of competing with it.
 .editor-collab-sidebar__floating-add-note {
-	// Round the popover frame and clip the toolbar to it. `width: auto` keeps
-	// the popover's computed width from forcing a stray scrollbar around the
-	// single icon button; keeping the default popover box-shadow preserves the
-	// rounded border + elevation so the corners read as rounded, not clipped.
+	// The popover renders with `variant="unstyled"`, so it contributes no
+	// background/border/shadow. `width: auto` just stops its computed width from
+	// forcing a stray scrollbar around the lone icon.
 	.components-popover__content {
 		width: auto !important;
 		min-width: 0 !important;
-		overflow: hidden !important;
-		border-radius: $radius-large;
 	}
 
-	// Let the rounded popover frame be the only visible surface: the toolbar
-	// must not paint its own near-square border or background over it (that is
-	// what made the corners look notched).
+	// The outer accessible toolbar is the visible surface, mirroring the block
+	// toolbar's frame: a solid $gray-900 border, the toolbar radius, and a white
+	// fill (the popover is `variant="unstyled"`, so it provides no background).
+	.components-accessible-toolbar {
+		min-height: 0;
+		padding: 0;
+		border: $border-width solid $gray-900;
+		border-radius: $radius-small;
+		background: $white;
+	}
+
+	// ToolbarGroup also carries the legacy `.components-toolbar` class; strip its
+	// border/background/padding and collapse its 48px `$block-toolbar-height`
+	// min-height. That min-height (not the button) is what left the gap below
+	// the icon: the 36px button top-aligned inside a 48px-tall group.
 	.components-toolbar-group,
 	.components-toolbar {
+		min-height: 0;
+		padding: 0;
 		border: none;
 		background: transparent;
+		align-items: center;
 	}
 
-	// Compact button with a clearly legible glyph, sized as a light on-select
-	// hint rather than a full toolbar control.
+	// A $button-size (36px) square with the glyph centered. `!important` and the
+	// matched specificity defeat the components' (0,4,0) rules that force the
+	// 48px block-toolbar height/min-width and would otherwise reintroduce the
+	// extra space around the icon.
 	.components-button.has-icon {
-		min-width: 40px;
-		width: 40px;
-		height: 40px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-width: $button-size !important;
+		width: $button-size !important;
+		height: $button-size !important;
+		padding: 0 !important;
 
 		svg {
 			width: 28px;
 			height: 28px;
+			min-width: 0;
 		}
 	}
 }
