@@ -23,10 +23,13 @@ export function useTypewriter() {
 
 	return useRefEffect(
 		( node ) => {
-			if ( ! hasSelectedBlock ) {
-				return;
-			}
-
+			// Attach the listeners unconditionally rather than only while a
+			// block is selected. `maintainCaretPosition` already no-ops unless
+			// the selection is within an editable element, and gating on the
+			// `hasSelectedBlock` subscription is unreliable when the selected
+			// block supports an editable root: the wrapper holds focus and a
+			// transient selection update can leave the subscription stale,
+			// leaving the typewriter inactive.
 			const { ownerDocument } = node;
 			const { defaultView } = ownerDocument;
 
