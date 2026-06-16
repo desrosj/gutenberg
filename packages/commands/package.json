@@ -52,9 +52,10 @@
 		"@wordpress/keyboard-shortcuts": "file:../keyboard-shortcuts",
 		"@wordpress/preferences": "file:../preferences",
 		"@wordpress/private-apis": "file:../private-apis",
+		"@wordpress/ui": "file:../ui",
 		"@wordpress/warning": "file:../warning",
 		"clsx": "^2.1.1",
-		"cmdk": "^1.0.0"
+		"command-score": "^0.1.2"
 	},
 	"peerDependencies": {
 		"react": "^18.0.0",
