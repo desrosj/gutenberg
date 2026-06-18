@@ -2128,7 +2128,7 @@ class WP_Theme_JSON_Gutenberg {
 	 * @return string The new stylesheet.
 	 */
 	protected function get_css_variables( $nodes, $origins ) {
-		$stylesheet = '';
+		$css_rules = array();
 		foreach ( $nodes as $metadata ) {
 			if ( null === $metadata['selector'] ) {
 				continue;
@@ -2177,11 +2177,17 @@ class WP_Theme_JSON_Gutenberg {
 			}
 
 			foreach ( $vars_by_selector as $rule_selector => $declarations ) {
-				$stylesheet .= static::to_ruleset( $rule_selector, $declarations );
+				$css_rules[] = array(
+					'selector'     => $rule_selector,
+					'declarations' => $declarations,
+				);
 			}
 		}
 
-		return $stylesheet;
+		return WP_Style_Engine_Gutenberg::compile_css_rules(
+			$css_rules,
+			array( 'sanitize' => false )
+		);
 	}
 
 	/**
@@ -2220,7 +2226,7 @@ class WP_Theme_JSON_Gutenberg {
 	 * creates the corresponding ruleset.
 	 *
 	 * @since 5.8.0
-	 * @since 7.1.0 Route to Style Engine trusted compiler.
+	 * @since 7.1.0 Route to Style Engine trusted rule compiler.
 	 *
 	 * @param string $selector     CSS selector.
 	 * @param array  $declarations List of declarations.
@@ -2231,9 +2237,13 @@ class WP_Theme_JSON_Gutenberg {
 			return '';
 		}
 
-		return WP_Style_Engine_Gutenberg::compile_css(
-			$declarations,
-			$selector,
+		return WP_Style_Engine_Gutenberg::compile_css_rules(
+			array(
+				array(
+					'selector'     => $selector,
+					'declarations' => $declarations,
+				),
+			),
 			array( 'sanitize' => false )
 		);
 	}
