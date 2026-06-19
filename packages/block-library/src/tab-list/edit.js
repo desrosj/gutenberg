@@ -14,6 +14,7 @@ import {
 	__experimentalUseBorderProps as useBorderProps,
 	__experimentalUseColorProps as useColorProps,
 	__experimentalGetSpacingClassesAndStyles as getSpacingClassesAndStyles,
+	__experimentalGetGapCSSValue as getGapCSSValue,
 } from '@wordpress/block-editor';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { useMemo, useCallback, useEffect, useRef } from '@wordpress/element';
@@ -31,7 +32,16 @@ function Edit( { attributes, clientId, context } ) {
 
 	const colorProps = useColorProps( attributes );
 	const borderProps = useBorderProps( attributes );
+
 	const spacingProps = getSpacingClassesAndStyles( attributes );
+
+	// Flex layout applies blockGap only via `useInnerBlocksProps`. This block has
+	// no inner blocks (buttons come from the `tabs` attribute), so apply the gap
+	// to the flex container manually.
+	const gapValue = getGapCSSValue(
+		attributes.style?.spacing?.blockGap,
+		'0.5em'
+	);
 
 	const { tabsClientId, editorActiveTabIndex, activeTabIndex } = useSelect(
 		( select ) => {
@@ -126,6 +136,7 @@ function Edit( { attributes, clientId, context } ) {
 	const blockProps = useBlockProps( {
 		role: 'tablist',
 		ref: menuRef,
+		style: { gap: gapValue },
 	} );
 
 	const buttonClassName = clsx( colorProps.className, borderProps.className );
