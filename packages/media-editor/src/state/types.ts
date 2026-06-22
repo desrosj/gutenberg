@@ -8,6 +8,8 @@ import type {
 	Size,
 } from '../image-editor';
 
+export type CropShape = 'rectangle' | 'circle';
+
 /**
  * Sidebar control state for the cropper. Lives in the composite store
  * so it participates in the same undo history as cropper geometry.
@@ -19,6 +21,8 @@ export interface CropOptionsSlice {
 	 * decimal = fixed ratio.
 	 */
 	aspectRatioValue: string;
+	/** Selected crop output shape. */
+	cropShape: CropShape;
 }
 
 /**
@@ -27,6 +31,7 @@ export interface CropOptionsSlice {
  */
 export const DEFAULT_CROP_OPTIONS: CropOptionsSlice = {
 	aspectRatioValue: '0',
+	cropShape: 'rectangle',
 };
 
 /**
@@ -79,6 +84,18 @@ export type MediaEditorAction =
 				 * rect. Caller supplies it because the reducer is
 				 * framework-agnostic and has no DOM access.
 				 */
+				visualSize: Size;
+			};
+	  }
+	/**
+	 * Set the crop output shape. Circle crops reshape to the largest square
+	 * that fits the current viewport because their stored geometry is the
+	 * circle's bounding box.
+	 */
+	| {
+			type: 'SET_CROP_SHAPE';
+			payload: {
+				shape: CropShape;
 				visualSize: Size;
 			};
 	  }

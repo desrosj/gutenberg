@@ -1,7 +1,11 @@
 /**
  * WordPress dependencies
  */
-import { SelectControl } from '@wordpress/components';
+import {
+	SelectControl,
+	__experimentalToggleGroupControl as ToggleGroupControl,
+	__experimentalToggleGroupControlOption as ToggleGroupControlOption,
+} from '@wordpress/components';
 import { Stack, VisuallyHidden } from '@wordpress/ui';
 import { __ } from '@wordpress/i18n';
 
@@ -11,8 +15,13 @@ import { __ } from '@wordpress/i18n';
 import { CROP_CONTROL_ATTR } from '../../hooks/use-crop-gesture-handlers';
 import MediaEditorImageControls from '../media-editor-image-controls';
 import type { AspectRatioPreset } from '../../image-editor/core/constants';
+import type { CropShape } from '../../state';
 
 export interface MediaEditorCropPanelProps {
+	/** Selected crop output shape. */
+	cropShape: CropShape;
+	/** Setter for the crop output shape. */
+	onCropShapeChange: ( shape: CropShape ) => void;
 	/**
 	 * Selected aspect-ratio preset value as a string (so it round-trips
 	 * through `<SelectControl>`). `'0'` = free, `'-1'` = original, any
@@ -36,12 +45,16 @@ export interface MediaEditorCropPanelProps {
  * rotate/flip and zoom controls on wide viewports (these move to the footer
  * toolbar when the sidebar collapses).
  * @param props
+ * @param props.cropShape
+ * @param props.onCropShapeChange
  * @param props.aspectRatioValue
  * @param props.onAspectRatioChange
  * @param props.aspectRatioOptions
  * @param props.showTransformControls
  */
 export default function MediaEditorCropPanel( {
+	cropShape,
+	onCropShapeChange,
 	aspectRatioValue,
 	onAspectRatioChange,
 	aspectRatioOptions,
@@ -60,16 +73,46 @@ export default function MediaEditorCropPanel( {
 				{ __( 'Crop options' ) }
 			</VisuallyHidden>
 			{ showTransformControls && <MediaEditorImageControls withLabels /> }
-			<SelectControl
+			<ToggleGroupControl
 				__next40pxDefaultSize
-				label={ __( 'Aspect ratio' ) }
-				value={ aspectRatioValue }
-				onChange={ onAspectRatioChange }
-				options={ aspectRatioOptions.map( ( preset ) => ( {
-					label: preset.label,
-					value: preset.value.toString(),
-				} ) ) }
-			/>
+				__shouldNotWarnDeprecated36pxSize
+				isBlock
+				label={ __( 'Shape' ) }
+				help={
+					cropShape === 'circle'
+						? __(
+								'Circle crops will be saved as PNG files to preserve transparency.'
+						  )
+						: undefined
+				}
+				value={ cropShape }
+				onChange={ ( value ) => {
+					if ( value === 'rectangle' || value === 'circle' ) {
+						onCropShapeChange( value );
+					}
+				} }
+			>
+				<ToggleGroupControlOption
+					value="rectangle"
+					label={ __( 'Rectangle' ) }
+				/>
+				<ToggleGroupControlOption
+					value="circle"
+					label={ __( 'Circle' ) }
+				/>
+			</ToggleGroupControl>
+			{ cropShape === 'rectangle' && (
+				<SelectControl
+					__next40pxDefaultSize
+					label={ __( 'Aspect ratio' ) }
+					value={ aspectRatioValue }
+					onChange={ onAspectRatioChange }
+					options={ aspectRatioOptions.map( ( preset ) => ( {
+						label: preset.label,
+						value: preset.value.toString(),
+					} ) ) }
+				/>
+			) }
 		</Stack>
 	);
 }

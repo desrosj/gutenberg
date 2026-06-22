@@ -15,7 +15,7 @@ import { __ } from '@wordpress/i18n';
  */
 import { useMediaEditorContext } from '../media-editor-provider';
 import { getMediaTypeFromMimeType } from '../../utils';
-import { Cropper } from '../../image-editor';
+import { CircleStencil, Cropper } from '../../image-editor';
 import { useMediaEditor, resolveAspectRatio } from '../../state';
 
 export interface MediaEditorCanvasProps {
@@ -51,7 +51,7 @@ export default function MediaEditorCanvas( {
 }: MediaEditorCanvasProps ) {
 	const { media } = useMediaEditorContext();
 	const controller = useMediaEditor();
-	const { aspectRatioValue } = controller.cropOptions;
+	const { aspectRatioValue, cropShape } = controller.cropOptions;
 	const cropperImage = controller.state.image;
 	const { beginGesture, endGesture, setImage } = controller;
 
@@ -67,8 +67,11 @@ export default function MediaEditorCanvas( {
 	// store this number — only the preset key — so it's a render-time
 	// derivation here.
 	const aspectRatio = useMemo(
-		() => resolveAspectRatio( aspectRatioValue, cropperImage ),
-		[ aspectRatioValue, cropperImage ]
+		() =>
+			cropShape === 'circle'
+				? 1
+				: resolveAspectRatio( aspectRatioValue, cropperImage ),
+		[ aspectRatioValue, cropShape, cropperImage ]
 	);
 
 	const handleGestureStart = useCallback( () => {
@@ -168,6 +171,10 @@ export default function MediaEditorCanvas( {
 					src={ mediaUrl }
 					controller={ controller }
 					aspectRatio={ aspectRatio }
+					stencil={
+						cropShape === 'circle' ? CircleStencil : undefined
+					}
+					stencilShape={ cropShape }
 					freeformCrop
 					focusOnMount={ focusOnMount && status === 'loaded' }
 					showGrid="interactive"

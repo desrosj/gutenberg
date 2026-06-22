@@ -32,6 +32,7 @@ import {
 } from './composite-reducer';
 import type {
 	CropOptionsSlice,
+	CropShape,
 	MediaEditorAction,
 	MediaEditorState,
 } from './types';
@@ -99,6 +100,8 @@ export interface MediaEditorController extends CropperController {
 	cropOptions: CropOptionsSlice;
 	/** Set the aspect-ratio preset. Atomic with the cropRect reshape. */
 	setAspectRatioValue: ( presetKey: string ) => void;
+	/** Set the crop output shape. Circle crops use a square bounding box. */
+	setCropShape: ( shape: CropShape ) => void;
 	/** Reset cropOptions to defaults. */
 	resetCropOptions: () => void;
 	/**
@@ -342,6 +345,19 @@ export function useMediaEditorState(
 		[ dispatchWithHistory ]
 	);
 
+	const setCropShape = useCallback(
+		( shape: CropShape ) => {
+			dispatchWithHistory( {
+				type: 'SET_CROP_SHAPE',
+				payload: {
+					shape,
+					visualSize: visualSizeRef.current,
+				},
+			} );
+		},
+		[ dispatchWithHistory ]
+	);
+
 	const resetCropOptions = useCallback( () => {
 		dispatchWithHistory( { type: 'RESET_CROP_OPTIONS' } );
 	}, [ dispatchWithHistory ] );
@@ -401,10 +417,9 @@ export function useMediaEditorState(
 	// =====================================================================
 
 	const isDirty = ! areMediaEditorStatesEqual( state, initialBaseline );
-	const isCropperDirty = ! areCropperStatesEqual(
-		state.cropper,
-		initialBaseline.cropper
-	);
+	const isCropperDirty =
+		! areCropperStatesEqual( state.cropper, initialBaseline.cropper ) ||
+		state.cropOptions.cropShape !== initialBaseline.cropOptions.cropShape;
 
 	const getCroppedImage = useCallback(
 		( mimeType?: string, quality?: number ): Promise< Blob > => {
@@ -436,6 +451,7 @@ export function useMediaEditorState(
 			// Composite extensions
 			cropOptions: state.cropOptions,
 			setAspectRatioValue,
+			setCropShape,
 			resetCropOptions,
 			isCropperDirty,
 			hasUndo,
@@ -456,6 +472,7 @@ export function useMediaEditorState(
 			getCroppedImage,
 			state.cropOptions,
 			setAspectRatioValue,
+			setCropShape,
 			resetCropOptions,
 			isCropperDirty,
 			hasUndo,

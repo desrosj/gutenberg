@@ -16,6 +16,8 @@ function setupCropPanel(
 	initialCropperState?: Partial< CropperState >
 ) {
 	const props: MediaEditorCropPanelProps = {
+		cropShape: 'rectangle',
+		onCropShapeChange: jest.fn(),
 		aspectRatioValue: '1',
 		onAspectRatioChange: jest.fn(),
 		aspectRatioOptions: [
@@ -49,6 +51,38 @@ describe( 'MediaEditorCropPanel', () => {
 		expect(
 			( controls.onAspectRatioChange as jest.Mock ).mock.calls[ 0 ][ 0 ]
 		).toBe( '0' );
+	} );
+
+	it( 'passes selected crop shape changes to the caller', () => {
+		const controls = setupCropPanel();
+
+		fireEvent.click( screen.getByRole( 'radio', { name: 'Circle' } ) );
+
+		expect( controls.onCropShapeChange ).toHaveBeenCalledWith( 'circle' );
+	} );
+
+	it( 'omits the aspect-ratio selector for circle crops', () => {
+		setupCropPanel( { cropShape: 'circle' } );
+
+		expect(
+			screen.queryByLabelText( 'Aspect ratio' )
+		).not.toBeInTheDocument();
+		expect( screen.getByRole( 'radio', { name: 'Circle' } ) ).toBeChecked();
+		expect(
+			screen.getByText(
+				'Circle crops will be saved as PNG files to preserve transparency.'
+			)
+		).toBeInTheDocument();
+	} );
+
+	it( 'does not show PNG format help for rectangle crops', () => {
+		setupCropPanel();
+
+		expect(
+			screen.queryByText(
+				'Circle crops will be saved as PNG files to preserve transparency.'
+			)
+		).not.toBeInTheDocument();
 	} );
 
 	it( 'omits the image controls by default', () => {

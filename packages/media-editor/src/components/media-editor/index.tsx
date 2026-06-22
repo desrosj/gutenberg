@@ -442,6 +442,8 @@ function MediaEditorContent( {
 	const {
 		aspectRatioValue,
 		setAspectRatioValue,
+		cropShape,
+		setCropShape,
 		aspectRatioOptions,
 		resetCropOptions,
 	} = useCropOptions( {
@@ -483,6 +485,8 @@ function MediaEditorContent( {
 						gap="lg"
 					>
 						<MediaEditorCropPanel
+							cropShape={ cropShape }
+							onCropShapeChange={ setCropShape }
 							aspectRatioValue={ aspectRatioValue }
 							onAspectRatioChange={ setAspectRatioValue }
 							aspectRatioOptions={ aspectRatioOptions }
@@ -495,6 +499,8 @@ function MediaEditorContent( {
 		];
 	}, [
 		isImage,
+		cropShape,
+		setCropShape,
 		aspectRatioValue,
 		setAspectRatioValue,
 		aspectRatioOptions,
@@ -661,7 +667,7 @@ function MediaEditorContent( {
 	) : null;
 	const imageControls = isImage ? (
 		<MediaEditorImageControls
-			showAspectRatioControl
+			showAspectRatioControl={ cropShape === 'rectangle' }
 			aspectRatioPresets={ aspectRatioPresets }
 		/>
 	) : null;
