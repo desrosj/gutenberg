@@ -22,6 +22,7 @@
 ### Enhancements
 
 -   Inserter media categories support an optional `emptyMessage`, shown in place of the generic "No results found" notice, that also keeps a source listed when it has no items. The media panel additionally renders attach/detach affordances for attached images ([#79336](https://github.com/WordPress/gutenberg/pull/79336)).
+-   Block Bindings: support binding an InnerBlocks area through `metadata.bindings.innerBlocks`, including source-supplied serialized block markup, write-back, and read-only locking. ([#79852](https://github.com/WordPress/gutenberg/pull/79852))
 
 ## 15.23.0 (2026-07-01)
 
