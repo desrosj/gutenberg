@@ -24,7 +24,6 @@ import {
 	TextHighlight,
 	privateApis as componentsPrivateApis,
 } from '@wordpress/components';
-import { store as preferencesStore } from '@wordpress/preferences';
 import {
 	store as keyboardShortcutsStore,
 	useShortcut,
@@ -36,12 +35,15 @@ import { Icon, search as inputIcon, arrowRight } from '@wordpress/icons';
  */
 import { store as commandsStore } from '../store';
 import { unlock } from '../lock-unlock';
-import { recordUsage } from './use-recent-commands';
+import {
+	recordUsage,
+	useLoaderCollector,
+	useRecentCommands,
+} from './use-recent-commands';
 
 const { withIgnoreIMEEvents } = unlock( componentsPrivateApis );
 
 const inputLabel = __( 'Search commands and settings' );
-const MAX_RECENTLY_DISPLAYED = 5;
 const EMPTY_ARRAY = [];
 
 /**
@@ -167,22 +169,12 @@ function CommandItem( { command, search, category } ) {
 // loader hook in isolation (respecting the rules of hooks) and to aggregate
 // dynamic commands into the shared item list.
 function LoaderRunner( { loader, search, onResolved } ) {
-	const { setLoaderLoading } = unlock( useDispatch( commandsStore ) );
-	const { isLoading = false, commands = EMPTY_ARRAY } =
-		loader.hook( { search } ) ?? {};
-
-	useEffect( () => {
-		setLoaderLoading( loader.name, isLoading );
-	}, [ setLoaderLoading, loader.name, isLoading ] );
-
-	useEffect( () => {
-		onResolved( loader.name, commands );
-	}, [ onResolved, loader.name, commands ] );
-
-	// Clear this loader's entries when it unmounts.
-	useEffect( () => {
-		return () => onResolved( loader.name, EMPTY_ARRAY );
-	}, [ onResolved, loader.name ] );
+	useLoaderCollector( {
+		hook: loader.hook,
+		name: loader.name,
+		search,
+		onResolved,
+	} );
 
 	return null;
 }
@@ -219,7 +211,6 @@ export function CommandMenu() {
 		contextualCommands,
 		staticLoaders,
 		contextualLoaders,
-		recentlyUsedNames,
 	} = useSelect( ( select ) => {
 		const { getCommands, getCommandLoaders, isOpen } =
 			select( commandsStore );
@@ -230,11 +221,6 @@ export function CommandMenu() {
 			contextualCommands: getCommands( true ),
 			staticLoaders: getCommandLoaders( false ),
 			contextualLoaders: getCommandLoaders( true ),
-			recentlyUsedNames:
-				select( preferencesStore ).get(
-					'core/commands',
-					'recentlyUsed'
-				) ?? EMPTY_ARRAY,
 		};
 	}, [] );
 	const { open, close } = useDispatch( commandsStore );
@@ -282,19 +268,23 @@ export function CommandMenu() {
 		};
 	}, [ resolvedMap, contextualLoaderNames ] );
 
+	const allCommands = useMemo(
+		() => [
+			...contextualCommands,
+			...staticCommands,
+			...allLoaderCommands,
+		],
+		[ contextualCommands, staticCommands, allLoaderCommands ]
+	);
+
+	const recentCommands = useRecentCommands( allCommands );
+
 	// Build the grouped item list passed to `Autocomplete`. The groups shown
 	// depend on whether a search term is present, mirroring the previous
 	// Recent / Suggestions / Results behavior.
 	const groups = useMemo( () => {
 		if ( search ) {
-			const results = rankCommands(
-				[
-					...contextualCommands,
-					...staticCommands,
-					...allLoaderCommands,
-				],
-				search
-			);
+			const results = rankCommands( allCommands, search );
 			return results.length
 				? [
 						{
@@ -310,32 +300,13 @@ export function CommandMenu() {
 		const result = [];
 
 		// Recent.
-		const recentNames = recentlyUsedNames.slice(
-			0,
-			MAX_RECENTLY_DISPLAYED
-		);
-		if ( recentNames.length ) {
-			const pool = new Map();
-			for ( const command of [
-				...contextualCommands,
-				...staticCommands,
-				...allLoaderCommands,
-			] ) {
-				if ( ! pool.has( command.name ) ) {
-					pool.set( command.name, command );
-				}
-			}
-			const recent = recentNames
-				.map( ( name ) => pool.get( name ) )
-				.filter( Boolean );
-			if ( recent.length ) {
-				result.push( {
-					key: 'recent',
-					label: __( 'Recent' ),
-					search: '',
-					items: recent,
-				} );
-			}
+		if ( recentCommands.length ) {
+			result.push( {
+				key: 'recent',
+				label: __( 'Recent' ),
+				search: '',
+				items: recentCommands,
+			} );
 		}
 
 		// Suggestions (contextual commands and loaders only).
@@ -355,11 +326,10 @@ export function CommandMenu() {
 		return result;
 	}, [
 		search,
+		allCommands,
+		recentCommands,
 		contextualCommands,
-		staticCommands,
-		allLoaderCommands,
 		contextualLoaderCommands,
-		recentlyUsedNames,
 	] );
 
 	const inputRef = useRef();
