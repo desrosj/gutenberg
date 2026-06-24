@@ -13,6 +13,7 @@ import {
 	setupPlayButtonArtwork,
 	logPlayError,
 	getNextShuffledTrack,
+	isShuffleCycleComplete,
 	refreshWaveformPlayerColors,
 	setupPlaylistControls,
 } from '../waveform-utils';
@@ -561,6 +562,18 @@ describe( 'Waveform utilities', () => {
 				playedIds: [ 'a' ],
 			} );
 		} );
+
+		it( 'should identify when the current track completes a shuffle cycle', () => {
+			expect(
+				isShuffleCycleComplete( [ 'a', 'b', 'c' ], 'c', [
+					'a',
+					'b',
+				] )
+			).toBe( true );
+			expect(
+				isShuffleCycleComplete( [ 'a', 'b', 'c' ], 'b', [ 'a' ] )
+			).toBe( false );
+		} );
 	} );
 
 	describe( 'setupPlaylistControls', () => {
@@ -596,6 +609,29 @@ describe( 'Waveform utilities', () => {
 			expect(
 				container.querySelector( '[aria-label="Next track"]' )
 			).not.toHaveAttribute( 'aria-pressed' );
+		} );
+
+		it( 'groups action buttons before toggle buttons', () => {
+			const container = createContainer();
+			setupPlaylistControls( container, {} );
+
+			expect(
+				[
+					...container.querySelectorAll(
+						'.wp-block-playlist__control-btn'
+					),
+				].map( ( button ) => button.getAttribute( 'aria-label' ) )
+			).toEqual( [
+				'Previous track',
+				'Next track',
+				'Repeat',
+				'Shuffle',
+			] );
+			expect(
+				container.querySelectorAll(
+					'.wp-block-playlist__controls-group'
+				)
+			).toHaveLength( 2 );
 		} );
 
 		it( 'toggles aria-pressed on shuffle click without using an is-active class', () => {

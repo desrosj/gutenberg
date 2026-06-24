@@ -2,6 +2,7 @@
 
 // Waveform player dimensions.
 $waveform-player-height: 120px;
+$playlist-control-size: 24px;
 
 .wp-block-playlist {
 	// Clip content to respect border-radius.
@@ -42,6 +43,11 @@ $waveform-player-height: 120px;
 			transform: none;
 		}
 
+		svg {
+			width: 40px;
+			height: 40px;
+		}
+
 		&.has-artwork {
 			background: #000;
 
@@ -56,8 +62,6 @@ $waveform-player-height: 120px;
 			svg {
 				position: relative;
 				z-index: 2;
-				width: 32px;
-				height: 32px;
 				filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
 			}
 		}
@@ -89,22 +93,27 @@ $waveform-player-height: 120px;
 		min-height: calc($waveform-player-height / 3);
 	}
 
-	// Playlist control buttons (prev, shuffle, next).
+	// Playlist control buttons (prev/next, repeat/shuffle).
 	.wp-block-playlist__controls {
 		display: flex;
 		align-self: flex-start;
 		align-items: flex-start;
-		// Span the play button width and push the outer buttons to its edges.
+		// Span the play button width and separate action/toggle groups.
 		flex: 0 0 $waveform-player-height;
 		justify-content: space-between;
+	}
+
+	.wp-block-playlist__controls-group {
+		display: flex;
+		gap: 4px;
 	}
 
 	.wp-block-playlist__control-btn {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 28px;
-		height: 28px;
+		width: $playlist-control-size;
+		height: $playlist-control-size;
 		padding: 0;
 		border: none;
 		background: none;
@@ -125,14 +134,22 @@ $waveform-player-height: 120px;
 			background-color: currentColor;
 			opacity: 1;
 
+			svg {
+				color: var(--wp-playlist-active-icon-color, #fff);
+			}
+
 			svg path {
 				fill: var(--wp-playlist-active-icon-color, #fff);
 			}
 		}
 
 		svg {
-			width: 24px;
-			height: 24px;
+			width: $playlist-control-size;
+			height: $playlist-control-size;
+		}
+
+		svg path {
+			fill: currentColor;
 		}
 	}
 
@@ -150,11 +167,13 @@ $waveform-player-height: 120px;
 		.waveform-subtitle {
 			overflow: hidden;
 			color: currentColor !important;
+			font-family: inherit !important;
 			text-overflow: ellipsis;
 			white-space: nowrap;
 		}
 
 		.waveform-subtitle {
+			font-size: inherit !important;
 			opacity: 0.7;
 		}
 	}

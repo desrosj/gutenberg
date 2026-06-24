@@ -11,6 +11,7 @@ import {
 	logPlayError,
 	setupPlayButtonArtwork,
 	getNextShuffledTrack,
+	isShuffleCycleComplete,
 } from '../utils/waveform-utils';
 
 /**
@@ -133,11 +134,21 @@ function initPlayer( ref, track, shouldAutoPlay, context ) {
 		labels,
 		waveformStyle: context.waveformStyle,
 		onEnded: () => {
-			if ( context.isRepeating ) {
-				player.instance.play()?.catch( logPlayError );
-				return;
-			}
 			if ( context.isShuffled ) {
+				if (
+					! context.isRepeating &&
+					isShuffleCycleComplete(
+						context.tracks,
+						context.currentId,
+						context.playedTracks
+					)
+				) {
+					return;
+				}
+				if ( context.isRepeating && context.tracks.length <= 1 ) {
+					player.instance.play()?.catch( logPlayError );
+					return;
+				}
 				advanceShuffled();
 				return;
 			}
@@ -145,8 +156,14 @@ function initPlayer( ref, track, shouldAutoPlay, context ) {
 			const currentIndex = context.tracks.findIndex(
 				( trackId ) => trackId === context.currentId
 			);
-			const nextTrack = context.tracks[ currentIndex + 1 ];
+			const nextTrack =
+				context.tracks[ currentIndex + 1 ] ||
+				( context.isRepeating ? context.tracks[ 0 ] : undefined );
 			if ( nextTrack ) {
+				if ( nextTrack === context.currentId ) {
+					player.instance.play()?.catch( logPlayError );
+					return;
+				}
 				context.currentId = nextTrack;
 			}
 		},
