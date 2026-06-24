@@ -33,6 +33,7 @@ function Edit( {
 	__unstableLayoutClassNames: layoutClassNames,
 } ) {
 	const tabsList = context[ 'core/tabs-list' ] || EMPTY_ARRAY;
+	const { tabs = EMPTY_ARRAY } = attributes;
 
 	const colorProps = useColorProps( attributes );
 	const borderProps = useBorderProps( attributes );
@@ -74,10 +75,11 @@ function Edit( {
 	}
 
 	function handleLabelChange( tabIndex, newLabel ) {
-		const tab = tabsList[ tabIndex ];
-		if ( tab?.clientId ) {
-			updateBlockAttributes( tab.clientId, { label: newLabel } );
-		}
+		const newTabs = tabsList.map( ( _tab, index ) => ( {
+			...tabs[ index ],
+			label: index === tabIndex ? newLabel : tabs[ index ]?.label ?? '',
+		} ) );
+		updateBlockAttributes( clientId, { tabs: newTabs } );
 	}
 
 	const menuRef = useRef();
@@ -161,7 +163,7 @@ function Edit( {
 								tagName="span"
 								withoutInteractiveFormatting
 								placeholder={ __( 'Tab title' ) }
-								value={ tab.label }
+								value={ tabs[ index ]?.label ?? '' }
 								onChange={ ( newLabel ) =>
 									handleLabelChange( index, newLabel )
 								}

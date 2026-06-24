@@ -64,11 +64,10 @@ function Edit( { clientId, attributes } ) {
 		/**
 		 * Compute tabs list from innerblocks to provide via context.
 		 * This traverses the tab-panels block to find all tab-panel blocks
-		 * and extracts their label and anchor for the tab-list to consume.
+		 * and extracts their anchor for the tab-list to consume.
 		 */
 		const tabList = tabPanels.map( ( tab, index ) => ( {
 			id: tab.attributes.anchor || `tab-${ index }`,
-			label: tab.attributes.label || '',
 			clientId: tab.clientId,
 			index,
 		} ) );

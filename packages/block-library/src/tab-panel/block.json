@@ -7,12 +7,6 @@
 	"description": "Content for a tab in a tabbed interface.",
 	"category": "design",
 	"textdomain": "default",
-	"attributes": {
-		"label": {
-			"type": "string",
-			"default": ""
-		}
-	},
 	"parent": [ "core/tab-panels" ],
 	"usesContext": [
 		"core/tabs-activeTabIndex",
@@ -44,9 +38,6 @@
 			}
 		},
 		"visibility": false
-	},
-	"providesContext": {
-		"core/tab-label": "label"
 	},
 	"style": "wp-block-tab-panel"
 }
