@@ -2128,7 +2128,7 @@ class WP_Theme_JSON_Gutenberg {
 	 * @return string The new stylesheet.
 	 */
 	protected function get_css_variables( $nodes, $origins ) {
-		$css_rules = array();
+		$css_variables = new WP_Style_Engine_CSS_Variables_Gutenberg();
 		foreach ( $nodes as $metadata ) {
 			if ( null === $metadata['selector'] ) {
 				continue;
@@ -2157,7 +2157,7 @@ class WP_Theme_JSON_Gutenberg {
 					continue;
 				}
 
-				$target = static::get_feature_selector( $feature_selectors, $preset_metadata['path'][0], $selector );
+				$target = static::get_css_variable_feature_selector( $feature_selectors, $preset_metadata['path'][0], $selector );
 
 				if ( ! isset( $vars_by_selector[ $target ] ) ) {
 					$vars_by_selector[ $target ] = array();
@@ -2172,20 +2172,21 @@ class WP_Theme_JSON_Gutenberg {
 			}
 
 			// Theme vars always use the block's default selector.
-			foreach ( static::compute_theme_vars( $node ) as $theme_var ) {
-				$vars_by_selector[ $selector ][] = $theme_var;
-			}
+			$vars_by_selector[ $selector ] = array_merge(
+				$vars_by_selector[ $selector ],
+				WP_Style_Engine_CSS_Variables_Gutenberg::get_declarations_from_values(
+					$node['custom'] ?? array(),
+					array( 'prefix' => '--wp--custom--' )
+				)
+			);
 
 			foreach ( $vars_by_selector as $rule_selector => $declarations ) {
-				$css_rules[] = array(
-					'selector'     => $rule_selector,
-					'declarations' => $declarations,
-				);
+				$css_variables->add_declarations( $rule_selector, $declarations );
 			}
 		}
 
 		return WP_Style_Engine_Gutenberg::compile_css_rules(
-			$css_rules,
+			$css_variables->get_rules(),
 			array( 'sanitize' => false )
 		);
 	}
@@ -2203,7 +2204,7 @@ class WP_Theme_JSON_Gutenberg {
 	 * @param string                                      $default_selector  Fallback selector.
 	 * @return string The resolved selector.
 	 */
-	private static function get_feature_selector( array $feature_selectors, string $feature_key, string $default_selector ): string {
+	private static function get_css_variable_feature_selector( array $feature_selectors, string $feature_key, string $default_selector ): string {
 		if ( ! isset( $feature_selectors[ $feature_key ] ) ) {
 			return $default_selector;
 		}
@@ -2544,17 +2545,10 @@ class WP_Theme_JSON_Gutenberg {
 	 * @return array The modified $declarations.
 	 */
 	protected static function compute_theme_vars( $settings ) {
-		$declarations  = array();
-		$custom_values = $settings['custom'] ?? array();
-		$css_vars      = static::flatten_tree( $custom_values );
-		foreach ( $css_vars as $key => $value ) {
-			$declarations[] = array(
-				'name'  => '--wp--custom--' . $key,
-				'value' => $value,
-			);
-		}
-
-		return $declarations;
+		return WP_Style_Engine_CSS_Variables_Gutenberg::get_declarations_from_values(
+			$settings['custom'] ?? array(),
+			array( 'prefix' => '--wp--custom--' )
+		);
 	}
 
 	/**
@@ -2595,25 +2589,7 @@ class WP_Theme_JSON_Gutenberg {
 	 * @return array The flattened tree.
 	 */
 	protected static function flatten_tree( $tree, $prefix = '', $token = '--' ) {
-		$result = array();
-		foreach ( $tree as $property => $value ) {
-			$new_key = $prefix . str_replace(
-				'/',
-				'-',
-				strtolower( _wp_to_kebab_case( $property ) )
-			);
-
-			if ( is_array( $value ) ) {
-				$new_prefix        = $new_key . $token;
-				$flattened_subtree = static::flatten_tree( $value, $new_prefix, $token );
-				foreach ( $flattened_subtree as $subtree_key => $subtree_value ) {
-					$result[ $subtree_key ] = $subtree_value;
-				}
-			} else {
-				$result[ $new_key ] = $value;
-			}
-		}
-		return $result;
+		return WP_Style_Engine_CSS_Variables_Gutenberg::flatten_tree( $tree, $prefix, $token );
 	}
 
 	/**
