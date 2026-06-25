@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### New Features
+
+-   Add a `Menu` component. ([#79600](https://github.com/WordPress/gutenberg/pull/79600))
+
 ### Bug Fixes
 
 -   `IconButton`: Restore the default tooltip delay on hover ([#79505](https://github.com/WordPress/gutenberg/pull/79505)).
