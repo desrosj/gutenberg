@@ -56,7 +56,7 @@ function createFakePlayer( options, element ) {
 			subtitleEl,
 			artworkEl,
 			pause: jest.fn(),
-			loadTrack: jest.fn( ( src, title, artist, trackOptions ) => {
+			loadTrack: jest.fn( async ( src, title, artist, trackOptions ) => {
 				titleEl.textContent = title;
 				if ( subtitleEl ) {
 					subtitleEl.textContent = artist;

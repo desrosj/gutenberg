@@ -102,22 +102,22 @@ export function WaveformPlayer( {
 	// `WaveformPlayer#loadTrack` over the undocumented `#load`, but prevent it
 	// from automatically playing the new track.
 	useEffect( () => {
-		( async () => {
-			if ( src && playerRef.current?.instance ) {
-				const wasPlaying = playerRef.current.instance.isPlaying;
-				await playerRef.current.instance.loadTrack(
-					src,
-					title,
-					artist,
-					{
-						artwork: image,
-					}
-				);
-				if ( ! wasPlaying ) {
-					playerRef.current.instance.pause();
+		if ( src && playerRef.current?.instance ) {
+			const wasPlaying = playerRef.current.instance.isPlaying;
+			const promise = playerRef.current.instance.loadTrack(
+				src,
+				title,
+				artist,
+				{
+					artwork: image,
 				}
+			);
+			if ( ! wasPlaying ) {
+				promise.then( () => {
+					playerRef.current.instance.pause();
+				} );
 			}
-		} )();
+		}
 	}, [ src, title, artist, image ] );
 
 	return <div ref={ ref } className="wp-block-playlist__waveform-player" />;
