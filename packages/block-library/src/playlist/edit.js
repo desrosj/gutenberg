@@ -40,8 +40,7 @@ import { WaveformPlayer } from '../utils/waveform-player';
 import { PlaylistContext } from './context';
 import {
 	logPlayError,
-	getNextShuffledTrack,
-	isShuffleCycleComplete,
+	getPlaylistPlaybackAction,
 } from '../utils/waveform-utils';
 import { getTrackAttributes } from './utils';
 
@@ -54,13 +53,8 @@ const PlaylistEdit = ( {
 	insertBlocksAfter,
 	clientId,
 } ) => {
-	const {
-		order,
-		showTracklist,
-		showNumbers,
-		showImages,
-		showArtists,
-	} = attributes;
+	const { order, showTracklist, showNumbers, showImages, showArtists } =
+		attributes;
 
 	const [ isShuffled, setIsShuffled ] = useState( false );
 	const [ isRepeating, setIsRepeating ] = useState( false );
@@ -156,61 +150,30 @@ const PlaylistEdit = ( {
 		tracks.find( ( track ) => track.clientId === currentTrackClientId ) ??
 		tracks[ 0 ];
 
-	// Advance to the next shuffled track, recording it so no track repeats
-	// until every other track has played once.
-	const advanceShuffled = useCallback( () => {
-		const { nextId, playedIds } = getNextShuffledTrack(
-			tracks.map( ( track ) => track.clientId ),
-			currentTrackClientId,
-			playedTracks
-		);
-		setPlayedTracks( playedIds );
-		if ( nextId ) {
-			setCurrentTrackClientId( nextId );
-		}
-	}, [
-		currentTrackClientId,
-		playedTracks,
-		setCurrentTrackClientId,
-		tracks,
-	] );
-
-	// Handle track end - advance to next track, respecting shuffle.
+	// Handle track end - repeat, shuffle, or advance in order.
 	const onTrackEnded = useCallback(
 		( playerInstance ) => {
-			if ( isRepeating ) {
+			const { action, nextId, playedIds } = getPlaylistPlaybackAction(
+				tracks.map( ( track ) => track.clientId ),
+				currentTrackClientId,
+				{ isRepeating, isShuffled, playedTracks }
+			);
+			setPlayedTracks( playedIds );
+			if ( action === 'repeat' ) {
 				playerInstance?.play()?.catch( logPlayError );
 				return;
 			}
-			if ( isShuffled ) {
-				if (
-					isShuffleCycleComplete(
-						tracks.map( ( track ) => track.clientId ),
-						currentTrackClientId,
-						playedTracks
-					)
-				) {
-					return;
-				}
-				advanceShuffled();
-				return;
-			}
-			const currentIndex = tracks.findIndex(
-				( track ) => track.clientId === currentTrackClientId
-			);
-			const nextTrack = tracks[ currentIndex + 1 ];
-			if ( nextTrack?.clientId ) {
-				setCurrentTrackClientId( nextTrack.clientId );
+			if ( nextId ) {
+				setCurrentTrackClientId( nextId );
 			}
 		},
 		[
-			advanceShuffled,
 			currentTrackClientId,
+			tracks,
 			isRepeating,
 			isShuffled,
 			playedTracks,
 			setCurrentTrackClientId,
-			tracks,
 		]
 	);
 
@@ -226,21 +189,20 @@ const PlaylistEdit = ( {
 	}, [ currentTrackClientId, setCurrentTrackClientId, tracks ] );
 
 	const onNext = useCallback( () => {
-		if ( isShuffled ) {
-			advanceShuffled();
-			return;
-		}
-		const currentIndex = tracks.findIndex(
-			( track ) => track.clientId === currentTrackClientId
+		const { nextId, playedIds } = getPlaylistPlaybackAction(
+			tracks.map( ( track ) => track.clientId ),
+			currentTrackClientId,
+			{ isRepeating, isShuffled, playedTracks, isUserInitiated: true }
 		);
-		const nextTrack = tracks[ currentIndex + 1 ] || tracks[ 0 ];
-		if ( nextTrack?.clientId ) {
-			setCurrentTrackClientId( nextTrack.clientId );
+		setPlayedTracks( playedIds );
+		if ( nextId ) {
+			setCurrentTrackClientId( nextId );
 		}
 	}, [
-		advanceShuffled,
 		currentTrackClientId,
+		isRepeating,
 		isShuffled,
+		playedTracks,
 		setCurrentTrackClientId,
 		tracks,
 	] );
