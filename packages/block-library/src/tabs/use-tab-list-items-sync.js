@@ -36,19 +36,19 @@ export default function useTabListItemsSync( { tabPanels, tabListClientId } ) {
 
 	// The panel client IDs `currentTabs` is aligned to, captured the last time
 	// `tabs` was written.
-	const prevPanelIdsRef = useRef( null );
+	const prevPanelClientIdsRef = useRef( null );
 
 	useEffect( () => {
 		if ( ! tabListClientId || ! currentTabs ) {
 			return;
 		}
 
-		const panelIds = tabPanels.map( ( panel ) => panel.clientId );
+		const panelClientIds = tabPanels.map( ( panel ) => panel.clientId );
 
 		// Map each known panel (by client ID) to its current label. On the
 		// first run there is no previous order, so fall back to the current
 		// panel order, which matches the loaded document.
-		const basis = prevPanelIdsRef.current ?? panelIds;
+		const basis = prevPanelClientIdsRef.current ?? panelClientIds;
 		const labelsById = new Map();
 		basis.forEach( ( id, index ) => {
 			if ( index < currentTabs.length ) {
@@ -58,11 +58,11 @@ export default function useTabListItemsSync( { tabPanels, tabListClientId } ) {
 
 		// Rebuild `tabs` in the current panel order, carrying each panel's
 		// label along. Panels with no known label (newly added) get a default.
-		const newTabs = panelIds.map( ( id ) => ( {
+		const newTabs = panelClientIds.map( ( id ) => ( {
 			label: labelsById.has( id ) ? labelsById.get( id ) : __( 'Tab' ),
 		} ) );
 
-		prevPanelIdsRef.current = panelIds;
+		prevPanelClientIdsRef.current = panelClientIds;
 
 		if ( JSON.stringify( newTabs ) === JSON.stringify( currentTabs ) ) {
 			return;
