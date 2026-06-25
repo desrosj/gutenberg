@@ -98,9 +98,22 @@ export function WaveformPlayer( {
 		[ onEndedEvent, hasSrc, waveformStyle, hasImage ]
 	);
 
-	// Update the player's track data as our props change. Prefer public method
-	// `WaveformPlayer#loadTrack` over the undocumented `#load`, but prevent it
-	// from automatically playing the new track.
+	useEffect( () => {
+		if ( playerRef.current?.instance ) {
+			const player = playerRef.current.instance;
+			if ( player.titleEl ) {
+				player.titleEl.textContent = title;
+			}
+			if ( player.subtitleEl ) {
+				player.subtitleEl.textContent = artist;
+				player.subtitleEl.style.display = artist ? '' : 'none';
+			}
+			if ( player.artworkEl ) {
+				player.artworkEl.src = image;
+			}
+		}
+	}, [ title, artist, image ] );
+
 	useEffect( () => {
 		if ( src && playerRef.current?.instance ) {
 			const wasPlaying = playerRef.current.instance.isPlaying;
@@ -118,7 +131,7 @@ export function WaveformPlayer( {
 				} );
 			}
 		}
-	}, [ src, title, artist, image ] );
+	}, [ src ] );
 
 	return <div ref={ ref } className="wp-block-playlist__waveform-player" />;
 }
