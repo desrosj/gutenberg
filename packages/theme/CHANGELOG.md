@@ -10,6 +10,10 @@
 
 -   Mark the published `design-tokens.css` file as side-effectful so downstream bundlers preserve the documented CSS import ([#79551](https://github.com/WordPress/gutenberg/pull/79551)).
 
+### Code Quality
+
+-   Clean the npm package publish surface to exclude tests, stories, fixtures, snapshots, and private declaration files ([#79552](https://github.com/WordPress/gutenberg/pull/79552)).
+
 ## 0.17.0 (2026-06-30)
 
 ### Breaking Changes
