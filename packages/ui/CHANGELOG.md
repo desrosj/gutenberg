@@ -4,7 +4,7 @@
 
 ### New Features
 
--   Add a `Menu` component. ([#79600](https://github.com/WordPress/gutenberg/pull/79600))
+-   Add a `Menu` component. ([#79560](https://github.com/WordPress/gutenberg/pull/79560))
 
 ### Bug Fixes
 
