@@ -10,11 +10,11 @@ import { useEffect, useRef } from '@wordpress/element';
  * Keep the tab-list block's `tabs` attribute in sync with the core/tab-panel
  * blocks.
  *
- * The `tabs` attribute is the source of truth for tab labels, but the panels
- * determine how many tabs exist and in which order. This hook reconciles the
- * two by tracking each label against its panel's client ID, so labels follow
- * their panel across additions, removals, and reordering. Brand-new panels get
- * a default label.
+ * The `tabs` attribute is the source of truth for tab labels, but the tab
+ * panels determine how many tabs exist and in which order. This hook reconciles
+ * the two by tracking each label against its tab panel's client ID, so labels
+ * follow their tab panel across additions, removals, and reordering. Brand-new
+ * tab panels get a default label.
  *
  * @param {Object}      props
  * @param {Array}       props.tabPanels       Raw core/tab-panel block objects.
@@ -34,35 +34,44 @@ export default function useTabListItemsSync( { tabPanels, tabListClientId } ) {
 		[ tabListClientId ]
 	);
 
-	// The panel client IDs `currentTabs` is aligned to, captured the last time
-	// `tabs` was written.
-	const prevPanelClientIdsRef = useRef( null );
+	// The tab panel client IDs `currentTabs` is aligned to, captured the last
+	// time `tabs` was written.
+	const prevTabPanelClientIdsRef = useRef( null );
 
 	useEffect( () => {
 		if ( ! tabListClientId || ! currentTabs ) {
 			return;
 		}
 
-		const panelClientIds = tabPanels.map( ( panel ) => panel.clientId );
+		const tabPanelClientIds = tabPanels.map(
+			( tabPanel ) => tabPanel.clientId
+		);
 
-		// Map each known panel (by client ID) to its current label. On the
-		// first run there is no previous order, so fall back to the current
-		// panel order, which matches the loaded document.
-		const basis = prevPanelClientIdsRef.current ?? panelClientIds;
-		const labelsById = new Map();
-		basis.forEach( ( id, index ) => {
+		// `currentTabs` has no client IDs of its own; each label is matched to a
+		// tab panel purely by position. This is the tab panel order from when
+		// `currentTabs` was last written, so `currentTabs[ i ]` is the label for
+		// tab panel `tabPanelClientIdsForCurrentTabs[ i ]`. On the first run
+		// nothing has been written yet, so fall back to the current order, which
+		// matches the freshly loaded document.
+		const tabPanelClientIdsForCurrentTabs =
+			prevTabPanelClientIdsRef.current ?? tabPanelClientIds;
+		const labelsByClientId = new Map();
+		tabPanelClientIdsForCurrentTabs.forEach( ( id, index ) => {
 			if ( index < currentTabs.length ) {
-				labelsById.set( id, currentTabs[ index ]?.label ?? '' );
+				labelsByClientId.set( id, currentTabs[ index ]?.label ?? '' );
 			}
 		} );
 
-		// Rebuild `tabs` in the current panel order, carrying each panel's
-		// label along. Panels with no known label (newly added) get a default.
-		const newTabs = panelClientIds.map( ( id ) => ( {
-			label: labelsById.has( id ) ? labelsById.get( id ) : __( 'Tab' ),
+		// Rebuild `tabs` in the current tab panel order, carrying each tab
+		// panel's label along. Tab panels with no known label (newly added) get
+		// a default.
+		const newTabs = tabPanelClientIds.map( ( id ) => ( {
+			label: labelsByClientId.has( id )
+				? labelsByClientId.get( id )
+				: __( 'Tab' ),
 		} ) );
 
-		prevPanelClientIdsRef.current = panelClientIds;
+		prevTabPanelClientIdsRef.current = tabPanelClientIds;
 
 		if ( JSON.stringify( newTabs ) === JSON.stringify( currentTabs ) ) {
 			return;
