@@ -65,8 +65,7 @@ export function isShuffleCycleComplete( trackIds, currentId, playedIds = [] ) {
 		: [ ...playedIds, currentId ];
 
 	return (
-		trackIds.length > 0 &&
-		trackIds.every( ( id ) => played.includes( id ) )
+		trackIds.length > 0 && trackIds.every( ( id ) => played.includes( id ) )
 	);
 }
 
@@ -628,6 +627,7 @@ export function initWaveformPlayer(
 	let cleanupAccessibility;
 	let cleanupControls;
 	let cleanupMetadata;
+	let endedTimeoutId;
 	const handlers = {
 		ready: () => {
 			applyPlayerColors( instance, container, colorState );
@@ -654,7 +654,18 @@ export function initWaveformPlayer(
 				instance.play()?.catch( logPlayError );
 			}
 		},
-		ended: () => onEnded?.( instance ),
+		ended: () => {
+			// The underlying library dispatches this event before its own
+			// pause cleanup. Defer playlist behavior so repeat playback is not
+			// immediately overwritten by that cleanup.
+			endedTimeoutId = container.ownerDocument.defaultView.setTimeout(
+				() => {
+					endedTimeoutId = undefined;
+					onEnded?.( instance );
+				},
+				0
+			);
+		},
 	};
 
 	container.addEventListener( 'waveformplayer:ready', handlers.ready );
@@ -669,6 +680,11 @@ export function initWaveformPlayer(
 			cleanupAccessibility?.();
 			cleanupControls?.();
 			cleanupMetadata?.();
+			if ( endedTimeoutId !== undefined ) {
+				container.ownerDocument.defaultView.clearTimeout(
+					endedTimeoutId
+				);
+			}
 			container.removeEventListener(
 				'waveformplayer:ready',
 				handlers.ready
