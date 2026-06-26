@@ -105,7 +105,7 @@
 		// Small left gutter so the tabs and panel content (and the zoom
 		// slider's thumb at its minimum) sit off the sidebar edge.
 		@include break-small() {
-			padding-left: 1px;
+			padding-left: $grid-unit-05;
 		}
 	}
 
