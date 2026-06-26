@@ -41,6 +41,7 @@ import { PlaylistContext } from './context';
 import {
 	logPlayError,
 	getPlaylistPlaybackAction,
+	getNextRepeatMode,
 } from '../utils/waveform-utils';
 import { getTrackAttributes } from './utils';
 
@@ -57,7 +58,7 @@ const PlaylistEdit = ( {
 		attributes;
 
 	const [ isShuffled, setIsShuffled ] = useState( false );
-	const [ isRepeating, setIsRepeating ] = useState( false );
+	const [ repeatMode, setRepeatMode ] = useState( 'none' );
 	// Track IDs already played in the current shuffle cycle, so no track
 	// repeats until every other track has played once.
 	const [ playedTracks, setPlayedTracks ] = useState( [] );
@@ -156,7 +157,7 @@ const PlaylistEdit = ( {
 			const { action, nextId, playedIds } = getPlaylistPlaybackAction(
 				tracks.map( ( track ) => track.clientId ),
 				currentTrackClientId,
-				{ isRepeating, isShuffled, playedTracks }
+				{ repeatMode, isShuffled, playedTracks }
 			);
 			setPlayedTracks( playedIds );
 			if ( action === 'repeat' ) {
@@ -170,9 +171,9 @@ const PlaylistEdit = ( {
 		[
 			currentTrackClientId,
 			tracks,
-			isRepeating,
 			isShuffled,
 			playedTracks,
+			repeatMode,
 			setCurrentTrackClientId,
 		]
 	);
@@ -192,7 +193,7 @@ const PlaylistEdit = ( {
 		const { nextId, playedIds } = getPlaylistPlaybackAction(
 			tracks.map( ( track ) => track.clientId ),
 			currentTrackClientId,
-			{ isRepeating, isShuffled, playedTracks, isUserInitiated: true }
+			{ repeatMode, isShuffled, playedTracks, isUserInitiated: true }
 		);
 		setPlayedTracks( playedIds );
 		if ( nextId ) {
@@ -200,9 +201,9 @@ const PlaylistEdit = ( {
 		}
 	}, [
 		currentTrackClientId,
-		isRepeating,
 		isShuffled,
 		playedTracks,
+		repeatMode,
 		setCurrentTrackClientId,
 		tracks,
 	] );
@@ -213,8 +214,10 @@ const PlaylistEdit = ( {
 		setPlayedTracks( [] );
 	}, [] );
 
-	const onRepeatToggle = useCallback( () => {
-		setIsRepeating( ( prev ) => ! prev );
+	const onRepeatToggle = useCallback( ( nextMode ) => {
+		setRepeatMode(
+			( currentMode ) => nextMode ?? getNextRepeatMode( currentMode )
+		);
 	}, [] );
 
 	const onChangeOrder = useCallback(
@@ -414,7 +417,7 @@ const PlaylistEdit = ( {
 						onShuffleToggle={ onShuffleToggle }
 						onRepeatToggle={ onRepeatToggle }
 						isShuffled={ isShuffled }
-						isRepeating={ isRepeating }
+						repeatMode={ repeatMode }
 					/>
 				</Disabled>
 				{ showTracklist && (

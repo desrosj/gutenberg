@@ -11,6 +11,7 @@ import {
 	logPlayError,
 	setupPlayButtonArtwork,
 	getPlaylistPlaybackAction,
+	getNextRepeatMode,
 } from '../utils/waveform-utils';
 
 /**
@@ -108,7 +109,9 @@ function initPlayer( ref, track, shouldAutoPlay, context ) {
 		previous: ref.dataset.labelPrevious,
 		next: ref.dataset.labelNext,
 		shuffle: ref.dataset.labelShuffle,
-		repeat: ref.dataset.labelRepeat,
+		repeatOff: ref.dataset.labelRepeatOff,
+		repeatAll: ref.dataset.labelRepeatAll,
+		repeatOne: ref.dataset.labelRepeatOne,
 	};
 
 	// Initialize using the shared core.
@@ -125,7 +128,7 @@ function initPlayer( ref, track, shouldAutoPlay, context ) {
 				context.tracks,
 				context.currentId,
 				{
-					isRepeating: context.isRepeating,
+					repeatMode: context.repeatMode,
 					isShuffled: context.isShuffled,
 					playedTracks: context.playedTracks,
 				}
@@ -155,7 +158,7 @@ function initPlayer( ref, track, shouldAutoPlay, context ) {
 				context.tracks,
 				context.currentId,
 				{
-					isRepeating: context.isRepeating,
+					repeatMode: context.repeatMode,
 					isShuffled: context.isShuffled,
 					playedTracks: context.playedTracks,
 					isUserInitiated: true,
@@ -171,11 +174,12 @@ function initPlayer( ref, track, shouldAutoPlay, context ) {
 			// Start a fresh shuffle cycle whenever shuffle is toggled.
 			context.playedTracks = [];
 		},
-		onRepeatToggle: () => {
-			context.isRepeating = ! context.isRepeating;
+		onRepeatToggle: ( nextMode ) => {
+			context.repeatMode =
+				nextMode ?? getNextRepeatMode( context.repeatMode );
 		},
 		isShuffled: context.isShuffled,
-		isRepeating: context.isRepeating,
+		repeatMode: context.repeatMode,
 	} );
 
 	// Store state for cleanup, including instance for loadTrack reuse.

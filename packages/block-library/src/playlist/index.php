@@ -88,20 +88,24 @@ function render_block_core_playlist( $attributes, $content, $block ) {
 	);
 
 	// Add waveform player container with translated button labels.
-	$label_play     = esc_attr__( 'Play' );
-	$label_pause    = esc_attr__( 'Pause' );
-	$label_previous = esc_attr__( 'Previous track' );
-	$label_next     = esc_attr__( 'Next track' );
-	$label_shuffle  = esc_attr__( 'Shuffle' );
-	$label_repeat   = esc_attr__( 'Repeat' );
-	$html           = '<div class="wp-block-playlist__waveform-player"
+	$label_play       = esc_attr__( 'Play' );
+	$label_pause      = esc_attr__( 'Pause' );
+	$label_previous   = esc_attr__( 'Previous track' );
+	$label_next       = esc_attr__( 'Next track' );
+	$label_shuffle    = esc_attr__( 'Shuffle' );
+	$label_repeat_off = esc_attr__( 'Repeat off' );
+	$label_repeat_all = esc_attr__( 'Repeat playlist' );
+	$label_repeat_one = esc_attr__( 'Repeat current track' );
+	$html             = '<div class="wp-block-playlist__waveform-player"
 		data-wp-watch="callbacks.initWaveformPlayer"
 		data-label-play="' . $label_play . '"
 		data-label-pause="' . $label_pause . '"
 		data-label-previous="' . $label_previous . '"
 		data-label-next="' . $label_next . '"
 		data-label-shuffle="' . $label_shuffle . '"
-		data-label-repeat="' . $label_repeat . '"
+		data-label-repeat-off="' . $label_repeat_off . '"
+		data-label-repeat-all="' . $label_repeat_all . '"
+		data-label-repeat-one="' . $label_repeat_one . '"
 	></div>';
 
 	// Add the waveform player container inside the figure.
@@ -129,7 +133,7 @@ function render_block_core_playlist( $attributes, $content, $block ) {
 				'tracks'        => $playlist_tracks,
 				'waveformStyle' => $waveform_style,
 				'isShuffled'    => false,
-				'isRepeating'   => false,
+				'repeatMode'    => 'none',
 				'playedTracks'  => array(),
 			)
 		)

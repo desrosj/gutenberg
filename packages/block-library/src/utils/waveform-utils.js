@@ -14,6 +14,35 @@ import WaveformPlayerLib from '@arraypress/waveform-player';
  * Note: DEFAULT_WAVEFORM_HEIGHT should match $waveform-player-height in style.scss.
  */
 const DEFAULT_WAVEFORM_HEIGHT = 120;
+export const REPEAT_MODE_NONE = 'none';
+export const REPEAT_MODE_ALL = 'all';
+export const REPEAT_MODE_ONE = 'one';
+
+const REPEAT_MODES = [ REPEAT_MODE_NONE, REPEAT_MODE_ALL, REPEAT_MODE_ONE ];
+
+function normalizeRepeatMode( repeatMode ) {
+	if ( true === repeatMode ) {
+		return REPEAT_MODE_ONE;
+	}
+	return REPEAT_MODES.includes( repeatMode ) ? repeatMode : REPEAT_MODE_NONE;
+}
+
+/**
+ * Get the next repeat mode for the repeat control.
+ *
+ * @param {string} repeatMode - The current repeat mode.
+ * @return {string} The next repeat mode.
+ */
+export function getNextRepeatMode( repeatMode = REPEAT_MODE_NONE ) {
+	const mode = normalizeRepeatMode( repeatMode );
+	if ( mode === REPEAT_MODE_NONE ) {
+		return REPEAT_MODE_ALL;
+	}
+	if ( mode === REPEAT_MODE_ALL ) {
+		return REPEAT_MODE_ONE;
+	}
+	return REPEAT_MODE_NONE;
+}
 
 /**
  * Pick the next track for shuffle playback so that no track repeats until
@@ -24,7 +53,7 @@ const DEFAULT_WAVEFORM_HEIGHT = 120;
  * played, a new cycle starts and the just-played track is excluded from the
  * first pick so it never plays twice in a row across the cycle boundary.
  *
- * @param {string[]} trackIds  - All track unique IDs, in playlist order.
+ * @param {string[]} trackIds  - All track IDs, in playlist order.
  * @param {string}   currentId - The currently (or just) played track ID.
  * @param {string[]} playedIds - Track IDs already played in the current cycle.
  * @return {{nextId: string, playedIds: string[]}} The next track ID and the updated played list.
@@ -54,7 +83,7 @@ export function getNextShuffledTrack( trackIds, currentId, playedIds = [] ) {
 /**
  * Check whether every track has played in the current shuffle cycle.
  *
- * @param {string[]} trackIds  - All track unique IDs, in playlist order.
+ * @param {string[]} trackIds  - All track IDs, in playlist order.
  * @param {string}   currentId - The currently (or just) played track ID.
  * @param {string[]} playedIds - Track IDs already played in the current cycle.
  * @return {boolean} True when the shuffle cycle has completed.
@@ -72,13 +101,15 @@ export function isShuffleCycleComplete( trackIds, currentId, playedIds = [] ) {
 /**
  * Get the next playlist playback action for track end or skip controls.
  *
- * Repeat only applies when a track ends. User-initiated skip controls still
- * advance through the playlist, using shuffle when it is active.
+ * Repeat-one only applies when a track ends. User-initiated skip controls still
+ * advance through the playlist, using shuffle when it is active. Repeat-all
+ * wraps to the start of the playlist, or starts a new shuffle cycle.
  *
- * @param {string[]} trackIds                - All track unique IDs, in playlist order.
+ * @param {string[]} trackIds                - All track IDs, in playlist order.
  * @param {string}   currentId               - The current track ID.
  * @param {Object}   options                 - Playback state.
- * @param {boolean}  options.isRepeating     - Whether repeat is active.
+ * @param {string}   options.repeatMode      - Repeat mode: none, all, or one.
+ * @param {boolean}  options.isRepeating     - Deprecated repeat-one boolean.
  * @param {boolean}  options.isShuffled      - Whether shuffle is active.
  * @param {string[]} options.playedTracks    - Shuffled tracks already played in the current cycle.
  * @param {boolean}  options.isUserInitiated - Whether this action came from a skip control.
@@ -88,6 +119,7 @@ export function getPlaylistPlaybackAction(
 	trackIds,
 	currentId,
 	{
+		repeatMode,
 		isRepeating = false,
 		isShuffled = false,
 		playedTracks = [],
@@ -98,13 +130,18 @@ export function getPlaylistPlaybackAction(
 		return { action: 'stop', nextId: undefined, playedIds: playedTracks };
 	}
 
-	if ( isRepeating && ! isUserInitiated ) {
+	const mode = normalizeRepeatMode(
+		repeatMode ?? ( isRepeating ? REPEAT_MODE_ONE : REPEAT_MODE_NONE )
+	);
+
+	if ( mode === REPEAT_MODE_ONE && ! isUserInitiated ) {
 		return { action: 'repeat', nextId: currentId, playedIds: playedTracks };
 	}
 
 	if ( isShuffled ) {
 		if (
 			! isUserInitiated &&
+			mode !== REPEAT_MODE_ALL &&
 			isShuffleCycleComplete( trackIds, currentId, playedTracks )
 		) {
 			return {
@@ -118,14 +155,21 @@ export function getPlaylistPlaybackAction(
 			currentId,
 			playedTracks
 		);
+		if ( nextId === currentId && ! isUserInitiated ) {
+			return { action: 'repeat', nextId, playedIds };
+		}
 		return { action: 'advance', nextId, playedIds };
 	}
 
 	const currentIndex = trackIds.findIndex( ( id ) => id === currentId );
 	const nextId =
-		trackIds[ currentIndex + 1 ] || ( isUserInitiated && trackIds[ 0 ] );
+		trackIds[ currentIndex + 1 ] ||
+		( ( isUserInitiated || mode === REPEAT_MODE_ALL ) && trackIds[ 0 ] );
 
 	if ( nextId ) {
+		if ( nextId === currentId && ! isUserInitiated ) {
+			return { action: 'repeat', nextId, playedIds: playedTracks };
+		}
 		return { action: 'advance', nextId, playedIds: playedTracks };
 	}
 
@@ -504,27 +548,41 @@ function setupPlaylistMetadata( container, instance ) {
  * @param {Function} callbacks.onShuffleToggle - Called when shuffle is toggled.
  * @param {Function} callbacks.onRepeatToggle  - Called when repeat is toggled.
  * @param {boolean}  isShuffled                - Initial shuffle state.
- * @param {boolean}  isRepeating               - Initial repeat state.
+ * @param {string}   repeatMode                - Initial repeat mode.
  * @param {Object}   labels                    - Translated control labels.
  * @param {string}   labels.previous           - Label for the previous-track button.
  * @param {string}   labels.next               - Label for the next-track button.
  * @param {string}   labels.shuffle            - Label for the shuffle button.
- * @param {string}   labels.repeat             - Label for the repeat button.
+ * @param {string}   labels.repeatOff          - Label for repeat-off state.
+ * @param {string}   labels.repeatAll          - Label for repeat playlist state.
+ * @param {string}   labels.repeatOne          - Label for repeat current track state.
  * @return {Object} Object with a cleanup function.
  */
 export function setupPlaylistControls(
 	container,
 	{ onPrev, onNext, onShuffleToggle, onRepeatToggle },
 	isShuffled = false,
-	isRepeating = false,
+	repeatMode = REPEAT_MODE_NONE,
 	{
 		previous: previousLabel = 'Previous track',
 		next: nextLabel = 'Next track',
 		shuffle: shuffleLabel = 'Shuffle',
-		repeat: repeatLabel = 'Repeat',
+		repeatOff: repeatOffLabel = 'Repeat off',
+		repeatAll: repeatAllLabel = 'Repeat playlist',
+		repeatOne: repeatOneLabel = 'Repeat current track',
 	} = {}
 ) {
 	const doc = container.ownerDocument;
+	let currentRepeatMode = normalizeRepeatMode( repeatMode );
+	const getRepeatLabel = ( mode ) => {
+		if ( mode === REPEAT_MODE_ONE ) {
+			return repeatOneLabel;
+		}
+		if ( mode === REPEAT_MODE_ALL ) {
+			return repeatAllLabel;
+		}
+		return repeatOffLabel;
+	};
 	const controlsDiv = doc.createElement( 'div' );
 	controlsDiv.className = 'wp-block-playlist__controls';
 	const actionGroup = doc.createElement( 'div' );
@@ -539,11 +597,9 @@ export function setupPlaylistControls(
 	prevBtn.setAttribute( 'title', previousLabel );
 	prevBtn.innerHTML = ICON_PREV;
 
-	// Shuffle and repeat are toggle buttons, so they carry aria-pressed as the
-	// single source of truth for their on/off state — it both exposes the state
-	// to assistive technology and drives the toggled-on styling (see the
-	// [aria-pressed="true"] rule in style.scss). Prev/next are momentary
-	// actions and get no aria-pressed.
+	// Shuffle and repeat carry aria-pressed for their on/off state. Repeat
+	// also carries data-repeat-mode because it has two pressed modes.
+	// Prev/next are momentary actions and get no aria-pressed.
 	const shuffleBtn = doc.createElement( 'button' );
 	shuffleBtn.type = 'button';
 	shuffleBtn.className = 'wp-block-playlist__control-btn';
@@ -555,10 +611,19 @@ export function setupPlaylistControls(
 	const repeatBtn = doc.createElement( 'button' );
 	repeatBtn.type = 'button';
 	repeatBtn.className = 'wp-block-playlist__control-btn';
-	repeatBtn.setAttribute( 'aria-label', repeatLabel );
-	repeatBtn.setAttribute( 'title', repeatLabel );
-	repeatBtn.setAttribute( 'aria-pressed', String( isRepeating ) );
 	repeatBtn.innerHTML = ICON_REPEAT;
+	const updateRepeatButton = ( mode ) => {
+		currentRepeatMode = normalizeRepeatMode( mode );
+		const label = getRepeatLabel( currentRepeatMode );
+		repeatBtn.dataset.repeatMode = currentRepeatMode;
+		repeatBtn.setAttribute(
+			'aria-pressed',
+			String( currentRepeatMode !== REPEAT_MODE_NONE )
+		);
+		repeatBtn.setAttribute( 'aria-label', label );
+		repeatBtn.setAttribute( 'title', label );
+	};
+	updateRepeatButton( currentRepeatMode );
 
 	const nextBtn = doc.createElement( 'button' );
 	nextBtn.type = 'button';
@@ -589,9 +654,9 @@ export function setupPlaylistControls(
 	};
 	const onRepeatClick = ( event ) => {
 		event.stopPropagation();
-		const pressed = repeatBtn.getAttribute( 'aria-pressed' ) !== 'true';
-		repeatBtn.setAttribute( 'aria-pressed', String( pressed ) );
-		onRepeatToggle?.();
+		const nextMode = getNextRepeatMode( repeatBtn.dataset.repeatMode );
+		updateRepeatButton( nextMode );
+		onRepeatToggle?.( nextMode );
 	};
 	const onNextClick = ( event ) => {
 		event.stopPropagation();
@@ -639,7 +704,7 @@ export function setupPlaylistControls(
  * @param {Function} options.onShuffleToggle - Callback for shuffle toggle.
  * @param {Function} options.onRepeatToggle  - Callback for repeat toggle.
  * @param {boolean}  options.isShuffled      - Initial shuffle state.
- * @param {boolean}  options.isRepeating     - Initial repeat state.
+ * @param {string}   options.repeatMode      - Initial repeat mode.
  * @return {Object} Object with instance, container, and destroy function.
  */
 export function initWaveformPlayer(
@@ -658,7 +723,7 @@ export function initWaveformPlayer(
 		onShuffleToggle,
 		onRepeatToggle,
 		isShuffled,
-		isRepeating,
+		repeatMode,
 	}
 ) {
 	// Get colors from computed styles.
@@ -707,7 +772,7 @@ export function initWaveformPlayer(
 					container,
 					{ onPrev, onNext, onShuffleToggle, onRepeatToggle },
 					isShuffled,
-					isRepeating,
+					repeatMode,
 					labels
 				);
 				cleanupControls = controls.cleanup;
