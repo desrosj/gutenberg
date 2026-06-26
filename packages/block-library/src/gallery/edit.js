@@ -25,6 +25,7 @@ import {
 	InspectorControls,
 	useBlockProps,
 	useInnerBlocksProps,
+	useBlockEditingMode,
 	BlockControls,
 	MediaReplaceFlow,
 	useSettings,
@@ -136,6 +137,13 @@ export default function GalleryEdit( props ) {
 
 	const postId = context?.postId;
 	const postType = context?.postType;
+
+	// Entering dynamic mode is a structural change (it discards inner blocks and
+	// switches the block's mode), so the entry point is only offered when the
+	// block is fully editable — mirroring the dynamic view's "Edit images"
+	// toolbar control. Under a content lock the mode is `'contentOnly'`/
+	// `'disabled'`, where structural affordances are hidden.
+	const blockEditingMode = useBlockEditingMode();
 
 	const [ lightboxSetting, defaultRatios, themeRatios, showDefaultRatios ] =
 		useSettings(
@@ -690,13 +698,15 @@ export default function GalleryEdit( props ) {
 					onError={ onUploadError }
 					{ ...mediaPlaceholderProps }
 				>
-					<Button
-						__next40pxDefaultSize
-						variant="secondary"
-						onClick={ dynamic.enableDynamicMode }
-					>
-						{ __( 'Use images attached to the post' ) }
-					</Button>
+					{ blockEditingMode === 'default' && (
+						<Button
+							__next40pxDefaultSize
+							variant="secondary"
+							onClick={ dynamic.enableDynamicMode }
+						>
+							{ __( 'Use images attached to the post' ) }
+						</Button>
+					) }
 				</MediaPlaceholder>
 			</View>
 		);
