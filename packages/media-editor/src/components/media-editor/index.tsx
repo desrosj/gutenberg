@@ -668,6 +668,7 @@ function MediaEditorContent( {
 	const imageControls = isImage ? (
 		<MediaEditorImageControls
 			showAspectRatioControl={ cropShape === 'rectangle' }
+			showCropShapeControl
 			aspectRatioPresets={ aspectRatioPresets }
 		/>
 	) : null;
