@@ -28,6 +28,7 @@ const EMPTY_ARRAY = [];
 
 function Edit( {
 	attributes,
+	setAttributes,
 	clientId,
 	context,
 	__unstableLayoutClassNames: layoutClassNames,
@@ -79,7 +80,7 @@ function Edit( {
 			...tabs[ index ],
 			label: index === tabIndex ? newLabel : tabs[ index ]?.label ?? '',
 		} ) );
-		updateBlockAttributes( clientId, { tabs: newTabs } );
+		setAttributes( { tabs: newTabs } );
 	}
 
 	const menuRef = useRef();
