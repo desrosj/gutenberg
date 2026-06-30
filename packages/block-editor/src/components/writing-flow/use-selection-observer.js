@@ -46,12 +46,13 @@ function extractSelectionStartNode( selection ) {
  * a text node, the selection offset is the index of a child node. The selection
  * reaches up to but excluding that child node.
  *
- * @param {Selection} selection The selection.
- * @param {boolean}   isMouse   Whether the selection is mouse driven.
+ * @param {Selection} selection     The selection.
+ * @param {boolean}   isTripleClick Whether the selection comes from a triple
+ *                                  click.
  *
  * @return {Element} The selection start node.
  */
-function extractSelectionEndNode( selection, isMouse ) {
+function extractSelectionEndNode( selection, isTripleClick ) {
 	const { focusNode, focusOffset } = selection;
 
 	if ( focusNode.nodeType === focusNode.TEXT_NODE ) {
@@ -62,15 +63,18 @@ function extractSelectionEndNode( selection, isMouse ) {
 		return focusNode;
 	}
 
-	// When a mouse driven selection is forward (the selection ends with the
-	// focus node), the selection may extend into the next element with an
-	// offset of 0 (e.g. on triple click). This may trigger multi selection
-	// even though the selection does not visually end in the next block.
-	// Keyboard driven selections extending to the same position (e.g.
-	// Shift+ArrowDown) do mean to include the next block: when the element
-	// is focusable, the browser reports the boundary at the element instead
-	// of descending into its first text position.
-	if ( focusOffset === 0 && isSelectionForward( selection ) && isMouse ) {
+	// A triple click selects the paragraph, but the browser extends the
+	// forward selection into the next element at an offset of 0. This may
+	// trigger multi selection even though the selection does not visually end
+	// in the next block. Keyboard selections that legitimately extend to the
+	// same boundary (e.g. Shift+ArrowDown into a focusable block, where the
+	// browser reports the boundary at the element instead of its first text
+	// position) must not be corrected, so only do this for triple clicks.
+	if (
+		focusOffset === 0 &&
+		isSelectionForward( selection ) &&
+		isTripleClick
+	) {
 		return focusNode.previousSibling ?? focusNode.parentElement;
 	}
 
@@ -143,14 +147,14 @@ export default function useSelectionObserver() {
 			const { ownerDocument } = node;
 			const { defaultView } = ownerDocument;
 
-			let isMouse = false;
+			let isTripleClick = false;
 
-			function onMouseDown() {
-				isMouse = true;
+			function onMouseDown( event ) {
+				isTripleClick = event.detail === 3;
 			}
 
 			function onKeyDown() {
-				isMouse = false;
+				isTripleClick = false;
 			}
 
 			function onSelectionChange( event ) {
@@ -161,7 +165,10 @@ export default function useSelectionObserver() {
 				}
 
 				const startNode = extractSelectionStartNode( selection );
-				const endNode = extractSelectionEndNode( selection, isMouse );
+				const endNode = extractSelectionEndNode(
+					selection,
+					isTripleClick
+				);
 
 				if (
 					! node.contains( startNode ) ||
@@ -443,7 +450,7 @@ export default function useSelectionObserver() {
 					extractSelectionStartNode( selection )
 				);
 				const endClientId = getBlockClientId(
-					extractSelectionEndNode( selection, isMouse )
+					extractSelectionEndNode( selection, isTripleClick )
 				);
 
 				if ( startClientId !== endClientId ) {
