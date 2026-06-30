@@ -338,8 +338,14 @@ export default function useSelectionObserver() {
 							} );
 							const attributeKey =
 								richTextElement.dataset.wpBlockAttributeKey;
+							// Clamp the offsets to the element. A forward selection
+							// can overshoot past the rich text (e.g. a triple
+							// click extends into the next block at offset 0),
+							// leaving `end` undefined; that means the selection
+							// reaches through the end of this element's content.
 							const startOffset = richTextData.start ?? 0;
-							const endOffset = richTextData.end;
+							const endOffset =
+								richTextData.end ?? richTextData.text.length;
 							const selectionStart = getSelectionStart();
 							const selectionEnd = getSelectionEnd();
 
