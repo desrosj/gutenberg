@@ -12,6 +12,7 @@ import {
 	setupPlayButtonArtwork,
 	getPlaylistPlaybackAction,
 	getNextRepeatMode,
+	replayWaveformPlayerTrack,
 } from '../utils/waveform-utils';
 
 /**
@@ -135,7 +136,7 @@ function initPlayer( ref, track, shouldAutoPlay, context ) {
 			);
 			context.playedTracks = playedIds;
 			if ( action === 'repeat' ) {
-				player.instance.play()?.catch( logPlayError );
+				replayWaveformPlayerTrack( player.instance );
 				return;
 			}
 			if ( nextId ) {
@@ -154,7 +155,7 @@ function initPlayer( ref, track, shouldAutoPlay, context ) {
 			}
 		},
 		onNext: () => {
-			const { nextId, playedIds } = getPlaylistPlaybackAction(
+			const { action, nextId, playedIds } = getPlaylistPlaybackAction(
 				context.tracks,
 				context.currentId,
 				{
@@ -165,6 +166,10 @@ function initPlayer( ref, track, shouldAutoPlay, context ) {
 				}
 			);
 			context.playedTracks = playedIds;
+			if ( action === 'repeat' ) {
+				replayWaveformPlayerTrack( player.instance );
+				return;
+			}
 			if ( nextId ) {
 				context.currentId = nextId;
 			}
