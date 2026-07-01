@@ -22,6 +22,7 @@ export {
 	SUGGESTION_AUTHOR_ATTRIBUTE,
 	SUGGESTION_TYPE_DELETION,
 	SUGGESTION_TYPE_ADDITION,
+	SUGGESTION_TYPE_FORMAT,
 	suggestionFormat,
 	registerSuggestionFormat,
 	findSuggestionRange,
@@ -33,7 +34,20 @@ export {
 	rejectInlineDeletion,
 	acceptInlineAddition,
 	rejectInlineAddition,
+	acceptInlineFormat,
+	rejectInlineFormat,
 	insertInlineAddition,
 	growInlineAddition,
 	buildSuggestionMarkerAttributes,
 } from './operations';
+export { computeDeleteRange } from './delete-range';
+export {
+	analyzeTextEdit,
+	planEditMarkers,
+	applyEditPlan,
+} from './reconcile-edit';
+export {
+	analyzeFormatEdit,
+	planFormatMarkers,
+	applyFormatPlan,
+} from './reconcile-format';

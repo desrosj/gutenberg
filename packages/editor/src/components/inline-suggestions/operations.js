@@ -28,10 +28,10 @@ import {
  * attribution survives reload and reviewer view. The author attribute is
  * omitted when no author id is known.
  *
- * @param {Object}        options
- * @param {number|string} options.id         Suggestion (comment) id.
- * @param {'del'|'add'}   options.type       Marker kind.
- * @param {number|string} [options.authorId] Author user id.
+ * @param {Object}               options
+ * @param {number|string}        options.id         Suggestion (comment) id.
+ * @param {'del'|'add'|'format'} options.type       Marker kind.
+ * @param {number|string}        [options.authorId] Author user id.
  * @return {Object} Marker attributes for `wrapInlineMarker`.
  */
 export function buildSuggestionMarkerAttributes( { id, type, authorId } ) {
@@ -139,6 +139,49 @@ export function acceptInlineAddition( value, suggestionId ) {
  */
 export function rejectInlineAddition( value, suggestionId ) {
 	return removeMarkedRange( value, suggestionId );
+}
+
+/**
+ * Accept a suggested formatting change: drop only the marker, so the proposed
+ * formatting (already carried on the marked run) becomes permanent. (Same shape
+ * as accepting an addition — the marked run stays, the marker goes.)
+ *
+ * @param {*}             value        Block attribute value (RichTextData or other).
+ * @param {number|string} suggestionId Suggestion (marker) id to accept.
+ * @return {*} New RichTextData with the marker unwrapped, or the original value.
+ */
+export function acceptInlineFormat( value, suggestionId ) {
+	return unwrapMarker( value, suggestionId );
+}
+
+/**
+ * Reject a suggested formatting change: replace the marked run with the original
+ * run captured when the suggestion was made, so the proposed formatting (and the
+ * marker) are both discarded and the run returns to how it was styled before.
+ * The original is supplied by the caller (persisted on the note as
+ * `plan.beforeHTML`) because the marked run in content holds the *proposed*
+ * formatting, not the original.
+ *
+ * @param {*}             value        Block attribute value (RichTextData or other).
+ * @param {number|string} suggestionId Suggestion (marker) id to reject.
+ * @param {string}        beforeHTML   HTML of the original run to restore.
+ * @return {*} New RichTextData with the original run restored, or the original value.
+ */
+export function rejectInlineFormat( value, suggestionId, beforeHTML ) {
+	if ( ! ( value instanceof RichTextData ) ) {
+		return value;
+	}
+	const range = findSuggestionRange( value, suggestionId );
+	if ( ! range ) {
+		return value;
+	}
+	const record = create( { html: value.toHTMLString() } );
+	const original = create( { html: beforeHTML ?? '' } );
+	// `insert` replaces the [start, end) range with the original run, which
+	// carries neither the proposed formatting nor the marker.
+	return new RichTextData(
+		insert( record, original, range.start, range.end )
+	);
 }
 
 /**
