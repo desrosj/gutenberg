@@ -2,6 +2,16 @@
 @use "./functions";
 @use "./colors";
 
+// References the local "Segoe UI Variable" font across the full weight range
+// so browsers can render the 500 font weight on Windows, instead of falling
+// back to 600.
+// See: https://github.com/WordPress/gutenberg/issues/79525
+@font-face {
+	font-family: "Segoe UI Variable";
+	src: local("Segoe UI Variable Text");
+	font-weight: 100 700;
+}
+
 // It is important to include these styles in all built stylesheets.
 // This allows to CSS variables post CSS plugin to generate fallbacks.
 // It also provides default CSS variables for npm package consumers.

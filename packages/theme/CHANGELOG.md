@@ -9,6 +9,7 @@
 ### Bug Fixes
 
 -   Mark the published `design-tokens.css` file as side-effectful so downstream bundlers preserve the documented CSS import ([#79551](https://github.com/WordPress/gutenberg/pull/79551)).
+-   Ship a local `Segoe UI Variable` `@font-face` in `design-tokens.css` and list it first in the `font-family` tokens so the 500 font weight can render on Windows ([#TODO](https://github.com/WordPress/gutenberg/pull/TODO)).
 
 ## 0.17.0 (2026-06-30)
 

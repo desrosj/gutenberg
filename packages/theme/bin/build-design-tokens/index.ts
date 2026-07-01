@@ -36,6 +36,27 @@ const { outputFiles } = await build( tokens, {
 	resolver,
 } );
 
+// Terrazzo's CSS plugin has no hook to add plain rules, so inject the
+// hand-authored `@font-face` after the generated file's header,
+// keeping it self-contained.
+const designTokensCss = outputFiles.find(
+	( file ) => file.filename === 'css/design-tokens.css'
+);
+if ( designTokensCss ) {
+	const fontFace = (
+		await readFile(
+			fileURLToPath( new URL( './font-face.css', import.meta.url ) ),
+			'utf8'
+		)
+	).trim();
+	const contents = designTokensCss.contents.toString();
+	const afterHeader = contents.indexOf( '*/' ) + 2;
+	designTokensCss.contents = `${ contents.slice(
+		0,
+		afterHeader
+	) }\n\n${ fontFace }\n${ contents.slice( afterHeader ) }`;
+}
+
 const outDir = fileURLToPath( config.outDir );
 
 for ( const file of outputFiles ) {

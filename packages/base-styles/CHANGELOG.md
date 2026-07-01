@@ -6,6 +6,10 @@
 
 -   Add `outset-ring__focus` mixin for outline-based focus rings using `--wpds-*` design tokens ([#78698](https://github.com/WordPress/gutenberg/pull/78698)).
 
+### Bug Fixes
+
+-   Reference the local `Segoe UI Variable` font via an `@font-face` declaration added to the default font stacks so the 500 font weight can render on Windows ([#TODO](https://github.com/WordPress/gutenberg/pull/TODO)).
+
 ## 10.1.0 (2026-06-24)
 
 ## 10.0.1 (2026-06-16)
