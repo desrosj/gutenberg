@@ -74,6 +74,13 @@ Do not import from repository or build-output paths such as `@wordpress/theme/sr
 
 Some public subpaths are generated from internal token sources. The generated values exposed by the public imports are part of the supported contract; the generator configuration, raw token JSON files, intermediate TypeScript, and emitted file locations are implementation details.
 
+Compatibility expectations depend on how the package is consumed:
+
+-   Runtime exports exposed through WordPress follow Gutenberg and WordPress backward compatibility expectations, not practical npm semver negotiation.
+-   Package semver still matters for published npm releases, especially tooling subpaths consumed directly from npm.
+-   Build plugins and Stylelint plugins are public tooling APIs; removing an exported plugin or changing its configuration or failure contract should be treated as breaking.
+-   Semantic `--wpds-*` token removals and renames are compatibility breaks. Additions are safe. Value changes are usually compatible when the token purpose is unchanged, but should be documented when visually meaningful.
+
 ## Theme Provider
 
 The `ThemeProvider` is a React component that should wrap your application to provide design tokens and theme context to the child UI components. It accepts a set of customizable seed values and automatically generates a set of design tokens, which are exposed as CSS custom properties for use throughout the application.

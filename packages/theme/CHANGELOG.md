@@ -12,7 +12,7 @@
 
 ### Documentation
 
--   Document the package's public API boundary, including supported imports and implementation details ([#79762](https://github.com/WordPress/gutenberg/pull/79762)).
+-   Document the package's public API boundary, including supported imports, implementation details, and compatibility expectations ([#79762](https://github.com/WordPress/gutenberg/pull/79762)).
 
 ## 0.17.0 (2026-06-30)
 
