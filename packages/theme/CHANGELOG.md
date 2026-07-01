@@ -10,6 +10,10 @@
 
 -   Mark the published `design-tokens.css` file as side-effectful so downstream bundlers preserve the documented CSS import ([#79551](https://github.com/WordPress/gutenberg/pull/79551)).
 
+### Documentation
+
+-   Document intentional design token omissions in the design system tokens reference ([#79770](https://github.com/WordPress/gutenberg/pull/79770)).
+
 ## 0.17.0 (2026-06-30)
 
 ### Breaking Changes
