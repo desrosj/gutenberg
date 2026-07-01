@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Bug Fixes
+
+-   Update the optional `@wordpress/theme` peer dependency range to allow the stable 1.x package line. ([#XXXXX](https://github.com/WordPress/gutenberg/pull/XXXXX))
+
 ## 0.17.0 (2026-06-24)
 
 ### Documentation
