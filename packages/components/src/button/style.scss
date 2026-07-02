@@ -11,8 +11,6 @@
 .components-button {
 	// Legacy default height (36px) has no exact WPDS size token match.
 	--wp-components-button-height: 36px;
-	// Icon-only padding (6px) sits between dimension-padding-xs (4px) and sm (8px).
-	--wp-components-button-icon-padding: calc((var(--wpds-dimension-padding-xs) + var(--wpds-dimension-padding-sm)) / 2);
 
 	&:focus:not(:active) {
 		@include mixins.outset-ring__focus();
@@ -306,7 +304,8 @@
 	}
 
 	&.has-icon {
-		padding: var(--wp-components-button-icon-padding); // Works for 24px icons. Smaller icons are vertically centered by flex alignments.
+		padding-block: var(--wpds-dimension-padding-xs);
+		padding-inline: 0;
 
 		// Icon buttons are square.
 		min-width: var(--wp-components-button-height);
