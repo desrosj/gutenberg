@@ -269,6 +269,7 @@ export function PositionPanelPure( {
 			<BaseControl help={ stickyHelpText }>
 				<CustomSelectControl
 					__next40pxDefaultSize
+					allowPopoverFlip
 					label={ __( 'Position' ) }
 					hideLabelFromVision
 					describedBy={ sprintf(

@@ -52,6 +52,11 @@ export type CustomSelectButtonProps = {
 // Props only exposed on the internal implementation
 export type CustomSelectInternalProps = {
 	/**
+	 * Allows the popover to flip to the opposite side when there is not enough
+	 * space in its default placement.
+	 */
+	allowPopoverFlip?: boolean;
+	/**
 	 * True if the consumer is emulating the legacy component behavior and look
 	 */
 	isLegacy?: boolean;

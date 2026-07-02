@@ -63,6 +63,7 @@ function CustomSelectControl< T extends CustomSelectOption >(
 	const {
 		__next40pxDefaultSize = false,
 		__shouldNotWarnDeprecated36pxSize,
+		allowPopoverFlip = false,
 		describedBy,
 		options,
 		onChange,
@@ -205,6 +206,7 @@ function CustomSelectControl< T extends CustomSelectOption >(
 					classNameProp
 				) }
 				isLegacy
+				allowPopoverFlip={ allowPopoverFlip }
 				{ ...restProps }
 			>
 				{ children }

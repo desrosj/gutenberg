@@ -65,6 +65,13 @@ function MyControlledCustomSelectControl() {
 
 ### Props
 
+#### `allowPopoverFlip`: `boolean`
+
+Allows the popover to flip to the opposite side when there is not enough space in its default placement.
+
+-   Default: `false`
+-   Required: No
+
 #### `className`: `string`
 
 Optional classname for the component.
@@ -148,8 +155,8 @@ A handler for `blur` events on the trigger button.
 
 Start opting into the larger default height that will become the default size in a future version.
 
-- Required: No
-- Default: `false`
+-   Required: No
+-   Default: `false`
 
 ## Related components
 
