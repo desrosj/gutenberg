@@ -44,7 +44,7 @@
 
 ### Internal
 
--   `Button`: Migrate hardcoded Sass color, spacing, and typography values to WPDS design tokens.
+-   `Button`: Migrate hardcoded Sass color, spacing, and typography values to WPDS design tokens, aligning brand, pressed, and destructive variant colors with the interactive tokens used by `@wordpress/ui` Button while preserving admin theme color support via token fallbacks.
 -   Enforce CSS Module class selector naming for component-library packages ([#79504](https://github.com/WordPress/gutenberg/pull/79504)).
 -   Update `@ariakit/react` to `0.4.32` ([#79860](https://github.com/WordPress/gutenberg/pull/79860)).
 -   `Surface`: Migrate styles from Emotion to SCSS Modules and use WPDS tokens for migrated visual values ([#79445](https://github.com/WordPress/gutenberg/pull/79445)).
