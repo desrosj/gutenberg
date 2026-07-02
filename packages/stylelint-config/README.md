@@ -78,6 +78,24 @@ For example, to change the `indentation` to four spaces and turn off the `number
 }
 ```
 
+## Design token linting
+
+The default preset includes `@wordpress/theme` rules that catch unknown `--wpds-*` design tokens and prevent consumers from redefining design token custom properties.
+
+The `plugin-wpds/no-token-fallback-values` rule is intentionally not enabled by default. It assumes your build injects fallback values for `--wpds-*` tokens, for example through `@wordpress/build` or the `@wordpress/theme` build plugins. If your project uses that pipeline, you can opt in:
+
+```json
+{
+	"extends": "@wordpress/stylelint-config",
+	"plugins": [
+		"@wordpress/theme/stylelint-plugins/no-token-fallback-values"
+	],
+	"rules": {
+		"plugin-wpds/no-token-fallback-values": true
+	}
+}
+```
+
 ## Contributing to this package
 
 This is an individual package that's part of the Gutenberg project. The project is organized as a monorepo. It's made up of multiple self-contained software packages, each with a specific purpose. The packages in this monorepo are published to [npm](https://www.npmjs.com/) and used by [WordPress](https://make.wordpress.org/core/) as well as other software projects.

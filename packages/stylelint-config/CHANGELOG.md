@@ -2,9 +2,12 @@
 
 ## Unreleased
 
+### Documentation
+
+-   Document why `plugin-wpds/no-token-fallback-values` remains opt-in for the shared Stylelint config ([#79768](https://github.com/WordPress/gutenberg/pull/79768)).
+
 ### Enhancements
 
--   Include `plugin-wpds/no-token-fallback-values` from `@wordpress/theme` to catch manual design token fallbacks in the shared Stylelint config ([#79768](https://github.com/WordPress/gutenberg/pull/79768)).
 -   Update `@stylistic/stylelint-plugin` to `^3.1.3` ([#79648](https://github.com/WordPress/gutenberg/pull/79648)).
 
 ## 23.41.0 (2026-06-24)
