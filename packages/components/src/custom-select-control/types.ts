@@ -34,13 +34,6 @@ type CustomSelectChangeObject< T extends CustomSelectOption > = {
 
 export type CustomSelectProps< T extends CustomSelectOption > = {
 	/**
-	 * Allows the popover to flip to the opposite side when there is not enough
-	 * space in its default placement.
-	 *
-	 * @default false
-	 */
-	allowPopoverFlip?: boolean;
-	/**
 	 * Optional classname for the component.
 	 */
 	className?: string;

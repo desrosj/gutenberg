@@ -98,7 +98,6 @@ function CustomSelect(
 		size,
 		store,
 		className,
-		allowPopoverFlip = false,
 		isLegacy = false,
 		...restProps
 	} = props;
@@ -150,8 +149,8 @@ function CustomSelect(
 					sameWidth
 					slide={ false }
 					onKeyDown={ onSelectPopoverKeyDown }
-					// Match legacy behavior unless a specific usage opts into flipping.
-					flip={ allowPopoverFlip || ! isLegacy }
+					// Match legacy behavior
+					flip={ ! isLegacy }
 				>
 					<CustomSelectContext.Provider value={ contextValue }>
 						{ children }
