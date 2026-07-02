@@ -40,10 +40,15 @@ import { VisuallyHidden } from '@wordpress/ui';
  */
 import { useSuggestionOverlay } from './overlay-context';
 import { EDITOR_STORE_NAME, SUGGEST_INTENT } from './constants';
+import { unlock } from '../../lock-unlock';
 import { getAvatarBorderColor } from '../collab-sidebar/utils';
 import SuggestionMoveGhost from './suggestion-move-ghost';
 import useMoveGhosts from './use-move-ghosts';
-import { planFormatMarkers, planEditMarkers } from '../inline-suggestions';
+import {
+	planFormatMarkers,
+	planEditMarkers,
+	stripSuggestionMarkersFromAttributes,
+} from '../inline-suggestions';
 
 /**
  * True for plain strings and for objects that stringify to a meaningful HTML
@@ -194,9 +199,13 @@ function SuggestingBlockEdit( { BlockEdit, props } ) {
 			if ( plan.kind !== 'format' ) {
 				return false;
 			}
+			// `prevContent` rides along so the handler can re-validate the
+			// live block content against the snapshot the plan was diffed
+			// from before (and after) its async note round trip.
 			return requestFormatSuggestion( {
 				clientId,
 				blockName: name,
+				prevContent,
 				nextContent,
 				plan,
 			} );
@@ -275,15 +284,32 @@ function SuggestingBlockEdit( { BlockEdit, props } ) {
 			) {
 				return;
 			}
-			// First overlay write for this block snapshots the current
-			// attributes as the baseline; subsequent writes only record
-			// overlay deltas. This lets the diff renderer below compare
-			// "what the block looked like when the suggestion started"
-			// against "what the suggester is proposing now".
+			/*
+			 * First overlay write for this block snapshots the current
+			 * attributes as the baseline; subsequent writes only record
+			 * overlay deltas. This lets the diff renderer below compare
+			 * "what the block looked like when the suggestion started"
+			 * against "what the suggester is proposing now".
+			 *
+			 * Both snapshots are stripped of live `core/suggestion` markers
+			 * (other suggestions' pending marks may sit in the block's
+			 * content): the overlay stores clean values, so accepting this
+			 * attribute suggestion later can't replay — and resurrect — a
+			 * marker whose suggestion was resolved in the interim.
+			 */
 			if ( ! entryExists ) {
-				captureBaseline( clientId, name, attributesRef.current );
+				captureBaseline(
+					clientId,
+					name,
+					stripSuggestionMarkersFromAttributes(
+						attributesRef.current
+					)
+				);
 			}
-			setOverlayAttributes( clientId, nextAttributes );
+			setOverlayAttributes(
+				clientId,
+				stripSuggestionMarkersFromAttributes( nextAttributes )
+			);
 		},
 		[
 			clientId,
@@ -326,7 +352,9 @@ const withSuggestionOverlay = createHigherOrderComponent(
 			const { clientId } = props;
 			const isSuggestMode = useSelect(
 				( select ) =>
-					select( EDITOR_STORE_NAME ).getEditorIntent() ===
+					// `getEditorIntent` is private while Suggest mode is
+					// experimental.
+					unlock( select( EDITOR_STORE_NAME ) ).getEditorIntent() ===
 					SUGGEST_INTENT,
 				[]
 			);
@@ -405,7 +433,7 @@ const withSuggestionBlockClassName = createHigherOrderComponent(
 				( ghostsInside && ghostsInside.length > 0 );
 			const { isSuggestMode, structuralClass, authorId } = useSelect(
 				( select ) => {
-					const editor = select( EDITOR_STORE_NAME );
+					const editor = unlock( select( EDITOR_STORE_NAME ) );
 					const blockEditor = select( blockEditorStore );
 					const marker =
 						blockEditor?.getBlockAttributes?.( clientId )?.metadata

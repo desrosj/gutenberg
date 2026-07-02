@@ -25,6 +25,7 @@ import { store as blockEditorStore } from '@wordpress/block-editor';
 import { createBlock, registerBlockType } from '@wordpress/blocks';
 import { store as preferencesStore } from '@wordpress/preferences';
 import { useEffect } from '@wordpress/element';
+import { unregisterFormatType } from '@wordpress/rich-text';
 
 /**
  * Internal dependencies
@@ -34,11 +35,17 @@ import withSuggestionOverlay, {
 	structuralMarkerClass,
 	withSuggestionBlockClassName,
 } from '../with-suggestion-overlay';
+import { MoveGhostsProvider } from '../use-move-ghosts';
 import {
 	SuggestionOverlayProvider,
 	useSuggestionOverlay,
 } from '../overlay-context';
+import {
+	registerSuggestionFormat,
+	SUGGESTION_FORMAT_NAME,
+} from '../../inline-suggestions';
 import { store as editorStore } from '../../../store';
+import { unlock } from '../../../lock-unlock';
 
 function renderWithProviders( ui, { intent = 'edit', blocks = null } = {} ) {
 	const registry = createRegistry();
@@ -60,7 +67,7 @@ function renderWithProviders( ui, { intent = 'edit', blocks = null } = {} ) {
 		registry.register( blockEditorStore );
 		registry.dispatch( blockEditorStore ).resetBlocks( blocks );
 	}
-	registry.dispatch( editorStore ).setEditorIntent( intent );
+	unlock( registry.dispatch( editorStore ) ).setEditorIntent( intent );
 
 	const wrapper = ( { children } ) => (
 		<RegistryProvider value={ registry }>
@@ -185,6 +192,54 @@ describe( 'withSuggestionOverlay', () => {
 		// value (the reconciler writes the marker itself, out of band).
 		expect( setAttributes ).not.toHaveBeenCalled();
 		expect( screen.getByTestId( 'content' ) ).toHaveTextContent( 'Hello' );
+	} );
+
+	it( 'strips live suggestion markers from overlay baseline and after snapshots', () => {
+		// Another author's pending marker lives in the block content. When an
+		// edit falls through to the attribute overlay, neither the baseline
+		// nor the proposed value may capture that marker - replaying `after`
+		// on accept would otherwise resurrect a marker whose suggestion was
+		// resolved in the interim.
+		registerSuggestionFormat();
+		try {
+			const marked =
+				'Hello <mark class="wp-suggestion" data-suggestion-id="9" data-suggestion-type="del">doomed</mark>';
+			let overlayHandle;
+			function CaptureOverlay() {
+				const overlay = useSuggestionOverlay();
+				useEffect( () => {
+					overlayHandle = overlay;
+				}, [ overlay ] );
+				return null;
+			}
+
+			renderWithProviders(
+				<>
+					<CaptureOverlay />
+					<Wrapped
+						clientId="a"
+						name="core/paragraph"
+						attributes={ { content: marked } }
+						setAttributes={ jest.fn() }
+					/>
+				</>,
+				{ intent: 'suggest' }
+			);
+
+			fireEvent.click( screen.getByRole( 'button', { name: 'edit' } ) );
+
+			const entry = overlayHandle.entries.a;
+			expect( entry ).toBeDefined();
+			// Baseline keeps the marked run's text but not the marker.
+			expect( entry.baselineAttributes.content ).toBe( 'Hello doomed' );
+			expect( entry.baselineAttributes.content ).not.toContain(
+				'wp-suggestion'
+			);
+			// The proposed value is clean too.
+			expect( entry.overlayAttributes.content ).toBe( 'proposed' );
+		} finally {
+			unregisterFormatType( SUGGESTION_FORMAT_NAME );
+		}
 	} );
 
 	it( 'writes setAttributes through (no overlay) for a pending-insert block in Suggest intent', () => {
@@ -459,7 +514,7 @@ describe( 'withSuggestionBlockClassName', () => {
 		registry.register( preferencesStore );
 		registry.register( blockEditorStore );
 		registry.register( editorStore );
-		registry.dispatch( editorStore ).setEditorIntent( intent );
+		unlock( registry.dispatch( editorStore ) ).setEditorIntent( intent );
 
 		const block = createBlock( TEST_BLOCK_NAME, {
 			content: 'Hello',
@@ -560,7 +615,7 @@ describe( 'withSuggestionBlockClassName', () => {
 		registry.register( preferencesStore );
 		registry.register( blockEditorStore );
 		registry.register( editorStore );
-		registry.dispatch( editorStore ).setEditorIntent( 'edit' );
+		unlock( registry.dispatch( editorStore ) ).setEditorIntent( 'edit' );
 
 		const anchor = createBlock( TEST_BLOCK_NAME, { content: 'Anchor' } );
 		const moved = createBlock( TEST_BLOCK_NAME, {
@@ -582,7 +637,7 @@ describe( 'withSuggestionBlockClassName', () => {
 		const wrapper = ( { children } ) => (
 			<RegistryProvider value={ registry }>
 				<SuggestionOverlayProvider>
-					{ children }
+					<MoveGhostsProvider>{ children }</MoveGhostsProvider>
 				</SuggestionOverlayProvider>
 			</RegistryProvider>
 		);
@@ -614,7 +669,7 @@ describe( 'withSuggestionBlockClassName', () => {
 		registry.register( preferencesStore );
 		registry.register( blockEditorStore );
 		registry.register( editorStore );
-		registry.dispatch( editorStore ).setEditorIntent( 'edit' );
+		unlock( registry.dispatch( editorStore ) ).setEditorIntent( 'edit' );
 
 		// The block's only child has moved out, leaving the parent empty;
 		// the moved block now sits at the root as the parent's sibling.
@@ -636,7 +691,7 @@ describe( 'withSuggestionBlockClassName', () => {
 		const wrapper = ( { children } ) => (
 			<RegistryProvider value={ registry }>
 				<SuggestionOverlayProvider>
-					{ children }
+					<MoveGhostsProvider>{ children }</MoveGhostsProvider>
 				</SuggestionOverlayProvider>
 			</RegistryProvider>
 		);

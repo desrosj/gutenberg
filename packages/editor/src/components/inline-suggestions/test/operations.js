@@ -22,6 +22,8 @@ import {
 	insertInlineAddition,
 	growInlineAddition,
 	buildSuggestionMarkerAttributes,
+	formatsRangeHasSuggestion,
+	valueRangeHasSuggestion,
 } from '../operations';
 import { registerSuggestionFormat, SUGGESTION_FORMAT_NAME } from '../format';
 
@@ -87,6 +89,26 @@ describe( 'inline deletion operations', () => {
 			);
 			const result = acceptInlineDeletion( value, 7 );
 			expect( result.toHTMLString() ).toBe( 'prepended ' );
+		} );
+
+		it( 'spares another marker interleaved inside a fragmented run', () => {
+			/*
+			 * The target marker is fragmented (same id split in two) with a
+			 * DIFFERENT suggestion's marker in the gap. The resolved range
+			 * spans first -> last hit of the id, but accepting the deletion
+			 * must remove only the characters carrying the target id — never
+			 * the inner marker's text.
+			 */
+			const value = RichTextData.fromHTMLString(
+				`${ del( 1, 'AB' ) }${ add( 2, 'IN' ) }${ del( 1, 'CD' ) }`
+			);
+			const result = acceptInlineDeletion( value, 1 );
+			const html = result.toHTMLString();
+			expect( html ).not.toContain( 'AB' );
+			expect( html ).not.toContain( 'CD' );
+			expect( html ).toContain( 'IN' );
+			expect( html ).toContain( 'data-suggestion-id="2"' );
+			expect( html ).not.toContain( 'data-suggestion-id="1"' );
 		} );
 	} );
 
@@ -188,6 +210,21 @@ describe( 'inline addition operations', () => {
 			expect( rejectInlineAddition( value, 99 ).toHTMLString() ).toBe(
 				'no markers here'
 			);
+		} );
+
+		it( 'spares another marker interleaved inside a fragmented run', () => {
+			// Mirror of the acceptInlineDeletion interleaved case: rejecting
+			// the fragmented addition removes only its own characters.
+			const value = RichTextData.fromHTMLString(
+				`${ add( 3, 'AB' ) }${ del( 4, 'IN' ) }${ add( 3, 'CD' ) }`
+			);
+			const result = rejectInlineAddition( value, 3 );
+			const html = result.toHTMLString();
+			expect( html ).not.toContain( 'AB' );
+			expect( html ).not.toContain( 'CD' );
+			expect( html ).toContain( 'IN' );
+			expect( html ).toContain( 'data-suggestion-id="4"' );
+			expect( html ).not.toContain( 'data-suggestion-id="3"' );
 		} );
 	} );
 
@@ -491,6 +528,87 @@ describe( 'inline format operations', () => {
 
 		it( 'returns a non-rich-text value unchanged', () => {
 			expect( rejectInlineFormat( 'plain', 5, 'x' ) ).toBe( 'plain' );
+		} );
+	} );
+} );
+
+describe( 'suggestion range overlap detection', () => {
+	beforeAll( () => {
+		registerSuggestionFormat();
+	} );
+
+	afterAll( () => {
+		if ( getFormatType( SUGGESTION_FORMAT_NAME ) ) {
+			unregisterFormatType( SUGGESTION_FORMAT_NAME );
+		}
+	} );
+
+	describe( 'valueRangeHasSuggestion', () => {
+		it( 'detects a range fully inside a marker', () => {
+			// "abc" + marked "def" + "ghi": characters 3-5 sit in the marker.
+			const value = RichTextData.fromHTMLString(
+				`abc${ del( 1, 'def' ) }ghi`
+			);
+			expect( valueRangeHasSuggestion( value, 4, 5 ) ).toBe( true );
+		} );
+
+		it( 'detects a range partially overlapping a marker', () => {
+			const value = RichTextData.fromHTMLString(
+				`abc${ add( 1, 'def' ) }ghi`
+			);
+			// [1, 4) covers "bc" plus the marker's first character.
+			expect( valueRangeHasSuggestion( value, 1, 4 ) ).toBe( true );
+			// [5, 8) covers the marker's last character plus "gh".
+			expect( valueRangeHasSuggestion( value, 5, 8 ) ).toBe( true );
+		} );
+
+		it( 'rejects a range that only touches unmarked text', () => {
+			const value = RichTextData.fromHTMLString(
+				`abc${ del( 1, 'def' ) }ghi`
+			);
+			expect( valueRangeHasSuggestion( value, 0, 3 ) ).toBe( false );
+			expect( valueRangeHasSuggestion( value, 6, 9 ) ).toBe( false );
+		} );
+
+		it( 'rejects when the value has no markers at all', () => {
+			const value = RichTextData.fromHTMLString( 'plain text' );
+			expect( valueRangeHasSuggestion( value, 0, 5 ) ).toBe( false );
+		} );
+
+		it( 'ignores non-suggestion formats in the range', () => {
+			const value = RichTextData.fromHTMLString(
+				'a <strong>bold</strong> run'
+			);
+			expect( valueRangeHasSuggestion( value, 0, 8 ) ).toBe( false );
+		} );
+
+		it( 'accepts a plain-string value', () => {
+			expect(
+				valueRangeHasSuggestion( `x${ del( 9, 'yz' ) }`, 1, 2 )
+			).toBe( true );
+			expect( valueRangeHasSuggestion( 'plain', 0, 3 ) ).toBe( false );
+		} );
+
+		it( 'tolerates non-string, non-rich values and empty ranges', () => {
+			expect( valueRangeHasSuggestion( undefined, 0, 1 ) ).toBe( false );
+			expect( valueRangeHasSuggestion( 42, 0, 1 ) ).toBe( false );
+			const value = RichTextData.fromHTMLString( del( 1, 'abc' ) );
+			expect( valueRangeHasSuggestion( value, 2, 2 ) ).toBe( false );
+		} );
+	} );
+
+	describe( 'formatsRangeHasSuggestion', () => {
+		it( 'clamps out-of-bounds ranges', () => {
+			const stack = [ { type: SUGGESTION_FORMAT_NAME } ];
+			const formats = [ undefined, stack, stack ];
+			expect( formatsRangeHasSuggestion( formats, -5, 1 ) ).toBe( false );
+			expect( formatsRangeHasSuggestion( formats, 1, 99 ) ).toBe( true );
+		} );
+
+		it( 'tolerates a missing formats array', () => {
+			expect( formatsRangeHasSuggestion( undefined, 0, 1 ) ).toBe(
+				false
+			);
 		} );
 	} );
 } );

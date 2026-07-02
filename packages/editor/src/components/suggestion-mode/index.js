@@ -1,3 +1,4 @@
+export { isSuggestionModeEnabled, useCanSuggest } from './gate';
 export {
 	SuggestionOverlayProvider,
 	useSuggestionOverlay,
@@ -7,7 +8,9 @@ export {
 	default as withSuggestionOverlay,
 	registerSuggestionOverlayFilter,
 } from './with-suggestion-overlay';
+export { MoveGhostsProvider } from './use-move-ghosts';
 export { default as SuggestionAutoSave } from './auto-save';
+export { default as SuggestionSaveLock } from './save-lock';
 export { default as SuggestionStoreInterceptor } from './store-interceptor';
 export { default as SuggestionDeletionKeyboard } from './suggestion-deletion-keyboard';
 export { default as SuggestionAdditionKeyboard } from './suggestion-addition-keyboard';

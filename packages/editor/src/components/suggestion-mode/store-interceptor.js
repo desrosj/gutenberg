@@ -13,8 +13,13 @@
  *     diff the live attributes against the snapshot.
  *   - For drift on a tracked block: route the changed attributes into the
  *     overlay and dispatch a revert that restores the snapshot.
- *   - The `isReverting` flag suppresses the recursive subscribe fire that
- *     the revert dispatch itself would otherwise trigger.
+ *   - The `isDispatchingOwnWrite` flag suppresses the *synchronous* subscribe
+ *     fire the interceptor's own dispatches trigger, so the loop never runs
+ *     reentrantly against half-processed state. Revert echoes that arrive
+ *     *later* (a batched or deferred dispatch) are recognized per block by
+ *     identity tokens (`createRevertGuard`, attribute-suggestions/), which
+ *     match only the exact restored values instead of swallowing everything
+ *     inside a time window.
  *   - System-managed metadata (`metadata.noteId` written by the suggestion
  *     provider after creating a note comment) is folded into the snapshot
  *     before diffing so it's invisible to the diff and never leaks into the
@@ -54,6 +59,8 @@ import { isUnmodifiedDefaultBlock } from '@wordpress/blocks';
 import { useSuggestionOverlay } from './overlay-context';
 import { EDITOR_STORE_NAME, SUGGEST_INTENT } from './constants';
 import { parseSuggestionPayload } from './provider';
+import { createRevertGuard } from '../attribute-suggestions/revert-guard';
+import { unlock } from '../../lock-unlock';
 
 const BLOCK_EDITOR_STORE_NAME = 'core/block-editor';
 
@@ -639,7 +646,9 @@ export default function SuggestionStoreInterceptor() {
 
 	const isSuggestMode = useSelect(
 		( select ) =>
-			select( EDITOR_STORE_NAME ).getEditorIntent() === SUGGEST_INTENT,
+			// `getEditorIntent` is private while Suggest mode is experimental.
+			unlock( select( EDITOR_STORE_NAME ) ).getEditorIntent() ===
+			SUGGEST_INTENT,
 		[]
 	);
 
@@ -703,12 +712,28 @@ export default function SuggestionStoreInterceptor() {
 		// recently-stable state.
 		let tree = captureTreeSnapshot( blockEditor );
 
-		// Set true while we're calling `updateBlockAttributes` to revert a
-		// detected mutation, so the resulting subscribe fire doesn't loop.
-		let isReverting = false;
+		/*
+		 * Set true while the interceptor dispatches its own writes (reverts,
+		 * marker writes, re-inserts). Subscriber notification is synchronous,
+		 * so without this the loop would re-enter itself against
+		 * half-processed state. This flag is ONLY a reentrancy gate — echo
+		 * *recognition* for attribute reverts is owned by the identity-token
+		 * guard below, which also catches echoes that arrive after the flag
+		 * window has closed (batched or deferred dispatches).
+		 */
+		let isDispatchingOwnWrite = false;
+
+		/*
+		 * Identity tokens for the attribute-revert loop: before dispatching a
+		 * revert the loop records exactly what that revert will make true;
+		 * a later fire whose block matches a pending token is the revert's
+		 * own echo and is skipped (consuming the token). See revert-guard.js
+		 * for the value-matching caveat and the bounded FIFO queue.
+		 */
+		const revertGuard = createRevertGuard( shallowAttributeEquals );
 
 		const unsubscribe = registry.subscribe( () => {
-			if ( isReverting ) {
+			if ( isDispatchingOwnWrite ) {
 				return;
 			}
 
@@ -726,6 +751,19 @@ export default function SuggestionStoreInterceptor() {
 				// next user edit diffs against the post-apply state.
 				if ( consumeInterceptorBypassRef.current?.( clientId ) ) {
 					snapshot.set( clientId, current );
+					continue;
+				}
+
+				/*
+				 * A late-arriving echo of one of our own reverts (the dispatch
+				 * was batched or deferred past the reentrancy gate): the block
+				 * is back at the values the revert restored. Consume the token
+				 * and skip — diffing would be a no-op, and processing it as a
+				 * user edit would be wrong. Note the value-matching caveat in
+				 * revert-guard.js: a legitimate edit that restores exactly the
+				 * same values is indistinguishable from the echo.
+				 */
+				if ( revertGuard.isEcho( clientId, current ) ) {
 					continue;
 				}
 
@@ -780,8 +818,14 @@ export default function SuggestionStoreInterceptor() {
 							? siblingIds[ indexInParent - 1 ]
 							: null;
 
-					isReverting = true;
+					isDispatchingOwnWrite = true;
 					try {
+						/*
+						 * Interceptor-originated writes must not create undo
+						 * levels: Ctrl+Z after a marker write would strip the
+						 * pending marker while the overlay still holds the op.
+						 */
+						blockEditorDispatch.__unstableMarkNextChangeAsNotPersistent();
 						blockEditorDispatch.updateBlockAttributes( clientId, {
 							metadata: withSuggestionMarker( current?.metadata, {
 								type: 'pending-insert',
@@ -789,7 +833,7 @@ export default function SuggestionStoreInterceptor() {
 							} ),
 						} );
 					} finally {
-						isReverting = false;
+						isDispatchingOwnWrite = false;
 					}
 
 					setStructuralOpRef.current?.( clientId, block.name, {
@@ -864,15 +908,38 @@ export default function SuggestionStoreInterceptor() {
 					setOverlayAttributesRef.current( clientId, overlayChanged );
 				}
 
-				isReverting = true;
+				// Record what this revert will make true, so its echo can be
+				// recognized per block even if the dispatch is batched past
+				// the reentrancy gate below.
+				revertGuard.expect( clientId, delta.restore );
+				isDispatchingOwnWrite = true;
 				try {
+					/*
+					 * The revert is a programmatic write, not a user edit:
+					 * marking it non-persistent keeps it off the undo stack,
+					 * where Ctrl+Z would otherwise re-apply the suggested
+					 * change to the real content.
+					 */
+					blockEditorDispatch.__unstableMarkNextChangeAsNotPersistent();
 					blockEditorDispatch.updateBlockAttributes(
 						clientId,
 						delta.restore
 					);
 				} finally {
-					isReverting = false;
+					isDispatchingOwnWrite = false;
 				}
+				/*
+				 * On the common, unbatched path the revert has already landed
+				 * (its synchronous subscribe fire was absorbed by the gate).
+				 * Consume the token now so it can't linger and misclassify a
+				 * future legitimate edit back to the same values. When the
+				 * dispatch was deferred, the live attributes won't match yet
+				 * and the token stays pending for the subscriber-side check.
+				 */
+				revertGuard.isEcho(
+					clientId,
+					blockEditor.getBlockAttributes( clientId )
+				);
 
 				// The snapshot reflects the (now-restored) baseline for this
 				// block; do NOT update it to `current` here.
@@ -896,27 +963,48 @@ export default function SuggestionStoreInterceptor() {
 				if ( ! block ) {
 					continue;
 				}
-				isReverting = true;
+				/*
+				 * A block that is moved AGAIN while already carrying a
+				 * pending-move marker must keep its ORIGINAL from* fields.
+				 * `detectMovedBlocks` diffs against the previous tick, so its
+				 * from* values describe the intermediate position — writing
+				 * those would make Reject restore the block to a spot that
+				 * was itself only ever a pending suggestion.
+				 */
+				const existingMarker = currentAttrs.metadata?.suggestion;
+				const from =
+					existingMarker?.type === 'pending-move'
+						? {
+								fromAnchorClientId:
+									existingMarker.fromAnchorClientId ?? null,
+								fromParentClientId:
+									existingMarker.fromParentClientId ?? null,
+								fromIndex: existingMarker.fromIndex ?? 0,
+						  }
+						: {
+								fromAnchorClientId: move.fromAnchorClientId,
+								fromParentClientId: move.fromParentClientId,
+								fromIndex: move.fromIndex,
+						  };
+				isDispatchingOwnWrite = true;
 				try {
+					// Programmatic marker write — keep it off the undo stack.
+					blockEditorDispatch.__unstableMarkNextChangeAsNotPersistent();
 					blockEditorDispatch.updateBlockAttributes( move.clientId, {
 						metadata: withSuggestionMarker( currentAttrs.metadata, {
 							type: 'pending-move',
 							authorId: currentUserId,
-							fromAnchorClientId: move.fromAnchorClientId,
-							fromParentClientId: move.fromParentClientId,
-							fromIndex: move.fromIndex,
+							...from,
 						} ),
 					} );
 				} finally {
-					isReverting = false;
+					isDispatchingOwnWrite = false;
 				}
 				setStructuralOpRef.current?.( move.clientId, block.name, {
 					type: 'block-move',
 					clientId: move.clientId,
 					blockName: block.name,
-					fromAnchorClientId: move.fromAnchorClientId,
-					fromParentClientId: move.fromParentClientId,
-					fromIndex: move.fromIndex,
+					...from,
 					toAnchorClientId: move.toAnchorClientId,
 					toParentClientId: move.toParentClientId,
 				} );
@@ -977,7 +1065,7 @@ export default function SuggestionStoreInterceptor() {
 				// blocks reuse their original clientIds (preserved by
 				// `getBlock`), so the marker write below targets the same
 				// IDs the caller saw.
-				isReverting = true;
+				isDispatchingOwnWrite = true;
 				try {
 					for ( const clientId of tops ) {
 						const block = tree.blocksByClientId.get( clientId );
@@ -986,6 +1074,11 @@ export default function SuggestionStoreInterceptor() {
 						if ( ! block ) {
 							continue;
 						}
+						/*
+						 * Programmatic re-insert — undoing it via Ctrl+Z
+						 * would perform the suggested removal for real.
+						 */
+						blockEditorDispatch.__unstableMarkNextChangeAsNotPersistent();
 						blockEditorDispatch.insertBlock(
 							block,
 							index,
@@ -994,7 +1087,7 @@ export default function SuggestionStoreInterceptor() {
 						);
 					}
 				} finally {
-					isReverting = false;
+					isDispatchingOwnWrite = false;
 				}
 
 				// Phase 2: tag each re-inserted block with the pending-
@@ -1010,8 +1103,11 @@ export default function SuggestionStoreInterceptor() {
 						continue;
 					}
 					const block = tree.blocksByClientId.get( clientId );
-					isReverting = true;
+					isDispatchingOwnWrite = true;
 					try {
+						// Programmatic marker write — keep it off the undo
+						// stack.
+						blockEditorDispatch.__unstableMarkNextChangeAsNotPersistent();
 						blockEditorDispatch.updateBlockAttributes( clientId, {
 							metadata: withSuggestionMarker(
 								currentAttrs.metadata,
@@ -1022,7 +1118,7 @@ export default function SuggestionStoreInterceptor() {
 							),
 						} );
 					} finally {
-						isReverting = false;
+						isDispatchingOwnWrite = false;
 					}
 					setStructuralOpRef.current?.( clientId, block?.name ?? '', {
 						type: 'block-remove',
