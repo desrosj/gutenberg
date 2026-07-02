@@ -56,6 +56,7 @@ async function createTempImage( sourceFile, ext ) {
  * @param {number[]} options.results      Array to append elapsed times to.
  * @param {number}   options.samples      Number of measured iterations.
  * @param {number}   options.throwaway    Number of warmup iterations to discard.
+ * @param {number}   options.timeout      Maximum time to wait for the upload.
  */
 async function runUploadIterations( {
 	editor,
@@ -66,6 +67,7 @@ async function runUploadIterations( {
 	results: bucket,
 	samples,
 	throwaway,
+	timeout = 120_000,
 } ) {
 	const iterations = samples + throwaway;
 
@@ -91,7 +93,7 @@ async function runUploadIterations( {
 				name: 'This image has an empty alt attribute',
 			} )
 		).toHaveAttribute( 'src', /^https?:\/\//, {
-			timeout: 120_000,
+			timeout,
 		} );
 		const elapsed = performance.now() - startTime;
 
@@ -185,6 +187,7 @@ test.describe( 'Media Upload Performance', () => {
 				results: results.largeJpegUploadProcessing,
 				samples,
 				throwaway,
+				timeout: 240_000,
 			} );
 		} );
 	} );

@@ -76,6 +76,7 @@ class GifToVideoUtils {
 					.getItems();
 				return items.length === 0;
 			},
+			undefined,
 			{ timeout }
 		);
 	}
@@ -161,6 +162,7 @@ test.describe( 'Video conversion: animated GIF to video', () => {
 					.select( 'core/block-editor' )
 					.getBlocks()
 					.some( ( block ) => block.name === 'core/video' ),
+			undefined,
 			{ timeout: 30_000 }
 		);
 
