@@ -124,9 +124,15 @@ test.describe( 'Suggest mode: overlay-retirement safety net (Phase 0)', () => {
 			)
 		).toContainText( 'world' );
 
-		// Addition marker: append at the end, past the formatted run, so the
-		// two suggestions do not overlap.
-		await page.keyboard.press( 'End' );
+		/*
+		 * Addition marker: append at the end, past the formatted run, so the
+		 * two suggestions do not overlap. The caret collapse must be
+		 * `ArrowRight`, not `End`: on macOS Chromium `End` is a no-op on a
+		 * non-collapsed selection (it only moves a collapsed caret), so `End`
+		 * would leave "world" selected and the typing would become a
+		 * type-over of the format marker instead of an append.
+		 */
+		await page.keyboard.press( 'ArrowRight' );
 		await page.keyboard.type( ' more' );
 		await expect(
 			paragraph.locator(
@@ -142,6 +148,77 @@ test.describe( 'Suggest mode: overlay-retirement safety net (Phase 0)', () => {
 			( await paragraph.locator( OVERLAY_ADD ).count() ) +
 			( await paragraph.locator( OVERLAY_DEL ).count() );
 		expect( overlayDiff ).toBe( 0 );
+	} );
+
+	/*
+	 * Regression: the keyboards used to anchor marker writes to the
+	 * block-editor STORE selection, which is synced from the DOM
+	 * asynchronously. After the format keyboard's marker write re-renders
+	 * RichText (restoring the store's selection over "world"), a caret
+	 * collapse (ArrowRight) moves the DOM caret synchronously while the
+	 * store still reports the old selection — so a fast typist's
+	 * `beforeinput` fired against stale store offsets and the add marker
+	 * landed mid-word, splitting the format marker into two `<mark>`
+	 * fragments and dropping the typed leading space
+	 * (`Hello <mark format>w</mark><mark add>more</mark><mark format>orld</mark>`).
+	 * Offsets now come from the DOM at input time (`readEventRange`).
+	 */
+	test( 'typing fast after a format marker lands the addition at the DOM caret, not stale store offsets', async ( {
+		editor,
+		page,
+		pageUtils,
+	} ) => {
+		await editor.insertBlock( {
+			name: 'core/paragraph',
+			attributes: { content: 'Hello world' },
+		} );
+
+		await switchIntent( page, 'Suggesting' );
+
+		const paragraph = editor.canvas
+			.getByRole( 'document', { name: 'Block: Paragraph' } )
+			.first();
+		await paragraph.click();
+
+		// Format marker: bold the trailing word "world".
+		await page.keyboard.press( 'End' );
+		await pageUtils.pressKeys( 'shift+ArrowLeft', { times: 5 } );
+		await pageUtils.pressKeys( 'primary+b' );
+		const formatMark = paragraph.locator(
+			`${ SUGGESTION_MARK }[data-suggestion-type="format"]`
+		);
+		await expect( formatMark ).toContainText( 'world' );
+
+		/*
+		 * Immediately collapse the caret to the selection end and type.
+		 * `ArrowRight` (not `End` — a no-op on a non-collapsed selection on
+		 * macOS Chromium) collapses the DOM selection synchronously, while
+		 * the store's selection sync is asynchronous; Playwright types with
+		 * no delay, so the first `beforeinput` fires while the store still
+		 * reports the old "world" selection — the exact window the
+		 * regression corrupted.
+		 */
+		await page.keyboard.press( 'ArrowRight' );
+		await page.keyboard.type( ' more' );
+
+		// One add marker containing exactly " more" — WITH the leading space
+		// (`toHaveText` normalizes whitespace, so compare `textContent`).
+		const addMark = paragraph.locator(
+			`${ SUGGESTION_MARK }[data-suggestion-type="add"]`
+		);
+		await expect( addMark ).toBeVisible();
+		await expect.poll( () => addMark.textContent() ).toBe( ' more' );
+
+		// The paragraph reads as the proposed result, nothing reordered.
+		await expect
+			.poll( () => paragraph.textContent() )
+			.toBe( 'Hello world more' );
+
+		// The format marker was not fragmented: exactly two markers on the
+		// block (format + add) and the format marker still spans "world"
+		// (a fragmented marker would also fail toHaveText's strict mode).
+		await expect( paragraph.locator( SUGGESTION_MARK ) ).toHaveCount( 2 );
+		await expect( formatMark ).toHaveText( 'world' );
 	} );
 
 	// --- Seams (close in Phase 1) -----------------------------------------
@@ -211,7 +288,7 @@ test.describe( 'Suggest mode: overlay-retirement safety net (Phase 0)', () => {
 		).toBeVisible();
 	} );
 
-	test( 'seam: pasting multi-line text becomes addition markers', async ( {
+	test( 'seam: a multi-line paste is captured as an attribute suggestion, never a raw commit', async ( {
 		editor,
 		page,
 		pageUtils,
@@ -231,10 +308,15 @@ test.describe( 'Suggest mode: overlay-retirement safety net (Phase 0)', () => {
 
 		/*
 		 * A REAL multi-line paste: the addition keyboard declines anything
-		 * matching /[\r\n]/, so this exercises the editor's own paste
-		 * pipeline feeding RichText a fresh `content` value, which the
-		 * content reconciler diffs into markers — not the single-line
-		 * keyboard shortcut path the old (newline-free) clipboard data took.
+		 * matching /[\r\n]/, so the editor's own paste pipeline handles it.
+		 * That pipeline commits the merged value to the block-editor store
+		 * directly (not through the block's `setAttributes` prop), so the
+		 * STORE INTERCEPTOR — not the content reconciler — captures it,
+		 * reverting the store to baseline and diverting the pasted value
+		 * into the attribute overlay as a whole-attribute suggestion.
+		 * Converting that capture into inline markers is a possible
+		 * follow-up; what this safety net pins is that the paste is never
+		 * committed raw and never rendered as an overlay inline diff.
 		 */
 		pageUtils.setClipboardData( { plainText: ' one two\nthree four' } );
 		await pageUtils.pressKeys( 'primary+v' );
@@ -242,16 +324,18 @@ test.describe( 'Suggest mode: overlay-retirement safety net (Phase 0)', () => {
 		await waitForSuggestionSaved( page );
 		await deselect( page );
 
-		// The whole pasted run — including the line break — lands as marker-
-		// diffed content on the block, not as a raw content change.
-		const addMarker = paragraph.locator(
-			`${ SUGGESTION_MARK }[data-suggestion-type="add"]`
-		);
-		await expect( addMarker ).toBeVisible();
-		await expect( addMarker ).toContainText( 'one two' );
-		await expect( addMarker ).toContainText( 'three four' );
-		// The pre-paste text is untouched outside the marker.
-		await expect( paragraph ).toContainText( 'Start' );
+		// The suggester sees their pasted text live (overlay merge)…
+		await expect( paragraph ).toContainText( 'one two' );
+		await expect( paragraph ).toContainText( 'three four' );
+		// …with the attribute-pending bracket treatment, not inline markers.
+		await expect( paragraph ).toHaveClass( /is-suggestion-pending/ );
+		await expect( paragraph.locator( SUGGESTION_MARK ) ).toHaveCount( 0 );
+		// The store (and thus serialized content) stays at the baseline:
+		// nothing from the paste is committed until the suggestion is
+		// accepted.
+		const serialized = await editor.getEditedPostContent();
+		expect( serialized ).toContain( '<p>Start</p>' );
+		expect( serialized ).not.toContain( 'one two' );
 	} );
 
 	test( 'seam: an autocorrect-style replacement (insertReplacementText) becomes markers via the reconciler', async ( {
