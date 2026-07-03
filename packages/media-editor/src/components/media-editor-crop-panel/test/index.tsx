@@ -61,12 +61,10 @@ describe( 'MediaEditorCropPanel', () => {
 		expect( controls.onCropShapeChange ).toHaveBeenCalledWith( 'circle' );
 	} );
 
-	it( 'omits the aspect-ratio selector for circle crops', () => {
+	it( 'disables the aspect-ratio selector for circle crops', () => {
 		setupCropPanel( { cropShape: 'circle' } );
 
-		expect(
-			screen.queryByLabelText( 'Aspect ratio' )
-		).not.toBeInTheDocument();
+		expect( screen.getByLabelText( 'Aspect ratio' ) ).toBeDisabled();
 		expect( screen.getByRole( 'radio', { name: 'Circle' } ) ).toBeChecked();
 		expect(
 			screen.getByText(

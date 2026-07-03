@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### New Features
+
+-   Add circular crop support to the media editor, saved as a transparent PNG (or another alpha-capable format negotiated via `image_editor_output_format`).
+
 ## 0.12.0 (2026-06-24)
 
 ## 0.11.1 (2026-06-16)

@@ -101,18 +101,19 @@ export default function MediaEditorCropPanel( {
 					label={ __( 'Circle' ) }
 				/>
 			</ToggleGroupControl>
-			{ cropShape === 'rectangle' && (
-				<SelectControl
-					__next40pxDefaultSize
-					label={ __( 'Aspect ratio' ) }
-					value={ aspectRatioValue }
-					onChange={ onAspectRatioChange }
-					options={ aspectRatioOptions.map( ( preset ) => ( {
-						label: preset.label,
-						value: preset.value.toString(),
-					} ) ) }
-				/>
-			) }
+			<SelectControl
+				__next40pxDefaultSize
+				label={ __( 'Aspect ratio' ) }
+				value={ aspectRatioValue }
+				onChange={ onAspectRatioChange }
+				// Circle crops are locked to 1:1, so the aspect-ratio control
+				// is greyed out rather than removed to keep the layout stable.
+				disabled={ cropShape === 'circle' }
+				options={ aspectRatioOptions.map( ( preset ) => ( {
+					label: preset.label,
+					value: preset.value.toString(),
+				} ) ) }
+			/>
 		</Stack>
 	);
 }
