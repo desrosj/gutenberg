@@ -7,12 +7,6 @@
 	"description": "Content for a tab in a tabbed interface.",
 	"category": "design",
 	"textdomain": "default",
-	"attributes": {
-		"label": {
-			"type": "string",
-			"role": "local"
-		}
-	},
 	"parent": [ "core/tab-panels" ],
 	"usesContext": [
 		"core/tabs-activeTabIndex",

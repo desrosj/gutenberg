@@ -15,11 +15,6 @@ import { useEffect, useRef } from '@wordpress/element';
  * the two by tracking each label against its tab panel's client ID, so labels
  * follow their tab panel across additions, removals, and reordering.
  *
- * A brand-new tab panel gets a default label, except when it was created by
- * duplicating another panel: the tab-panel block mirrors its label into a local
- * (non-serialized) `label` attribute, which duplication copies, so a duplicated
- * panel inherits its source's label instead of the default.
- *
  * @param {Object}      props
  * @param {Array}       props.tabPanels       Raw core/tab-panel block objects.
  * @param {string|null} props.tabListClientId Client ID of the core/tab-list block.
@@ -67,26 +62,15 @@ export default function useTabListItemsSync( { tabPanels, tabListClientId } ) {
 		} );
 
 		// Rebuild `tabs` in the current tab panel order, carrying each tab
-		// panel's label along. A newly added tab panel has no known label: a
-		// duplicated one carries its source's label in its local `label`
-		// attribute, while a freshly inserted one has none and gets a default.
-		const newTabs = tabPanelClientIds.map( ( id, index ) => ( {
+		// panel's label along. A newly added tab panel has no known label and
+		// gets a default.
+		const newTabs = tabPanelClientIds.map( ( id ) => ( {
 			label: labelsByClientId.has( id )
 				? labelsByClientId.get( id )
-				: tabPanels[ index ].attributes.label || __( 'Tab' ),
+				: __( 'Tab' ),
 		} ) );
 
 		prevTabPanelClientIdsRef.current = tabPanelClientIds;
-
-		// Mirror each resolved label into its tab panel's local `label`
-		// attribute (never serialized) so a later duplication can carry it.
-		tabPanels.forEach( ( tabPanel, index ) => {
-			const label = newTabs[ index ].label?.toString() ?? '';
-			if ( ( tabPanel.attributes.label ?? '' ) !== label ) {
-				__unstableMarkNextChangeAsNotPersistent();
-				updateBlockAttributes( tabPanel.clientId, { label } );
-			}
-		} );
 
 		if ( JSON.stringify( newTabs ) === JSON.stringify( currentTabs ) ) {
 			return;
