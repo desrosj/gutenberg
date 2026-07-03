@@ -19,6 +19,10 @@
 					"type": "rich-text",
 					"source": "rich-text",
 					"role": "content"
+				},
+				"tabPanelClientId": {
+					"type": "string",
+					"role": "local"
 				}
 			},
 			"default": []

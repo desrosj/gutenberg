@@ -4,7 +4,7 @@
 import { __ } from '@wordpress/i18n';
 import { store as blockEditorStore } from '@wordpress/block-editor';
 import { useSelect, useDispatch } from '@wordpress/data';
-import { useEffect, useRef } from '@wordpress/element';
+import { useEffect } from '@wordpress/element';
 
 const EMPTY_ARRAY = [];
 
@@ -48,44 +48,33 @@ export default function useTabListItemsSync( clientId ) {
 		[ clientId ]
 	);
 
-	// The tab panel client IDs `currentTabs` is aligned to, captured the last
-	// time `tabs` was written.
-	const prevTabPanelClientIdsRef = useRef( null );
-
 	useEffect( () => {
 		if ( ! tabListClientId || ! currentTabs ) {
 			return;
 		}
 
-		const tabPanelClientIds = tabPanels.map(
-			( tabPanel ) => tabPanel.clientId
-		);
-
-		// `currentTabs` has no client IDs of its own; each label is matched to a
-		// tab panel purely by position. This is the tab panel order from when
-		// `currentTabs` was last written, so `currentTabs[ i ]` is the label for
-		// tab panel `tabPanelClientIdsForCurrentTabs[ i ]`. On the first run
-		// nothing has been written yet, so fall back to the current order, which
-		// matches the freshly loaded document.
-		const tabPanelClientIdsForCurrentTabs =
-			prevTabPanelClientIdsRef.current ?? tabPanelClientIds;
+		// Match each existing label to its tab panel by the stored client ID.
+		// `tabPanelClientId` is a local (unsaved) attribute, so on a freshly
+		// loaded document it is empty; fall back to positional alignment, which
+		// matches the saved order.
 		const labelsByClientId = new Map();
-		tabPanelClientIdsForCurrentTabs.forEach( ( id, index ) => {
-			if ( index < currentTabs.length ) {
-				labelsByClientId.set( id, currentTabs[ index ]?.label ?? '' );
+		currentTabs.forEach( ( tab, index ) => {
+			const id = tab.tabPanelClientId ?? tabPanels[ index ]?.clientId;
+			if ( id ) {
+				labelsByClientId.set( id, tab.label ?? '' );
 			}
 		} );
 
-		// Rebuild `tabs` in the current tab panel order, carrying each tab
-		// panel's label along. A newly added tab panel has no known label and
-		// gets a default.
-		const newTabs = tabPanelClientIds.map( ( id ) => ( {
-			label: labelsByClientId.has( id )
-				? labelsByClientId.get( id )
+		// Rebuild `tabs` in the current tab panel order, carrying each panel's
+		// label along. A newly added panel has no stored label and gets a
+		// default. Each entry records its tab panel's client ID so the binding
+		// survives reordering and undo without extra bookkeeping.
+		const newTabs = tabPanels.map( ( tabPanel ) => ( {
+			label: labelsByClientId.has( tabPanel.clientId )
+				? labelsByClientId.get( tabPanel.clientId )
 				: __( 'Tab' ),
+			tabPanelClientId: tabPanel.clientId,
 		} ) );
-
-		prevTabPanelClientIdsRef.current = tabPanelClientIds;
 
 		if ( JSON.stringify( newTabs ) === JSON.stringify( currentTabs ) ) {
 			return;
