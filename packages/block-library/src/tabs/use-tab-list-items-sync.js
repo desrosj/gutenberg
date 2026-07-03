@@ -6,6 +6,8 @@ import { store as blockEditorStore } from '@wordpress/block-editor';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { useEffect, useRef } from '@wordpress/element';
 
+const EMPTY_ARRAY = [];
+
 /**
  * Keep the tab-list block's `tabs` attribute in sync with the core/tab-panel
  * blocks.
@@ -15,22 +17,35 @@ import { useEffect, useRef } from '@wordpress/element';
  * the two by tracking each label against its tab panel's client ID, so labels
  * follow their tab panel across additions, removals, and reordering.
  *
- * @param {Object}      props
- * @param {Array}       props.tabPanels       Raw core/tab-panel block objects.
- * @param {string|null} props.tabListClientId Client ID of the core/tab-list block.
+ * @param {string} clientId Client ID of the core/tabs block.
  */
-export default function useTabListItemsSync( { tabPanels, tabListClientId } ) {
+export default function useTabListItemsSync( clientId ) {
 	const { updateBlockAttributes, __unstableMarkNextChangeAsNotPersistent } =
 		useDispatch( blockEditorStore );
 
-	const currentTabs = useSelect(
-		( select ) =>
-			tabListClientId
-				? select( blockEditorStore ).getBlockAttributes(
-						tabListClientId
-				  )?.tabs
-				: null,
-		[ tabListClientId ]
+	const { tabPanels, tabListClientId, currentTabs } = useSelect(
+		( select ) => {
+			const { getBlocks, getBlockAttributes } =
+				select( blockEditorStore );
+			const innerBlocks = getBlocks( clientId );
+
+			const tabPanelsBlock = innerBlocks.find(
+				( block ) => block.name === 'core/tab-panels'
+			);
+			const tabListBlock = innerBlocks.find(
+				( block ) => block.name === 'core/tab-list'
+			);
+			const _tabListClientId = tabListBlock?.clientId ?? null;
+
+			return {
+				tabPanels: tabPanelsBlock?.innerBlocks ?? EMPTY_ARRAY,
+				tabListClientId: _tabListClientId,
+				currentTabs: _tabListClientId
+					? getBlockAttributes( _tabListClientId )?.tabs
+					: null,
+			};
+		},
+		[ clientId ]
 	);
 
 	// The tab panel client IDs `currentTabs` is aligned to, captured the last

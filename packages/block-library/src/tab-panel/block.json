@@ -8,11 +8,7 @@
 	"category": "design",
 	"textdomain": "default",
 	"parent": [ "core/tab-panels" ],
-	"usesContext": [
-		"core/tabs-activeTabIndex",
-		"core/tabs-editorActiveTabIndex",
-		"core/tabs-id"
-	],
+	"usesContext": [ "core/tabs-id" ],
 	"supports": {
 		"anchor": true,
 		"html": false,

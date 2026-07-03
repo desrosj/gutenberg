@@ -30,34 +30,42 @@ function Edit( {
 	attributes,
 	setAttributes,
 	clientId,
-	context,
 	__unstableLayoutClassNames: layoutClassNames,
 } ) {
-	const tabsList = context[ 'core/tabs-list' ] || EMPTY_ARRAY;
 	const { tabs = EMPTY_ARRAY } = attributes;
 
 	const colorProps = useColorProps( attributes );
 	const borderProps = useBorderProps( attributes );
 	const spacingProps = getSpacingClassesAndStyles( attributes );
 
-	const { tabsClientId, editorActiveTabIndex, activeTabIndex } = useSelect(
-		( select ) => {
-			const { getBlockRootClientId, getBlockAttributes } =
-				select( blockEditorStore );
+	const { tabsList, tabsClientId, editorActiveTabIndex, activeTabIndex } =
+		useSelect(
+			( select ) => {
+				const { getBlockRootClientId, getBlockAttributes, getBlocks } =
+					select( blockEditorStore );
 
-			const _tabsClientId = getBlockRootClientId( clientId );
-			const tabsAttributes = _tabsClientId
-				? getBlockAttributes( _tabsClientId )
-				: {};
+				const _tabsClientId = getBlockRootClientId( clientId );
+				const tabsAttributes = _tabsClientId
+					? getBlockAttributes( _tabsClientId )
+					: {};
 
-			return {
-				tabsClientId: _tabsClientId,
-				editorActiveTabIndex: tabsAttributes?.editorActiveTabIndex,
-				activeTabIndex: tabsAttributes?.activeTabIndex ?? 0,
-			};
-		},
-		[ clientId ]
-	);
+				// Mirror the sibling tab-panels so the buttons match their
+				// count and order.
+				const tabPanelsBlock = _tabsClientId
+					? getBlocks( _tabsClientId ).find(
+							( block ) => block.name === 'core/tab-panels'
+					  )
+					: undefined;
+
+				return {
+					tabsList: tabPanelsBlock?.innerBlocks ?? EMPTY_ARRAY,
+					tabsClientId: _tabsClientId,
+					editorActiveTabIndex: tabsAttributes?.editorActiveTabIndex,
+					activeTabIndex: tabsAttributes?.activeTabIndex ?? 0,
+				};
+			},
+			[ clientId ]
+		);
 	const { isBlockSelected, hasSelectedInnerBlock } =
 		useSelect( blockEditorStore );
 	const { updateBlockAttributes, __unstableMarkNextChangeAsNotPersistent } =
