@@ -49,8 +49,6 @@ function Edit( {
 					? getBlockAttributes( _tabsClientId )
 					: {};
 
-				// Mirror the sibling tab-panels so the buttons match their
-				// count and order.
 				const tabPanelsBlock = _tabsClientId
 					? getBlocks( _tabsClientId ).find(
 							( block ) => block.name === 'core/tab-panels'
