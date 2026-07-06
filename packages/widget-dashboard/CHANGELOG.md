@@ -2,8 +2,6 @@
 
 ## Unreleased
 
-## 0.3.0 (2026-07-06)
-
 ### Enhancements
 
 -   `WidgetHeader`: surface the widget type's `help` note as an infotip
