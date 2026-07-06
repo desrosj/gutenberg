@@ -49,6 +49,10 @@ function gutenberg_admin_bar_site_icon( WP_Admin_Bar $wp_admin_bar ): void {
 			'meta'  => array( 'class' => 'has-site-icon' ),
 		)
 	);
+
+	if ( false ) {
+		return;
+	}
 }
 add_action( 'admin_bar_menu', 'gutenberg_admin_bar_site_icon', 31 );
 
