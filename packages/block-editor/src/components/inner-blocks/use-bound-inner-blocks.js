@@ -115,27 +115,6 @@ export function getInnerBlocksBindingKey(
 }
 
 /**
- * Returns the subset of the block's resolved context that the binding source
- * declares it consumes — the context part of the recursion-guard key. A
- * source without `usesContext` is context-independent by declaration, so its
- * key carries no context.
- *
- * @param {Object|undefined} source       The registered bindings source.
- * @param {Object}           blockContext The block's resolved context.
- *
- * @return {Object} The source-used context subset.
- */
-function getBindingGuardContext( source, blockContext ) {
-	const guardContext = {};
-	source?.usesContext?.forEach( ( key ) => {
-		if ( blockContext[ key ] !== undefined ) {
-			guardContext[ key ] = blockContext[ key ];
-		}
-	} );
-	return guardContext;
-}
-
-/**
  * Returns the context-aware recursion-guard key for a block's `innerBlocks`
  * binding, or `undefined` when the binding is absent or its source is not
  * registered. Bound containers push this key onto the ancestry consumed by
@@ -168,7 +147,7 @@ export function useInnerBlocksBindingKey( binding ) {
 		}
 		return getInnerBlocksBindingKey(
 			binding,
-			getBindingGuardContext( source, blockContext )
+			getBlockBindingsContext( blockContext, undefined, [ source ] )
 		);
 	}, [ source, binding, blockContext ] );
 }
@@ -239,12 +218,12 @@ export function useBoundInnerBlocksProps( clientId, binding, blockType ) {
 		[ sourceName ]
 	);
 
-	const guardContext = useMemo(
-		() => getBindingGuardContext( source, blockContext ),
+	const sourceContext = useMemo(
+		() => getBlockBindingsContext( blockContext, undefined, [ source ] ),
 		[ source, blockContext ]
 	);
 	const recursionKey = source
-		? getInnerBlocksBindingKey( binding, guardContext )
+		? getInnerBlocksBindingKey( binding, sourceContext )
 		: undefined;
 	const isRecursive =
 		!! recursionKey &&
