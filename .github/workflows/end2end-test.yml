@@ -43,6 +43,8 @@ jobs:
               uses: ./.github/setup-node
 
             - name: Npm build
+              env:
+                  WP_BUILD_CONCURRENCY: 4
               run: npm run build -- --skip-types
 
             - name: Install Playwright dependencies
@@ -158,6 +160,8 @@ jobs:
               uses: ./.github/setup-node
 
             - name: Npm build
+              env:
+                  WP_BUILD_CONCURRENCY: 4
               run: npm run build -- --skip-types
 
             - name: Report flaky tests
