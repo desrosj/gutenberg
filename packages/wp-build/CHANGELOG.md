@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.19.0 (2026-07-06)
+
 ### Enhancements
 
 -   Widgets: carry the optional `help` field (content plus links) from
