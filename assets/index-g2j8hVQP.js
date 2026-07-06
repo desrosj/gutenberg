@@ -1,0 +1,1 @@
+import{r as e}from"./iframe-jqcvgCKi.js";function useEvent(r){const n=e.useRef(()=>{throw new Error("Callbacks created with `useEvent` cannot be called during rendering.")});return e.useInsertionEffect(()=>{n.current=r}),e.useCallback((...e)=>n.current?.(...e),[])}export{useEvent as u};

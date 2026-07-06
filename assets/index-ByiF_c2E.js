@@ -1,0 +1,1 @@
+import{d as i}from"./index-D6OBgHjj.js";var throttle=(a,n,r)=>{let t=!0,e=!0;return r&&(t="leading"in r?!!r.leading:t,e="trailing"in r?!!r.trailing:e),i(a,n,{leading:t,trailing:e,maxWait:n})};export{throttle as t};

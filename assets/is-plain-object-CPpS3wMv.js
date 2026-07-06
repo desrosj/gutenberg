@@ -1,0 +1,1 @@
+function isObject(t){return"[object Object]"===Object.prototype.toString.call(t)}function isPlainObject(t){var e,o;return!1!==isObject(t)&&(void 0===(e=t.constructor)||!1!==isObject(o=e.prototype)&&!1!==o.hasOwnProperty("isPrototypeOf"))}export{isPlainObject as i};

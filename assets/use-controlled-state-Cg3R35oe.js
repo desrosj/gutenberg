@@ -1,0 +1,1 @@
+import{g as a,i as t}from"./hook-mosa3sKA.js";import{r as i}from"./iframe-jqcvgCKi.js";var o={initial:void 0,fallback:""};var r=function useControlledState(r,e=o){const{initial:s,fallback:l}={...o,...e},[f,n]=i.useState(r),u=t(r);return i.useEffect(()=>{u&&f&&n(void 0)},[u,f]),[a([r,f,s],l),i.useCallback(a=>{u||n(a)},[u])]};export{r as u};

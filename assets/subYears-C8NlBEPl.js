@@ -1,0 +1,1 @@
+import{a as s,b as u,c as a,d as n}from"./setYear-Cf0m_ZIA.js";function subDays(u,a,n){return s(u,-a,n)}function subMonths(s,a,n){return u(s,-a,n)}function subWeeks(s,u,n){return a(s,-u,n)}function subYears(s,u,a){return n(s,-u,a)}export{subYears as a,subWeeks as b,subDays as c,subMonths as s};

@@ -1,0 +1,1 @@
+import{u as e}from"./index-D8f1rL4o.js";function useFocusableIframe(){return e(e=>{const{ownerDocument:u}=e;if(!u)return;const{defaultView:c}=u;if(c)return c.addEventListener("blur",checkFocus),()=>{c.removeEventListener("blur",checkFocus)};function checkFocus(){u&&u.activeElement===e&&e.focus()}},[])}export{useFocusableIframe as u};

@@ -1,0 +1,1 @@
+import{f as e}from"./useRenderElement-Dvl4b0gU.js";import{r as t}from"./iframe-jqcvgCKi.js";const o=t.createContext(void 0);function useFieldsetRootContext(r=!1){const s=t.useContext(o);if(!s&&!r)throw new Error(e(86));return s}export{o as F,useFieldsetRootContext as u};

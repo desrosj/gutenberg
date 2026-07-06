@@ -1,0 +1,1 @@
+import{b as r,f as a,a as o}from"./index-CVCuL0t-.js";const t=r(function useSeparator2({orientation:r="horizontal",...a}){return a={role:"separator","aria-orientation":r,...a}}),n=a(function Separator2(r){return o("hr",t(r))});export{n as S,t as u};

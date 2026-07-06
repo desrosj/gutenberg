@@ -1,0 +1,1 @@
+import{r as e}from"./iframe-jqcvgCKi.js";var r=new WeakMap;var t=function useInstanceId(t,n,a){return e.useMemo(()=>{if(a)return a;const e=function createId(e){const t=r.get(e)||0;return r.set(e,t+1),t}(t);return n?`${n}-${e}`:e},[t,a,n])};export{t as u};

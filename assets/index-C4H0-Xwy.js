@@ -1,0 +1,1 @@
+var e;function decodeEntities(t){if("string"!=typeof t||-1===t.indexOf("&"))return t;void 0===e&&(e=document.implementation&&document.implementation.createHTMLDocument?document.implementation.createHTMLDocument("").createElement("textarea"):document.createElement("textarea")),e.innerHTML=t;const n=e.textContent??"";return e.innerHTML="",n}export{decodeEntities as d};

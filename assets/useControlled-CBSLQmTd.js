@@ -1,0 +1,1 @@
+import{r as e}from"./iframe-jqcvgCKi.js";function useControlled({controlled:t,default:o,name:r,state:u="value"}){const{current:a}=e.useRef(void 0!==t),[l,s]=e.useState(o);return[a?t:l,e.useCallback(e=>{a||s(e)},[])]}export{useControlled as u};

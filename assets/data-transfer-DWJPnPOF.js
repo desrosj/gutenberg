@@ -1,0 +1,1 @@
+function getFilesFromDataTransfer(e){const r=Array.from(e.files);return Array.from(e.items).forEach(e=>{const s=e.getAsFile();s&&!r.find(({name:e,type:r,size:t})=>e===s.name&&r===s.type&&t===s.size)&&r.push(s)}),r}export{getFilesFromDataTransfer as g};

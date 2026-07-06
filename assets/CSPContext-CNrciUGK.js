@@ -1,0 +1,1 @@
+import{r as e}from"./iframe-jqcvgCKi.js";function isElementDisabled(e){return null==e||e.hasAttribute("disabled")||"true"===e.getAttribute("aria-disabled")}const t=e.createContext(void 0),s={disableStyleElements:!1};function useCSPContext(){return e.useContext(t)??s}export{isElementDisabled as i,useCSPContext as u};

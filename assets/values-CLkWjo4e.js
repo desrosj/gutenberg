@@ -1,0 +1,1 @@
+function isValueDefined(e){return null!=e}function isValueEmpty(e){const n=""===e;return!isValueDefined(e)||n}function getDefinedValue(e=[],n){return e.find(isValueDefined)??n}const ensureNumber=e=>"string"==typeof e?(e=>parseFloat(e))(e):e;export{isValueEmpty as a,ensureNumber as e,getDefinedValue as g,isValueDefined as i};
