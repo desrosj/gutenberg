@@ -8,7 +8,7 @@ import clsx from 'clsx';
  */
 import { Button, Modal, Spinner, SearchControl } from '@wordpress/components';
 import { __, _n, sprintf } from '@wordpress/i18n';
-import { useCallback, useMemo, useState } from '@wordpress/element';
+import { useCallback, useEffect, useMemo, useState } from '@wordpress/element';
 import { useDebouncedInput } from '@wordpress/compose';
 import { useDispatch } from '@wordpress/data';
 import { store as noticesStore } from '@wordpress/notices';
@@ -93,6 +93,22 @@ export function MediaCategoryPanel( { rootClientId, onInsert, category } ) {
 	const refresh = useCallback( () => {
 		category.invalidate?.( query );
 		setRefreshKey( ( key ) => key + 1 );
+	}, [ category, query ] );
+
+	// A media modal can be opened from anywhere in the editor (a block in the
+	// canvas, the featured-image panel, this panel's own "Attach images"
+	// button), and uploading in it attaches media to the current post. Closing
+	// such a modal invalidates the cached attachment queries; subscribe so this
+	// grid refetches and reflects the newly attached images. Categories without
+	// `subscribe` (Images, Videos, Audio, Openverse) simply opt out.
+	useEffect( () => {
+		if ( ! category.subscribe ) {
+			return undefined;
+		}
+		return category.subscribe(
+			() => setRefreshKey( ( key ) => key + 1 ),
+			query
+		);
 	}, [ category, query ] );
 
 	const handleAttach = useCallback(
