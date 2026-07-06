@@ -30,7 +30,7 @@ jobs:
         runs-on: 'ubuntu-24.04'
         permissions:
             contents: read
-        if: ${{ github.repository == 'WordPress/gutenberg' && github.event_name == 'workflow_dispatch' }}
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         outputs:
             current_stable_branch: ${{ steps.get_branches.outputs.current_stable_branch }}
             next_stable_branch: ${{ steps.get_branches.outputs.next_stable_branch }}
@@ -60,7 +60,6 @@ jobs:
             contents: write
         needs: compute-stable-branches
         if: |
-            github.repository == 'WordPress/gutenberg' &&
               github.event_name == 'workflow_dispatch' && (
                 (
                   github.ref == 'refs/heads/trunk' ||
@@ -349,7 +348,6 @@ jobs:
             contents: write
         if: |
             always() &&
-            github.repository == 'WordPress/gutenberg' &&
             needs.build.result == 'failure' &&
             needs.bump-version.outputs.release_branch_commit
 
@@ -402,7 +400,7 @@ jobs:
         name: Create Release Draft and Attach Asset
         needs: [bump-version, build]
         runs-on: 'ubuntu-24.04'
-        if: ${{ github.repository == 'WordPress/gutenberg' && github.event_name == 'workflow_dispatch' }}
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         permissions:
             contents: write
 
