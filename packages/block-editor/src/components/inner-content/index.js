@@ -39,17 +39,22 @@ const LAYOUT = { type: 'default', alignments: [] };
  * elements. Inner blocks are locked: they can be edited in place but not
  * moved, removed, or added to.
  *
- * @param {Object} props          Component props.
- * @param {string} props.clientId Client ID of the block whose inner content
- *                                should be rendered.
- * @param {string} [props.html]   Slot-bearing markup to use verbatim instead of
- *                                building it from the block's `innerContent`.
- *                                The markup must already contain
- *                                `<wp-inner-block-slot data-slot-index>` elements
- *                                (e.g. a server-rendered shell). When omitted, the
- *                                markup is derived from `innerContent` as usual.
+ * @param {Object}  props            Component props.
+ * @param {string}  props.clientId   Client ID of the block whose inner content
+ *                                   should be rendered.
+ * @param {string}  [props.html]     Slot-bearing markup to use verbatim instead of
+ *                                   building it from the block's `innerContent`.
+ *                                   The markup must already contain
+ *                                   `<wp-inner-block-slot data-slot-index>` elements
+ *                                   (e.g. a server-rendered shell). When omitted, the
+ *                                   markup is derived from `innerContent` as usual.
+ * @param {Element} [props.children] Pre-rendered inner-blocks children to portal
+ *                                   wholesale into the first slot, instead of one
+ *                                   portal per block. Required for controlled
+ *                                   trees: their store sync lives in these
+ *                                   children, so they must stay mounted.
  */
-export default function InnerContent( { clientId, html: htmlProp } ) {
+export default function InnerContent( { clientId, html: htmlProp, children } ) {
 	const { innerContent, order, selectedClientIds } = useSelect(
 		( select ) => {
 			const { getBlock, getBlockOrder, getSelectedBlockClientIds } =
@@ -147,6 +152,36 @@ export default function InnerContent( { clientId, html: htmlProp } ) {
 			?.focus();
 	}, [ slots, registry ] );
 
+	// Provided children carry their own rendering (and, for controlled trees,
+	// the store sync), so they portal wholesale into the first slot; when the
+	// markup has no slot they stay mounted inline rather than disappear.
+	let portals;
+	if ( children !== undefined ) {
+		portals = slots[ 0 ]
+			? createPortal( children, slots[ 0 ], 'inner-content-children' )
+			: children;
+	} else {
+		portals = order.map( ( childClientId, index ) =>
+			slots[ index ]
+				? createPortal(
+						// Render the selected block synchronously, as the block list does.
+						<AsyncModeProvider
+							value={
+								! selectedClientIds.includes( childClientId )
+							}
+						>
+							<BlockListBlock
+								rootClientId={ clientId }
+								clientId={ childClientId }
+							/>
+						</AsyncModeProvider>,
+						slots[ index ],
+						childClientId
+				  )
+				: null
+		);
+	}
+
 	return (
 		<LayoutProvider value={ LAYOUT }>
 			<div
@@ -154,27 +189,7 @@ export default function InnerContent( { clientId, html: htmlProp } ) {
 				className="block-editor-inner-content"
 				style={ { display: 'contents' } }
 			/>
-			{ order.map( ( childClientId, index ) =>
-				slots[ index ]
-					? createPortal(
-							// Render the selected block synchronously, as the block list does.
-							<AsyncModeProvider
-								value={
-									! selectedClientIds.includes(
-										childClientId
-									)
-								}
-							>
-								<BlockListBlock
-									rootClientId={ clientId }
-									clientId={ childClientId }
-								/>
-							</AsyncModeProvider>,
-							slots[ index ],
-							childClientId
-					  )
-					: null
-			) }
+			{ portals }
 		</LayoutProvider>
 	);
 }

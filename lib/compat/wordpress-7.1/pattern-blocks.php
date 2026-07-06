@@ -140,9 +140,11 @@ function gutenberg_wrap_ssr_islands_render_callback( $args ) {
 			if ( defined( 'REST_REQUEST' ) && REST_REQUEST && str_contains( $rest_route, '/block-renderer/' ) ) {
 				// Only the editor's block-renderer preview renders the block
 				// bare on purpose. Pass the slots as `$content` so the editor
-				// has somewhere to portal the editable islands.
+				// has somewhere to portal the editable islands. Synced blocks
+				// portal their whole controlled tree into a single slot.
+				$count = $is_synced ? 1 : $slot_count;
 				$slots = '';
-				for ( $index = 0; $index < $slot_count; $index++ ) {
+				for ( $index = 0; $index < $count; $index++ ) {
 					$slots .= sprintf(
 						'<wp-inner-block-slot data-slot-index="%d" style="display:contents"></wp-inner-block-slot>',
 						$index
