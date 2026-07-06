@@ -4,6 +4,8 @@
 
 ### Enhancements
 
+-   Limit concurrent `esbuild` build jobs by default and add `--concurrency`
+    / `WP_BUILD_CONCURRENCY` overrides for `wp-build`.
 -   Widgets: carry the optional `help` field (content plus links) from
     `widget.json` into the generated PHP registry.
 
