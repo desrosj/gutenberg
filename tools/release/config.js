@@ -1,4 +1,4 @@
-const gitRepoOwner = 'WordPress';
+const gitRepoOwner = 'desrosj';
 
 /**
  * @typedef WPPluginCLIConfig
@@ -33,7 +33,7 @@ const config = {
 	pluginEntryPoint: 'gutenberg.php',
 	buildZipCommand: '/bin/bash bin/build-plugin-zip.sh',
 	githubRepositoryURL: 'https://github.com/' + gitRepoOwner + '/gutenberg/',
-	wpRepositoryReleasesURL: 'https://github.com/WordPress/gutenberg/releases/',
+	wpRepositoryReleasesURL: 'https://github.com/desrosj/gutenberg/releases/',
 	gitRepositoryURL: 'https://github.com/' + gitRepoOwner + '/gutenberg.git',
 	svnRepositoryURL: 'https://plugins.svn.wordpress.org/gutenberg',
 };
