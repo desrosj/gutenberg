@@ -39,7 +39,7 @@ jobs:
 
         steps:
             - name: Checkout code
-              uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f # v2.3.4
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
               with:
                   ref: ${{ matrix.branch }}
                   token: ${{ secrets.GUTENBERG_TOKEN }}
@@ -89,7 +89,7 @@ jobs:
                   fi
 
             - name: Upload Changelog artifact
-              uses: actions/upload-artifact@e448a9b857ee2131e752b06002bf0e093c65e571 # v2.2.2
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               with:
                   name: changelog ${{ matrix.label }}
                   path: ./changelog.txt
