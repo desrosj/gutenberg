@@ -33,4 +33,4 @@ jobs:
             security-events: write
             actions: read
             contents: read
-        uses: ./.github/workflows/reusable-workflow-lint.yml
+        uses: WordPress/gutenberg/.github/workflows/reusable-workflow-lint.yml@trunk
