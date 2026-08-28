@@ -25,7 +25,8 @@
 			"advisories": {
 				"ignore-id": {
 					"PKSA-z3gr-8qht-p93v": "CVE-2026-24765: unsafe deserialization in PHPUnit's PHPT-format code-coverage handling. This repository has no .phpt-format tests, and unit-test.yml explicitly disables code coverage instrumentation (coverage: none), so the vulnerable code path is never reached. Ignored to allow a PHP-7.0/7.1-compatible phpunit/phpunit release to resolve.",
-					"PKSA-mh9b-91zm-m1gy": "CVE-2026-45293: only affects the WordPress and WordPress-Extra rulesets' WordPress.WP.EnqueuedResourceParameters sniff, which this repository's phpcs.xml.dist does not use (it uses WordPress-Core and WordPress-Docs). Ignored to allow a PHP-7.0/7.1-compatible wp-coding-standards/wpcs release to resolve."
+					"PKSA-mh9b-91zm-m1gy": "CVE-2026-45293: only affects the WordPress and WordPress-Extra rulesets' WordPress.WP.EnqueuedResourceParameters sniff, which this repository's phpcs.xml.dist does not use (it uses WordPress-Core and WordPress-Docs). Ignored to allow a PHP-7.0/7.1-compatible wp-coding-standards/wpcs release to resolve.",
+					"PKSA-rkkf-636k-qjb3": "CVE-2026-24739: argument-escaping issue in symfony/process that only manifests under an MSYS2-based shell (e.g. Git Bash on Windows) when Process is used to invoke a file-deletion-style command with a path argument containing '='. spatie/phpunit-watcher only uses Process to spawn the phpunit test runner, not for file-deletion operations, so this usage doesn't match the vulnerable pattern."
 				}
 			}
 		}
