@@ -20,6 +20,13 @@
 		"allow-plugins": {
 			"dealerdirect/phpcodesniffer-composer-installer": true,
 			"composer/installers": true
+		},
+		"policy": {
+			"advisories": {
+				"ignore-id": {
+					"PKSA-z3gr-8qht-p93v": "CVE-2026-24765: unsafe deserialization in PHPUnit's PHPT-format code-coverage handling. This repository has no .phpt-format tests, and unit-test.yml explicitly disables code coverage instrumentation (coverage: none), so the vulnerable code path is never reached. Ignored to allow a PHP-7.0/7.1-compatible phpunit/phpunit release to resolve."
+				}
+			}
 		}
 	},
 	"require-dev": {
