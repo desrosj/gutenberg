@@ -96,6 +96,43 @@ jobs:
               run: |
                   npx playwright install chromium firefox webkit
 
+            # SPIKE: iteration 2. Iteration 1 (no manual packages at all)
+            # showed chromium already launches on this runner image with
+            # zero extra packages. Firefox failed with a single missing
+            # library (libdbus-glib-1-2, unchanged package name on Noble).
+            # Webkit failed with a long list of missing libraries; each
+            # candidate Noble package name below was independently confirmed
+            # to exist via packages.ubuntu.com before being added here,
+            # EXCEPT libsoup2.4-1 (needed for libsoup-2.4.so.1), which
+            # packages.ubuntu.com confirms was dropped entirely from Noble
+            # (Ubuntu 24.04 ships only libsoup-3.0, a different, non-drop-in
+            # soname) - included here as a comment, not installed, since
+            # apt-get would hard-fail the whole step on an unknown package
+            # name. This iteration's goal is to see how much of webkit's
+            # dependency list this resolves with that one gap left open.
+            - name: Install Noble system packages for Playwright browsers
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y --no-install-recommends \
+                      libdbus-glib-1-2 \
+                      libpcre3 \
+                      libvpx9 \
+                      libevent-2.1-7t64 \
+                      libopus0 \
+                      libwoff1 \
+                      libharfbuzz-icu0 \
+                      gstreamer1.0-plugins-base \
+                      gstreamer1.0-plugins-good \
+                      libgstreamer-gl1.0-0 \
+                      libsecret-1-0 \
+                      libhyphen0 \
+                      libwayland-server0 \
+                      libmanette-0.2-0 \
+                      libflite1 \
+                      libgles2 \
+                      libx264-164
+                  # libsoup2.4-1 intentionally omitted: not available on Noble.
+
             # SPIKE: diagnostic-only launch check for all three browsers in a
             # single step, so one CI run reports the missing-library error
             # for every browser at once instead of only the first one that
