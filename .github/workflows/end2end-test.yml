@@ -19,7 +19,9 @@ jobs:
     e2e-puppeteer:
         name: Puppeteer - ${{ matrix.part }}
         runs-on: ubuntu-latest
-        if: ${{ github.repository == 'WordPress/gutenberg' || github.event_name == 'pull_request' }}
+        # SPIKE: disabled, this job is unrelated to the Playwright/Noble investigation
+        # this branch exists for.
+        if: false
         strategy:
             fail-fast: false
             matrix:
@@ -69,8 +71,10 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                part: [1, 2, 3, 4]
-                totalParts: [4]
+                # SPIKE: scoped down to a single shard while iterating on the
+                # system-package list, to keep each CI round-trip short.
+                part: [1]
+                totalParts: [1]
 
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -83,15 +87,47 @@ jobs:
             - name: Npm build
               run: npm run build
 
-            - name: Install Playwright dependencies
+            # SPIKE: install browser binaries only, without Playwright's own
+            # `--with-deps` OS-package installer, which doesn't recognize
+            # Ubuntu 24.04 "Noble" (the current `ubuntu-latest`) on this old
+            # Playwright version. System libraries are installed by hand in
+            # the next step instead.
+            - name: Install Playwright browser binaries (no --with-deps)
               run: |
-                  npx playwright install chromium firefox webkit --with-deps
+                  npx playwright install chromium firefox webkit
 
+            # SPIKE: diagnostic-only launch check for all three browsers in a
+            # single step, so one CI run reports the missing-library error
+            # for every browser at once instead of only the first one that
+            # happens to run. Not part of the eventual real fix.
+            - name: Diagnostic - attempt to launch each browser
+              run: |
+                  node -e "
+                  const { chromium, firefox, webkit } = require('playwright-core');
+                  (async () => {
+                    for (const [name, type] of [['chromium', chromium], ['firefox', firefox], ['webkit', webkit]]) {
+                      try {
+                        const browser = await type.launch();
+                        await browser.close();
+                        console.log('=== ' + name + ': OK ===');
+                      } catch (e) {
+                        console.log('=== ' + name + ': FAILED ===');
+                        console.log(e.message);
+                      }
+                    }
+                  })();
+                  "
+
+            # SPIKE: wp-env + the real test run are re-enabled once the
+            # diagnostic launch step above is passing, to keep early
+            # dependency-hunting iterations fast.
             - name: Install WordPress and start the server
+              if: false
               run: |
                   npm run wp-env start
 
             - name: Run the tests
+              if: false
               run: |
                   xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- npm run test:e2e:playwright -- --shard=${{ matrix.part }}/${{ matrix.totalParts }}
 
