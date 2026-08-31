@@ -155,10 +155,25 @@ jobs:
                   })();
                   "
 
-            # SPIKE: iteration 3. Chromium and Firefox now both launch
-            # (confirmed by the diagnostic step above); re-enabling the real
-            # wp-env + Playwright test run to confirm actual E2E tests
-            # execute, not just that the browsers can launch standalone.
+            # SPIKE: iteration 4. `npm run wp-env start` itself failed with
+            # `spawn docker-compose ENOENT` in iteration 3 -- a SEPARATE,
+            # pre-existing problem unrelated to Playwright/apt packages: the
+            # current ubuntu-latest runner image no longer ships the
+            # standalone `docker-compose` v1 binary that @wordpress/env's
+            # `docker-compose` npm dependency shells out to directly (only
+            # the `docker compose` v2 plugin subcommand is available).
+            # Confirmed pre-existing and orthogonal to this spike: the real,
+            # unmodified fix-actions-6.4/disable-flaky-test-issue-reporting
+            # branch's own most recent CI run fails identically at this same
+            # step in its e2e-puppeteer job too, which never touches
+            # Playwright at all. This one-line shim works around it here
+            # only so this spike can verify real E2E test execution; it is
+            # NOT a proposed fix for that separate issue.
+            - name: Work around missing docker-compose v1 binary (unrelated pre-existing issue)
+              run: |
+                  printf '#!/bin/sh\nexec docker compose "$@"\n' | sudo tee /usr/local/bin/docker-compose > /dev/null
+                  sudo chmod +x /usr/local/bin/docker-compose
+
             - name: Install WordPress and start the server
               run: |
                   npm run wp-env start
