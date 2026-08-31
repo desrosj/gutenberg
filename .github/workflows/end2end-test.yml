@@ -155,16 +155,15 @@ jobs:
                   })();
                   "
 
-            # SPIKE: wp-env + the real test run are re-enabled once the
-            # diagnostic launch step above is passing, to keep early
-            # dependency-hunting iterations fast.
+            # SPIKE: iteration 3. Chromium and Firefox now both launch
+            # (confirmed by the diagnostic step above); re-enabling the real
+            # wp-env + Playwright test run to confirm actual E2E tests
+            # execute, not just that the browsers can launch standalone.
             - name: Install WordPress and start the server
-              if: false
               run: |
                   npm run wp-env start
 
             - name: Run the tests
-              if: false
               run: |
                   xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- npm run test:e2e:playwright -- --shard=${{ matrix.part }}/${{ matrix.totalParts }}
 
