@@ -71,10 +71,12 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                # SPIKE: scoped down to a single shard while iterating on the
-                # system-package list, to keep each CI round-trip short.
+                # SPIKE: scoped down to one real shard (1 of 4, matching the
+                # unmodified workflow's normal split) instead of running the
+                # whole suite unsharded, which made the previous iteration's
+                # verification run take 30+ minutes for no added value.
                 part: [1]
-                totalParts: [1]
+                totalParts: [4]
 
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
