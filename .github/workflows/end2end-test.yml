@@ -83,17 +83,43 @@ jobs:
             - name: Npm build
               run: npm run build
 
-            - name: Install Playwright dependencies
+            # `--with-deps` runs Playwright's own OS-detection before installing
+            # any system packages, and Playwright 1.32.0 (pinned on this branch)
+            # doesn't recognize Ubuntu 24.04 "Noble" (the current `ubuntu-latest`),
+            # so the step fails outright before a single browser binary is
+            # installed. Installing the browser binaries only, then the system
+            # packages by hand below, sidesteps that OS-detection check entirely.
+            - name: Install Playwright browser binaries
               run: |
-                  npx playwright install chromium firefox webkit --with-deps
+                  npx playwright install chromium firefox
+
+            # Chromium launches on Noble's base runner image with no extra
+            # packages. Firefox needs exactly one: libdbus-glib-1-2 (unchanged
+            # package name on Noble).
+            - name: Install system packages required by Playwright browsers
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y --no-install-recommends \
+                      libdbus-glib-1-2
 
             - name: Install WordPress and start the server
               run: |
                   npm run wp-env start
 
+            # The `webkit` project is deliberately excluded here (--project
+            # limits the run to `chromium` and `firefox`). WebKit needs system
+            # packages beyond libdbus-glib-1-2 above, and two of them
+            # (libsoup2.4-1, libvpx7) were dropped from Noble's repositories
+            # entirely, superseded by ABI-incompatible major version bumps
+            # (libsoup-3.0, libvpx9) that Playwright 1.32.0 doesn't target.
+            # There's no package to install here that fixes it; it would take
+            # a Playwright upgrade, which is off the table for this branch.
+            # This is a permanent, deliberate gap, not an oversight — excluded
+            # so CI gives a clean signal for the browsers that do work, rather
+            # than leaving a WebKit leg that can never pass.
             - name: Run the tests
               run: |
-                  xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- npm run test:e2e:playwright -- --shard=${{ matrix.part }}/${{ matrix.totalParts }}
+                  xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- npm run test:e2e:playwright -- --shard=${{ matrix.part }}/${{ matrix.totalParts }} --project=chromium --project=firefox
 
             - name: Archive debug artifacts (screenshots, traces)
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
