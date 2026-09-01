@@ -56,7 +56,7 @@ jobs:
               if: github.event_name == 'push'
               run: ./bin/plugin/cli.js perf --ci $GITHUB_SHA wp/5.8 --tests-branch $GITHUB_SHA
 
-            - uses: actions/github-script@0.3.0
+            - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
               if: github.event_name == 'push'
               id: commit-timestamp
               with:
