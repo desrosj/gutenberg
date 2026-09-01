@@ -91,14 +91,11 @@ jobs:
             # packages by hand below, sidesteps that OS-detection check entirely.
             - name: Install Playwright browser binaries
               run: |
-                  npx playwright install chromium firefox webkit
+                  npx playwright install chromium firefox
 
             # Chromium launches on Noble's base runner image with no extra
             # packages. Firefox needs exactly one: libdbus-glib-1-2 (unchanged
-            # package name on Noble). WebKit also needs system packages here,
-            # but two of them (libsoup2.4-1, libvpx7) no longer exist in
-            # Noble's repositories at all, so it's excluded from the test
-            # matrix in a separate commit rather than partially patched.
+            # package name on Noble).
             - name: Install system packages required by Playwright browsers
               run: |
                   sudo apt-get update
@@ -109,9 +106,20 @@ jobs:
               run: |
                   npm run wp-env start
 
+            # The `webkit` project is deliberately excluded here (--project
+            # limits the run to `chromium` and `firefox`). WebKit needs system
+            # packages beyond libdbus-glib-1-2 above, and two of them
+            # (libsoup2.4-1, libvpx7) were dropped from Noble's repositories
+            # entirely, superseded by ABI-incompatible major version bumps
+            # (libsoup-3.0, libvpx9) that Playwright 1.32.0 doesn't target.
+            # There's no package to install here that fixes it; it would take
+            # a Playwright upgrade, which is off the table for this branch.
+            # This is a permanent, deliberate gap, not an oversight — excluded
+            # so CI gives a clean signal for the browsers that do work, rather
+            # than leaving a WebKit leg that can never pass.
             - name: Run the tests
               run: |
-                  xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- npm run test:e2e:playwright -- --shard=${{ matrix.part }}/${{ matrix.totalParts }}
+                  xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- npm run test:e2e:playwright -- --shard=${{ matrix.part }}/${{ matrix.totalParts }} --project=chromium --project=firefox
 
             - name: Archive debug artifacts (screenshots, traces)
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
