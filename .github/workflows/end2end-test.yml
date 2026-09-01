@@ -83,9 +83,27 @@ jobs:
             - name: Npm build
               run: npm run build
 
-            - name: Install Playwright dependencies
+            # `--with-deps` runs Playwright's own OS-detection before installing
+            # any system packages, and Playwright 1.32.0 (pinned on this branch)
+            # doesn't recognize Ubuntu 24.04 "Noble" (the current `ubuntu-latest`),
+            # so the step fails outright before a single browser binary is
+            # installed. Installing the browser binaries only, then the system
+            # packages by hand below, sidesteps that OS-detection check entirely.
+            - name: Install Playwright browser binaries
               run: |
-                  npx playwright install chromium firefox webkit --with-deps
+                  npx playwright install chromium firefox webkit
+
+            # Chromium launches on Noble's base runner image with no extra
+            # packages. Firefox needs exactly one: libdbus-glib-1-2 (unchanged
+            # package name on Noble). WebKit also needs system packages here,
+            # but two of them (libsoup2.4-1, libvpx7) no longer exist in
+            # Noble's repositories at all, so it's excluded from the test
+            # matrix in a separate commit rather than partially patched.
+            - name: Install system packages required by Playwright browsers
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y --no-install-recommends \
+                      libdbus-glib-1-2
 
             - name: Install WordPress and start the server
               run: |
