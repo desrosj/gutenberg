@@ -21,7 +21,7 @@ env:
 jobs:
     e2e-puppeteer:
         name: Puppeteer - ${{ matrix.part }}
-        runs-on: ubuntu-latest
+        runs-on: 'ubuntu-24.04'
         if: ${{ github.repository == 'WordPress/gutenberg' || github.event_name == 'pull_request' }}
         strategy:
             fail-fast: false
@@ -69,7 +69,7 @@ jobs:
 
     e2e-playwright:
         name: Playwright
-        runs-on: ubuntu-latest
+        runs-on: 'ubuntu-24.04'
         if: ${{ github.repository == 'WordPress/gutenberg' || github.event_name == 'pull_request' }}
         strategy:
             fail-fast: false
@@ -120,7 +120,7 @@ jobs:
         name: Report to GitHub
         needs: [e2e-puppeteer, e2e-playwright]
         if: ${{ always() }}
-        runs-on: ubuntu-latest
+        runs-on: 'ubuntu-24.04'
         steps:
             # Checkout defaults to using the branch which triggered the event, which
             # isn't necessarily `trunk` (e.g. in the case of a merge).
