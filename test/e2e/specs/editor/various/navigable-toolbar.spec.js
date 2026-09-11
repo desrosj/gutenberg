@@ -14,6 +14,12 @@ test.describe( 'Block Toolbar', () => {
 		await admin.createNewPost();
 	} );
 
+	test.afterEach( async ( { requestUtils } ) => {
+		// Reset preferences via REST so a mid-test failure doesn't leak
+		// the fixed-toolbar setting (or any other pref) to other tests.
+		await requestUtils.resetPreferences();
+	} );
+
 	test.describe( 'Contextual Toolbar', () => {
 		test( 'should not scroll page', async ( { page, pageUtils } ) => {
 			while (
