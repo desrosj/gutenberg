@@ -19,7 +19,9 @@ jobs:
     e2e-puppeteer:
         name: Puppeteer - ${{ matrix.part }}
         runs-on: ubuntu-latest
-        if: ${{ github.repository == 'WordPress/gutenberg' || github.event_name == 'pull_request' }}
+        # SPIKE: disabled, this job is unrelated to the Playwright/Noble investigation
+        # this branch exists for.
+        if: false
         strategy:
             fail-fast: false
             matrix:
@@ -69,7 +71,11 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                part: [1, 2, 3, 4]
+                # SPIKE: scoped down to one real shard (1 of 4, matching the
+                # unmodified workflow's normal split) instead of running the
+                # whole suite unsharded, which made the previous iteration's
+                # verification run take 30+ minutes for no added value.
+                part: [1]
                 totalParts: [4]
 
         steps:
@@ -83,9 +89,92 @@ jobs:
             - name: Npm build
               run: npm run build
 
-            - name: Install Playwright dependencies
+            # SPIKE: install browser binaries only, without Playwright's own
+            # `--with-deps` OS-package installer, which doesn't recognize
+            # Ubuntu 24.04 "Noble" (the current `ubuntu-latest`) on this old
+            # Playwright version. System libraries are installed by hand in
+            # the next step instead.
+            - name: Install Playwright browser binaries (no --with-deps)
               run: |
-                  npx playwright install chromium firefox webkit --with-deps
+                  npx playwright install chromium firefox webkit
+
+            # SPIKE: iteration 2. Iteration 1 (no manual packages at all)
+            # showed chromium already launches on this runner image with
+            # zero extra packages. Firefox failed with a single missing
+            # library (libdbus-glib-1-2, unchanged package name on Noble).
+            # Webkit failed with a long list of missing libraries; each
+            # candidate Noble package name below was independently confirmed
+            # to exist via packages.ubuntu.com before being added here,
+            # EXCEPT libsoup2.4-1 (needed for libsoup-2.4.so.1), which
+            # packages.ubuntu.com confirms was dropped entirely from Noble
+            # (Ubuntu 24.04 ships only libsoup-3.0, a different, non-drop-in
+            # soname) - included here as a comment, not installed, since
+            # apt-get would hard-fail the whole step on an unknown package
+            # name. This iteration's goal is to see how much of webkit's
+            # dependency list this resolves with that one gap left open.
+            - name: Install Noble system packages for Playwright browsers
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y --no-install-recommends \
+                      libdbus-glib-1-2 \
+                      libpcre3 \
+                      libvpx9 \
+                      libevent-2.1-7t64 \
+                      libopus0 \
+                      libwoff1 \
+                      libharfbuzz-icu0 \
+                      gstreamer1.0-plugins-base \
+                      gstreamer1.0-plugins-good \
+                      libgstreamer-gl1.0-0 \
+                      libsecret-1-0 \
+                      libhyphen0 \
+                      libwayland-server0 \
+                      libmanette-0.2-0 \
+                      libflite1 \
+                      libgles2 \
+                      libx264-164
+                  # libsoup2.4-1 intentionally omitted: not available on Noble.
+
+            # SPIKE: diagnostic-only launch check for all three browsers in a
+            # single step, so one CI run reports the missing-library error
+            # for every browser at once instead of only the first one that
+            # happens to run. Not part of the eventual real fix.
+            - name: Diagnostic - attempt to launch each browser
+              run: |
+                  node -e "
+                  const { chromium, firefox, webkit } = require('playwright-core');
+                  (async () => {
+                    for (const [name, type] of [['chromium', chromium], ['firefox', firefox], ['webkit', webkit]]) {
+                      try {
+                        const browser = await type.launch();
+                        await browser.close();
+                        console.log('=== ' + name + ': OK ===');
+                      } catch (e) {
+                        console.log('=== ' + name + ': FAILED ===');
+                        console.log(e.message);
+                      }
+                    }
+                  })();
+                  "
+
+            # SPIKE: iteration 4. `npm run wp-env start` itself failed with
+            # `spawn docker-compose ENOENT` in iteration 3 -- a SEPARATE,
+            # pre-existing problem unrelated to Playwright/apt packages: the
+            # current ubuntu-latest runner image no longer ships the
+            # standalone `docker-compose` v1 binary that @wordpress/env's
+            # `docker-compose` npm dependency shells out to directly (only
+            # the `docker compose` v2 plugin subcommand is available).
+            # Confirmed pre-existing and orthogonal to this spike: the real,
+            # unmodified fix-actions-6.4/disable-flaky-test-issue-reporting
+            # branch's own most recent CI run fails identically at this same
+            # step in its e2e-puppeteer job too, which never touches
+            # Playwright at all. This one-line shim works around it here
+            # only so this spike can verify real E2E test execution; it is
+            # NOT a proposed fix for that separate issue.
+            - name: Work around missing docker-compose v1 binary (unrelated pre-existing issue)
+              run: |
+                  printf '#!/bin/sh\nexec docker compose "$@"\n' | sudo tee /usr/local/bin/docker-compose > /dev/null
+                  sudo chmod +x /usr/local/bin/docker-compose
 
             - name: Install WordPress and start the server
               run: |
