@@ -23,6 +23,13 @@
 		"allow-plugins": {
 			"dealerdirect/phpcodesniffer-composer-installer": true,
 			"composer/installers": true
+		},
+		"policy": {
+			"advisories": {
+				"ignore-id": {
+					"PKSA-mh9b-91zm-m1gy": "CVE-2026-45293: only affects the WordPress and WordPress-Extra rulesets' WordPress.WP.EnqueuedResourceParameters sniff, which this repository's phpcs.xml.dist does not use (it uses WordPress-Core and WordPress-Docs). Ignored to allow a PHP-7.0/7.1-compatible wp-coding-standards/wpcs release to resolve."
+				}
+			}
 		}
 	},
 	"require-dev": {
