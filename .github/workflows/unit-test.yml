@@ -56,9 +56,39 @@ jobs:
       run: npm run test-unit -- --ci --maxWorkers=2 --cacheDirectory="$HOME/.jest-cache"
 
   unit-php:
-    name: PHP
+    name: PHP ${{ matrix.php }}${{ matrix.multisite && ' multisite' || '' }}
 
     runs-on: 'ubuntu-24.04'
+
+    strategy:
+      # Don't let one PHP version's failure cancel the others -- each leg is
+      # independently useful signal, especially the first time some of these
+      # versions are tested in isolation on this branch.
+      fail-fast: false
+      matrix:
+        php: ['5.6', '7.0', '7.4']
+        multisite: [false, true]
+
+    env:
+      # NOTE: this branch's `@wordpress/env` (v1.6.0) predates the
+      # `WP_ENV_PHP_VERSION` mechanism entirely -- it is never read anywhere
+      # in `packages/env`'s source, and the `wordpress`/`wordpress:cli`/
+      # `tests-wordpress`/`tests-cli` Docker images in
+      # `build-docker-compose-config.js` are hardcoded, unversioned image
+      # references with no PHP-version templating at all. They always run
+      # whatever PHP version Docker Hub's floating `wordpress`/`wordpress:cli`
+      # tags currently resolve to, regardless of this matrix.
+      #
+      # The one piece of this branch's Docker Compose config that IS
+      # PHP-version-selectable is the standalone `phpunit` service, whose
+      # image is `wordpressdevelop/phpunit:${LOCAL_PHP-latest}` -- a raw
+      # docker-compose environment-variable substitution (not a wp-env config
+      # option). `npm run test-php`/`test-unit-php-multisite` both execute
+      # PHPUnit via `wp-env run phpunit`, which shells out to `docker compose
+      # run` with no explicit `env` override, so it inherits this variable
+      # from the job environment. Setting it here is what actually pins the
+      # PHP version PHPUnit itself runs under for each matrix leg.
+      LOCAL_PHP: ${{ matrix.php }}-fpm
 
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -92,5 +122,10 @@ jobs:
         chmod -R 767 ./ # TODO: Possibly integrate in wp-env
         npm run wp-env start
 
-    - name: Running the tests
-      run: npm run test-php && npm run test-unit-php-multisite
+    - name: Running the tests (single site)
+      if: ${{ ! matrix.multisite }}
+      run: npm run test-php
+
+    - name: Running the tests (multisite)
+      if: ${{ matrix.multisite }}
+      run: npm run test-unit-php-multisite
