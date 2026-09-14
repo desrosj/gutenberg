@@ -234,8 +234,15 @@ module.exports = function buildDockerComposeConfig( config ) {
 					...dbEnv.tests,
 				},
 			},
+			// The official `composer` image floats to whatever PHP release is
+			// current on Docker Hub, independent of `testsPhpVersion`/
+			// `developmentPhpVersion` above — it has drifted to PHP 8.5, which
+			// is incompatible with this project's own committed
+			// `composer.lock` (`phpspec/prophecy` requires `php ^7.2 || ~8.0,
+			// <8.2`). Pin to the newest Composer 2.2.x (LTS) patch that still
+			// bundles a PHP below that ceiling.
 			composer: {
-				image: 'composer',
+				image: 'composer:2.2.17',
 				volumes: [ `${ config.configDirectoryPath }:/app` ],
 			},
 			phpunit: {
