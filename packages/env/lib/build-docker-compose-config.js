@@ -268,7 +268,20 @@ module.exports = function buildDockerComposeConfig( config ) {
 				},
 			},
 			composer: {
-				image: 'composer',
+				// Pinned to the last release whose image still bundles a
+				// pre-8.4 PHP runtime. Docker Hub's `composer` image is
+				// rebuilt against a rolling PHP base independent of the
+				// Composer version tag, and every build from `2.8.3` onward
+				// bundles PHP >=8.4, which turns `wp-coding-standards/wpcs`
+				// 2.x's implicitly-nullable-parameter usage into a fatal
+				// phpcs `Internal.Exception` (deprecation notices are
+				// treated as errors during a sniff run), aborting
+				// `lint:php` entirely. This container's PHP version is
+				// otherwise unrelated to `WP_ENV_PHP_VERSION`/any PHP
+				// version matrix, so a floating tag here breaks every
+				// matrix leg identically regardless of which PHP version
+				// is under test.
+				image: 'composer:2.8.0',
 				volumes: [ `${ config.configDirectoryPath }:/app` ],
 			},
 			phpunit: {
