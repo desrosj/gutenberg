@@ -118,9 +118,16 @@ jobs:
     # against its own fixed, modern PHP version (not `matrix.php`), and
     # leaving them installed would let PHPUnit's own PHP-8-only classes get
     # autoloaded by the older per-version PHPUnit container and fatal.
+    #
+    # `--no-update` is deliberately NOT used here: it only edits
+    # composer.json, without touching composer.lock or the installed
+    # vendor/ directory, so the very next step's `composer install` would
+    # just reinstall the exact same (still-locked) packages regardless of
+    # this edit. Letting `composer remove` actually update the lock file
+    # is what makes the removal take effect.
     - name: Remove incompatible Composer packages
       if: ${{ matrix.php < '7.2' }}
-      run: npm run wp-env run composer "remove phpunit/phpunit spatie/phpunit-watcher --dev --no-update"
+      run: npm run wp-env run composer "remove phpunit/phpunit spatie/phpunit-watcher --dev"
 
     - name: Running lint check
       run: npm run lint-php
