@@ -235,7 +235,20 @@ module.exports = function buildDockerComposeConfig( config ) {
 				},
 			},
 			composer: {
-				image: 'composer',
+				// The official `composer` image floats to whatever PHP the
+				// Docker Hub build currently bundles (PHP 8.5 as of this
+				// writing), independent of the composer-version tag chosen.
+				// That's incompatible with this branch's own committed
+				// `composer.lock`, which locks `phpspec/prophecy` to a
+				// release requiring `php ^7.2 || ~8.0, <8.1`. Pinning to a
+				// `wordpressdevelop/phpunit` tag instead gets a fixed,
+				// known-good PHP version (this one bundles PHP 8.0) plus a
+				// working `composer` binary, and that image family is
+				// already used elsewhere in this file for exactly this
+				// kind of stability. `entrypoint` is overridden because
+				// this image's own default entrypoint isn't `composer`.
+				image: 'wordpressdevelop/phpunit:9-php-8.0-fpm',
+				entrypoint: 'composer',
 				volumes: [ `${ config.configDirectoryPath }:/app` ],
 			},
 			phpunit: {
