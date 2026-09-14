@@ -98,6 +98,17 @@ module.exports = async function initConfig( {
 };
 
 function dockerFileContents( image, xdebugMode ) {
+	// `pecl install xdebug` with no version pin always resolves to the
+	// newest Xdebug release, which currently requires PHP >= 8.0. Skipping
+	// the install entirely when Xdebug isn't actually requested (the
+	// default for every CI job) avoids that requirement altogether, rather
+	// than needing to track a PHP-version-to-Xdebug-version compatibility
+	// table for a feature that's off by default anyway.
+	if ( xdebugMode === 'off' ) {
+		return `FROM ${ image }
+`;
+	}
+
 	const isLinux = os.type() === 'Linux';
 	// Discover client host does not appear to work on macOS with Docker.
 	const clientDetectSettings = isLinux
