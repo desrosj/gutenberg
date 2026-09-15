@@ -276,13 +276,37 @@ module.exports = function buildDockerComposeConfig( config ) {
 				// 2.x's implicitly-nullable-parameter usage into a fatal
 				// phpcs `Internal.Exception` (deprecation notices are
 				// treated as errors during a sniff run), aborting
-				// `lint:php` entirely. This container's PHP version is
-				// otherwise unrelated to `WP_ENV_PHP_VERSION`/any PHP
-				// version matrix, so a floating tag here breaks every
-				// matrix leg identically regardless of which PHP version
-				// is under test.
+				// `lint:php` entirely.
 				image: 'composer:2.8.0',
 				volumes: [ `${ config.configDirectoryPath }:/app` ],
+				// This container's own PHP runtime (fixed by the image tag
+				// above) is unrelated to `WP_ENV_PHP_VERSION`/any PHP
+				// version matrix, but `composer install`'s *dependency
+				// resolution* still needs to target the PHP version the
+				// tests will actually run under (`testsPhpVersion`) rather
+				// than this container's own PHP. On a project with no
+				// `composer.lock` (like this one), Composer otherwise
+				// resolves the newest `phpunit/phpunit` compatible with
+				// its own PHP runtime, regardless of which
+				// `WP_ENV_PHP_VERSION` is under test — e.g. it picks
+				// `phpunit/phpunit` 9.6.x here, which refuses to boot at
+				// all under PHP < 7.3, and under PHP 7.3/7.4/8.0 its mock
+				// generator fatals with `Call to undefined function
+				// enum_exists()` (a real phpunit/phpunit bug: that
+				// function is PHP 8.1+ only) the moment a test calls
+				// `createMock()`. There is no Composer environment
+				// variable for the `platform.php` config value (only
+				// `composer config platform.php <version>` or a static
+				// `composer.json` entry, and the correct version varies
+				// per matrix leg), so this overrides the container's
+				// entrypoint to set it immediately before every command.
+				entrypoint: [
+					'sh',
+					'-c',
+					'if [ -n "$1" ]; then composer config platform.php "$1"; fi; shift; exec composer "$@"',
+					'sh',
+					testsPhpVersion,
+				],
 			},
 			phpunit: {
 				image: phpunitImage,
