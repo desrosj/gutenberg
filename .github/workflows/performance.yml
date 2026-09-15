@@ -49,7 +49,12 @@ jobs:
 
             - name: Compare performance with base branch
               if: github.event_name == 'pull_request'
-              run: ./bin/plugin/cli.js perf $GITHUB_SHA ${{ github.base_ref }} --tests-branch $GITHUB_SHA
+              # Pin the WP core version to match this branch's own .wp-env.json
+              # (WordPress/WordPress#6.7-branch). Without --wp-version, the perf
+              # CLI's own environment generation defaults to unpinned WP core
+              # trunk, which has diverged from what this branch's frozen
+              # Gutenberg snapshot was built against.
+              run: ./bin/plugin/cli.js perf $GITHUB_SHA ${{ github.base_ref }} --tests-branch $GITHUB_SHA --wp-version 6.7
 
             - name: Compare performance with current WordPress Core and previous Gutenberg versions
               if: github.event_name == 'release'
