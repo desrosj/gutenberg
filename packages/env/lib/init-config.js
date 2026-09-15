@@ -109,6 +109,7 @@ function dockerFileContents( image, config ) {
 	let shouldInstallXdebug = true;
 	// By default, an undefined phpVersion uses the version on the docker image,
 	// which is supported by Xdebug 3.
+	let xdebugPackage = 'xdebug';
 	if ( config.env.development.phpVersion ) {
 		const versionTokens = config.env.development.phpVersion.split( '.' );
 		const majorVersion = parseInt( versionTokens[ 0 ] );
@@ -120,17 +121,31 @@ function dockerFileContents( image, config ) {
 		// Disable Xdebug for PHP < 7.2. Xdebug 3 supports 7.2 and higher.
 		if ( majorVersion < 7 || ( majorVersion === 7 && minorVersion < 2 ) ) {
 			shouldInstallXdebug = false;
+		} else if ( majorVersion === 7 ) {
+			// `pecl install xdebug` (no version pinned) always resolves to the
+			// newest Xdebug release, and every Xdebug 3.2.x-3.5.x release's own
+			// PECL package metadata declares a PHP >= 8.0.0 requirement, so
+			// `pecl` refuses to install any of them on a PHP 7 interpreter
+			// (confirmed directly against pecl.php.net's own per-release
+			// dependency data, not just its human-readable compatibility docs,
+			// which describe those same releases as still supporting PHP 7.x
+			// at the source level). Xdebug 3.1.6 is the newest release whose
+			// PECL metadata actually declares support for PHP 7.2-7.4 (min
+			// 7.2.0, max 8.1.99), so pin to it explicitly on PHP 7.x rather
+			// than letting `pecl install xdebug` fail outright trying to
+			// resolve an incompatible version.
+			xdebugPackage = 'xdebug-3.1.6';
 		}
 	}
 
 	return `FROM ${ image }
 
 RUN apt-get -qy install $PHPIZE_DEPS && touch /usr/local/etc/php/php.ini
-${ shouldInstallXdebug ? installXdebug( config.xdebug ) : '' }
+${ shouldInstallXdebug ? installXdebug( config.xdebug, xdebugPackage ) : '' }
 `;
 }
 
-function installXdebug( enableXdebug ) {
+function installXdebug( enableXdebug, xdebugPackage = 'xdebug' ) {
 	const isLinux = os.type() === 'Linux';
 	// Discover client host does not appear to work on macOS with Docker.
 	const clientDetectSettings = isLinux
@@ -139,7 +154,7 @@ function installXdebug( enableXdebug ) {
 
 	return `
 # Install Xdebug:
-RUN pecl install xdebug && docker-php-ext-enable xdebug
+RUN pecl install ${ xdebugPackage } && docker-php-ext-enable xdebug
 RUN echo 'xdebug.start_with_request=yes' >> /usr/local/etc/php/php.ini
 RUN echo 'xdebug.mode=${ enableXdebug }' >> /usr/local/etc/php/php.ini
 RUN echo '${ clientDetectSettings }' >> /usr/local/etc/php/php.ini
