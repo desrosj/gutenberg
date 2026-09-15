@@ -62,9 +62,24 @@ jobs:
       run: npm run test-unit:date -- --ci --maxWorkers=2 --cacheDirectory="$HOME/.jest-cache"
 
   unit-php:
-    name: PHP
+    name: PHP ${{ matrix.php }}${{ matrix.multisite && ' multisite' || '' }} on 'ubuntu-24.04'
 
     runs-on: 'ubuntu-24.04'
+
+    strategy:
+      # Let every PHP version finish so a failure at one version doesn't
+      # cancel the runs still verifying the others.
+      fail-fast: false
+      matrix:
+        php:
+          - '5.6'
+          - '7.0'
+          - '7.4'
+          - '8.0'
+        multisite: [false, true]
+
+    env:
+      WP_ENV_PHP_VERSION: ${{ matrix.php }}
 
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -97,16 +112,26 @@ jobs:
         chmod -R 767 ./ # TODO: Possibly integrate in wp-env
         npm run wp-env start
 
+    # The phpunit/phpunit and spatie/phpunit-watcher packages are not
+    # compatible with PHP < 7.2. They must be removed before running the
+    # tests, since `wp-env`'s `composer` service always installs them
+    # against its own fixed, modern PHP version (not `matrix.php`), and
+    # leaving them installed would let PHPUnit's own PHP-8-only classes get
+    # autoloaded by the older per-version PHPUnit container and fatal.
+    - name: Remove incompatible Composer packages
+      if: ${{ matrix.php < '7.2' }}
+      run: npm run wp-env run composer "remove phpunit/phpunit spatie/phpunit-watcher --dev --no-update"
+
     - name: Running lint check
       run: npm run lint-php
 
     - name: Running single site unit tests
       run: npm run test-unit-php
-      if: ${{ success() || failure() }}
+      if: ${{ ! matrix.multisite }}
 
     - name: Running multisite unit tests
       run: npm run test-unit-php-multisite
-      if: ${{ success() || failure() }}
+      if: ${{ matrix.multisite }}
 
 
   mobile-unit-js:
