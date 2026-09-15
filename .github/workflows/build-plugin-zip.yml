@@ -20,7 +20,7 @@ concurrency:
 jobs:
     bump-version:
         name: Bump version
-        runs-on: ubuntu-latest
+        runs-on: 'ubuntu-24.04'
         if: |
             github.repository == 'WordPress/gutenberg' &&
             github.event_name == 'workflow_dispatch' &&
@@ -109,7 +109,7 @@ jobs:
 
     build:
         name: Build Release Artifact
-        runs-on: ubuntu-latest
+        runs-on: 'ubuntu-24.04'
         needs: bump-version
         if: ${{ ( github.repository == 'WordPress/gutenberg' && always() ) || ( github.event_name == 'pull_request' && always() ) }}
 
@@ -168,7 +168,7 @@ jobs:
     create-release:
         name: Create Release Draft and Attach Asset
         needs: [bump-version, build]
-        runs-on: ubuntu-latest
+        runs-on: 'ubuntu-24.04'
         if: ${{ github.repository == 'WordPress/gutenberg' }}
 
         steps:
