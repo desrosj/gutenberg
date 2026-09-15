@@ -43,9 +43,9 @@ jobs:
                   npm run wp-env -- run tests-cli "wp theme update twentytwentythree --version=1.0"
                   npm run wp-env stop
 
-            - name: Compare performance with trunk
+            - name: Compare performance with the most recent 6.2 point release
               if: github.event_name == 'pull_request'
-              run: ./bin/plugin/cli.js perf $GITHUB_SHA trunk --tests-branch $GITHUB_SHA
+              run: ./bin/plugin/cli.js perf $GITHUB_SHA ${{ github.base_ref }} --tests-branch $GITHUB_SHA --wp-version 6.2
 
             - name: Compare performance with current WordPress Core and previous Gutenberg versions
               if: github.event_name == 'release'
