@@ -40,8 +40,8 @@
 		"composer/installers": "~1.0"
 	},
 	"scripts": {
-		"format": "phpcbf --standard=phpcs.xml.dist --report-summary --report-source",
-		"lint": "phpcs --standard=phpcs.xml.dist",
+		"format": "php -d error_reporting=\"E_ALL & ~E_DEPRECATED\" vendor/bin/phpcbf --standard=phpcs.xml.dist --report-summary --report-source",
+		"lint": "php -d error_reporting=\"E_ALL & ~E_DEPRECATED\" vendor/bin/phpcs --standard=phpcs.xml.dist",
 		"test": "phpunit",
 		"test:watch": "phpunit-watcher watch < /dev/tty"
 	}
