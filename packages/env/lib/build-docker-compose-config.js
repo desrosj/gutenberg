@@ -268,8 +268,39 @@ module.exports = function buildDockerComposeConfig( config ) {
 				},
 			},
 			composer: {
+				// The floating `composer` tag is used deliberately: Composer is
+				// never pinned here, so every run picks up the newest release.
+				// That keeps its security fixes and its security-advisory policy
+				// engine current, and it means CI resolves dependencies with the
+				// same Composer a contributor running `composer` on their own
+				// machine would get.
 				image: 'composer',
 				volumes: [ `${ config.configDirectoryPath }:/app` ],
+				// Whatever PHP that image happens to ship is unrelated to
+				// `WP_ENV_PHP_VERSION` or any PHP version matrix: only the
+				// `phpunit`/`tests-wordpress` services consume those. Dependency
+				// *resolution*, though, still has to target the PHP version the
+				// tests will actually run under (`testsPhpVersion`). There is no
+				// committed `composer.lock` here, so every `composer install` is
+				// a full resolve, and left alone Composer resolves against its
+				// own container's PHP instead: it picks `phpunit/phpunit` 9.6.x
+				// for every leg, which refuses to boot at all under PHP < 7.3,
+				// and whose mock generator fatals under PHP 7.3/7.4/8.0 with
+				// `Call to undefined function enum_exists()` (that function is
+				// PHP 8.1+ only) the moment a test calls `createMock()`.
+				//
+				// There is no Composer environment variable for the
+				// `platform.php` config value — only `composer config
+				// platform.php <version>` or a static `composer.json` entry, and
+				// the correct version varies per matrix leg — so the entrypoint
+				// sets it before every command.
+				entrypoint: [
+					'sh',
+					'-c',
+					'if [ -n "$1" ]; then composer config platform.php "$1"; fi; shift; exec composer "$@"',
+					'sh',
+					testsPhpVersion,
+				],
 			},
 			phpunit: {
 				image: phpunitImage,
