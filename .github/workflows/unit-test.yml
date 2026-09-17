@@ -87,12 +87,6 @@ jobs:
               run: |
                   npm run wp-env start
 
-            # The spatie/phpunit-watcher package is not compatible with PHP < 7.2.
-            # It must be removed before running the tests.
-            - name: Remove incompatible Composer packages
-              if: ${{ matrix.php < '7.2' }}
-              run: npm run wp-env run composer "remove spatie/phpunit-watcher --dev --no-update"
-
             - name: Running lint check
               run: npm run lint-php
 
