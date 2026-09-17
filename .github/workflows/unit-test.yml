@@ -87,12 +87,6 @@ jobs:
               run: |
                   npm run wp-env start
 
-            # The spatie/phpunit-watcher package is not compatible with PHP < 7.2.
-            # It must be removed before running the tests.
-            - name: Remove incompatible Composer packages
-              if: ${{ matrix.php < '7.2' }}
-              run: npm run wp-env run composer "remove spatie/phpunit-watcher --dev --no-update"
-
             # `npm run lint-php` used to double as the step that installed the
             # PHP dependencies, via its `prelint-php` hook. Linting now happens
             # in the `phpcs` job below, so the install has to be requested
