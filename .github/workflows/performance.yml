@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   performance:
-    name: Compare performance with master
+    name: Run performance tests
 
     runs-on: 'ubuntu-24.04'
 
@@ -43,5 +43,5 @@ jobs:
       run: |
         npm ci
 
-    - name: Run the performance tests
-      run: ./bin/plugin/cli.js perf --ci $GITHUB_SHA master --tests-branch $GITHUB_SHA
+    - name: Compare performance with base branch
+      run: ./bin/plugin/cli.js perf --ci "$GITHUB_SHA" "$GITHUB_BASE_REF" --tests-branch "$GITHUB_SHA"
