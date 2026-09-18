@@ -23,6 +23,17 @@
 		"allow-plugins": {
 			"dealerdirect/phpcodesniffer-composer-installer": true,
 			"composer/installers": true
+		},
+		"policy": {
+			"advisories": {
+				"ignore-id": {
+					"PKSA-z3gr-8qht-p93v": "CVE-2026-24765: unsafe deserialization in PHPUnit's PHPT-format code-coverage handling. This repository has no .phpt-format tests, and unit-test.yml's test-unit-php/test-unit-php-multisite commands never pass a --coverage-* flag, so the vulnerable code path is never reached. Ignored to allow a PHP-5.6/7.0-compatible phpunit/phpunit release to resolve.",
+					"PKSA-v5yj-8nmz-sk2q": "CVE-2026-45304: YAML parser exponential memory allocation via recursive collection-alias expansion in symfony/yaml. Only reachable when parsing untrusted YAML input; the only symfony/yaml usage this dependency graph exercises (PHPUnit 5.7's TAP log formatter) only serializes local data and is never invoked in this repository's own PHPUnit runs (no --log-tap flag is ever used). Ignored to allow a PHP-5.6-compatible symfony/yaml release to resolve, as a transitive dependency of phpunit/phpunit ^5.7.",
+					"PKSA-ft77-7h5f-p3r6": "CVE-2026-45305: ReDoS via catastrophic backtracking in symfony/yaml's parser cleanup regex. Same reachability analysis as PKSA-v5yj-8nmz-sk2q above: only exercised by YAML parsing of untrusted input, which this repository's PHPUnit-5.7-driven usage never performs.",
+					"PKSA-b14r-zh1d-vdrc": "CVE-2026-45133: stack exhaustion via unbounded recursion in symfony/yaml's parser for deeply nested blocks, sequences, and mappings. Same reachability analysis as PKSA-v5yj-8nmz-sk2q above: only exercised by YAML parsing of untrusted input, which this repository's PHPUnit-5.7-driven usage never performs.",
+					"PKSA-xxgb-wq2d-7gpg": "CVE-2013-1397: symfony/yaml's parser could be made to instantiate arbitrary PHP objects or enable PHP-tag parsing without the caller opting in. Only reachable when parsing untrusted YAML with object support enabled, which this repository's PHPUnit-5.7-driven usage never does."
+				}
+			}
 		}
 	},
 	"require-dev": {
@@ -32,7 +43,7 @@
 		"wp-coding-standards/wpcs": "^2.2",
 		"sirbrillig/phpcs-variable-analysis": "^2.8",
 		"wp-phpunit/wp-phpunit": "6.0.*",
-		"phpunit/phpunit": "^8.5",
+		"phpunit/phpunit": "^5.7",
 		"yoast/phpunit-polyfills": "^1.0"
 	},
 	"require": {
