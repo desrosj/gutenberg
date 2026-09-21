@@ -1,0 +1,145 @@
+name: Unit Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+    - trunk
+    - 'release/[0-9]+.[0-9]'
+    - 'wp/[0-9]+.[0-9]'
+    - wp/latest
+    - wp/next
+  # Allow manually triggering the workflow.
+  workflow_dispatch:
+
+# Cancels all previous workflow runs for pull requests that have not completed.
+concurrency:
+    # The concurrency group contains the workflow name and the branch name for pull requests
+    # or the commit hash for any other events.
+    group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+    cancel-in-progress: true
+
+# Disable permissions for all available scopes by default.
+# Any needed permissions should be configured at the job level.
+permissions: {}
+
+jobs:
+  unit-js:
+    name: JavaScript
+
+    runs-on: 'ubuntu-24.04'
+
+    permissions:
+      contents: read
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    - name: Cache node modules
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      env:
+        cache-name: cache-node-modules
+      with:
+        # npm cache files are stored in `~/.npm` on Linux/macOS
+        path: ~/.npm
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
+    - name: Setup Node.js
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version-file: '.nvmrc'
+
+    - name: Npm install and build
+      # It's not necessary to run the full build, since Jest can interpret
+      # source files with `babel-jest`. Some packages have their own custom
+      # build tasks, however. These must be run.
+      run: |
+        npm ci
+        npx lerna run build
+
+    - name: Running the tests
+      run: npm run test-unit -- --ci --maxWorkers=2 --cacheDirectory="$HOME/.jest-cache"
+
+  unit-php:
+    name: PHP ${{ matrix.php }}${{ matrix.multisite && ' multisite' || '' }}
+
+    runs-on: 'ubuntu-24.04'
+
+    permissions:
+      contents: read
+
+    strategy:
+      # Don't let one PHP version's failure cancel the others -- each leg is
+      # independently useful signal.
+      fail-fast: false
+      matrix:
+        # The oldest and newest PHP versions supported by the WordPress version
+        # this branch was shipped with, plus the first PHP 7 release.
+        php: ['5.6', '7.0', '7.4']
+        multisite: [false, true]
+
+    env:
+      # The `php`, `cli` and `phpunit` images in the `wordpress-develop` local
+      # environment are all selected through this variable.
+      LOCAL_PHP: ${{ matrix.php }}-fpm
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    - name: Cache node modules
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      env:
+        cache-name: cache-node-modules
+      with:
+        # npm cache files are stored in `~/.npm` on Linux/macOS
+        path: ~/.npm
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
+    - name: Setup Node.js
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version-file: '.nvmrc'
+
+    - name: Npm install and build
+      run: |
+        npm ci
+        npm run build
+
+    - name: Install WordPress
+      uses: ./.github/setup-wordpress
+
+    - name: Install the PHPUnit Polyfills
+      # The WordPress test suite requires the PHPUnit Polyfills, and expects to find them in the
+      # `vendor` directory of `wordpress-develop`. This mirrors how `wordpress-develop` installs its
+      # Composer dependencies when testing this branch.
+      working-directory: wordpress
+      run: |
+        docker compose run --rm php composer --version
+        if [[ "${LOCAL_PHP}" == '5.6-fpm' || "${LOCAL_PHP}" == '7.0-fpm' ]]; then
+          docker compose run --rm php composer require --dev phpunit/phpunit:"^5.7" --update-with-dependencies
+        else
+          docker compose run --rm php composer install
+        fi
+
+    # `npm run test-php` is not used because it also runs `npm run lint-php`. The versions of
+    # `composer/installers` and `dealerdirect/phpcodesniffer-composer-installer` locked in
+    # `composer.lock` only support Composer 1, so the PHPCS dependencies cannot be installed.
+    - name: Running the tests (single site)
+      if: ${{ ! matrix.multisite }}
+      run: npm run test-unit-php
+
+    - name: Running the tests (multisite)
+      if: ${{ matrix.multisite }}
+      run: npm run test-unit-php-multisite
