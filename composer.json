@@ -20,6 +20,13 @@
 		"allow-plugins": {
 			"dealerdirect/phpcodesniffer-composer-installer": true,
 			"composer/installers": true
+		},
+		"policy": {
+			"advisories": {
+				"ignore-id": {
+					"PKSA-z3gr-8qht-p93v": "CVE-2026-24765: unsafe deserialization in PHPUnit's PHPT-format code-coverage handling. The .phpt format is not used in this repository."
+				}
+			}
 		}
 	},
 	"require-dev": {
