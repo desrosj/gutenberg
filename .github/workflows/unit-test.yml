@@ -1,0 +1,129 @@
+name: Unit Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+    - trunk
+    - 'release/[0-9]+.[0-9]'
+    - 'wp/[0-9]+.[0-9]'
+    - wp/latest
+    - wp/next
+  # Allow manually triggering the workflow.
+  workflow_dispatch:
+
+# Cancels all previous workflow runs for pull requests that have not completed.
+concurrency:
+    # The concurrency group contains the workflow name and the branch name for pull requests
+    # or the commit hash for any other events.
+    group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+    cancel-in-progress: true
+
+# Disable permissions for all available scopes by default.
+# Any needed permissions should be configured at the job level.
+permissions: {}
+
+jobs:
+  unit-js:
+    name: JavaScript
+
+    runs-on: 'ubuntu-24.04'
+
+    permissions:
+      contents: read
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    - name: Cache node modules
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      env:
+        cache-name: cache-node-modules
+      with:
+        # npm cache files are stored in `~/.npm` on Linux/macOS
+        path: ~/.npm
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
+    - name: Setup Node.js
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version-file: '.nvmrc'
+
+    - name: Npm install and build
+      # It's not necessary to run the full build, since Jest can interpret
+      # source files with `babel-jest`. Some packages have their own custom
+      # build tasks, however. These must be run.
+      run: |
+        npm ci
+        npx lerna run build
+
+    - name: Running the tests
+      run: npm run test-unit:ci -- --cacheDirectory="$HOME/.jest-cache"
+
+  unit-php:
+    name: PHP
+
+    runs-on: 'ubuntu-24.04'
+
+    permissions:
+      contents: read
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    - name: Cache node modules
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      env:
+        cache-name: cache-node-modules
+      with:
+        # npm cache files are stored in `~/.npm` on Linux/macOS
+        path: ~/.npm
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
+    - name: Setup Node.js
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version-file: '.nvmrc'
+
+    - name: Npm install and build
+      # The plugin reads the built files when it loads, so it must be built
+      # before the tests can run.
+      run: |
+        npm ci
+        npm run build
+
+    - name: Install WordPress
+      uses: ./.github/setup-wordpress
+
+    # The remaining steps are the commands `bin/run-wp-unit-tests.sh` runs.
+    - name: Check that the PHP parser is up to date
+      run: |
+        node bin/create-php-parser.js
+        if ! git diff --quiet --exit-code lib/parser.php; then
+          echo 'ERROR: The PEG parser has been updated, but the generated PHP version'
+          echo '       (lib/parser.php) has not. Run bin/create-php-parser.js and'
+          echo '       commit the resulting changes to resolve this.'
+          exit 1
+        fi
+
+    # `test-php` runs the PHP coding standards checks before the single site tests.
+    - name: Running the tests (single site)
+      run: npm run test-php
+
+    - name: Running the tests (multisite)
+      run: npm run test-unit-php-multisite
+
+    - name: Check the PHP parser syntax
+      run: php lib/parser.php
