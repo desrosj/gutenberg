@@ -241,6 +241,19 @@ module.exports = function buildDockerComposeConfig( config ) {
 					...dbEnv.tests,
 				},
 			},
+			// The unversioned `composer` tag is deliberate: it always
+			// resolves to the newest Composer release, so this service
+			// keeps picking up upstream security fixes and Composer's
+			// advisory policy engine (see the `config.policy.advisories`
+			// block in composer.json) without anyone having to remember
+			// to bump a pin here.
+			//
+			// Pinning the tag would only be warranted if a PHP version
+			// ceiling forced it, because the `composer:<version>` tags
+			// track PHP by build date rather than by Composer version.
+			// Nothing in this branch's dependency graph imposes such a
+			// ceiling: `composer install` and `composer run-script lint`
+			// both succeed on the PHP shipped in the latest image.
 			composer: {
 				image: 'composer',
 				volumes: [ `${ config.configDirectoryPath }:/app` ],
