@@ -13,7 +13,15 @@ coverage
 yarn.lock
 /artifacts
 
+# The /.cache directory holds the PHPCS scan cache, which the `phpcs` CI job
+# persists between runs. Every other .cache directory stays ignored. A file
+# cannot be re-included once a parent directory is excluded, so /.cache and
+# /.cache/.gitkeep must both be re-included explicitly.
 .cache
+!/.cache/
+/.cache/**
+!/.cache/.gitkeep
+
 *.tsbuildinfo
 
 # Operating system specific files
