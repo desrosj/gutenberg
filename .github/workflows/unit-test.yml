@@ -7,8 +7,10 @@ on:
     push:
         branches:
             - trunk
-            - 'release/**'
-            - 'wp/**'
+            - 'release/[0-9]+.[0-9]'
+            - 'wp/[0-9]+.[0-9]'
+            - wp/latest
+            - wp/next
     # Allow manually triggering the workflow.
     workflow_dispatch:
 
@@ -22,21 +24,14 @@ concurrency:
 jobs:
     unit-js:
         name: JavaScript
-        runs-on: ubuntu-latest
+        runs-on: 'ubuntu-24.04'
         if: ${{ github.repository == 'WordPress/gutenberg' || github.event_name == 'pull_request' }}
 
-        strategy:
-            fail-fast: false
-            matrix:
-                node: ['14']
-
         steps:
-            - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3 # v3.5.0
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
             - name: Setup Node.js and install dependencies
               uses: ./.github/setup-node
-              with:
-                  node-version: ${{ matrix.node }}
 
             - name: Npm build
               # It's not necessary to run the full build, since Jest can interpret
@@ -50,35 +45,9 @@ jobs:
             - name: Running the date tests
               run: npm run test:unit:date -- --ci --maxWorkers=2 --cacheDirectory="$HOME/.jest-cache"
 
-    compute-previous-wordpress-version:
-        name: Compute previous WordPress version
-        runs-on: ubuntu-latest
-        outputs:
-            previous-wordpress-version: ${{ steps.get-previous-wordpress-version.outputs.previous-wordpress-version }}
-
-        steps:
-            - name: Get previous WordPress version
-              id: get-previous-wordpress-version
-              run: |
-                  curl \
-                    -H "Accept: application/json" \
-                    -o versions.json \
-                    "http://api.wordpress.org/core/stable-check/1.0/"
-                  LATEST_WP_VERSION=$(jq --raw-output 'with_entries(select(.value=="latest"))|keys[]' versions.json)
-                  IFS='.' read LATEST_WP_MAJOR LATEST_WP_MINOR LATEST_WP_PATCH <<< "${LATEST_WP_VERSION}"
-                  if [[ ${LATEST_WP_MINOR} == "0" ]]; then
-                    PREVIOUS_WP_SERIES="$((LATEST_WP_MAJOR - 1)).9"
-                  else
-                    PREVIOUS_WP_SERIES="${LATEST_WP_MAJOR}.$((LATEST_WP_MINOR - 1))"
-                  fi
-                  PREVIOUS_WP_VERSION=$(jq --raw-output --arg series "${PREVIOUS_WP_SERIES}" 'with_entries(select(.key|startswith($series)))|keys[-1]' versions.json)
-                  echo "previous-wordpress-version=${PREVIOUS_WP_VERSION}" >> $GITHUB_OUTPUT
-                  rm versions.json
-
     test-php:
-        name: PHP ${{ matrix.php }}${{ matrix.multisite && ' multisite' || '' }}${{ matrix.wordpress != '' && format( ' (WP {0}) ', matrix.wordpress ) || '' }} on ubuntu-latest
-        needs: compute-previous-wordpress-version
-        runs-on: ubuntu-latest
+        name: PHP ${{ matrix.php }}${{ matrix.multisite && ' multisite' || '' }} on ubuntu-latest
+        runs-on: 'ubuntu-24.04'
         timeout-minutes: 20
         if: ${{ github.repository == 'WordPress/gutenberg' || github.event_name == 'pull_request' }}
         strategy:
@@ -86,30 +55,16 @@ jobs:
             matrix:
                 php:
                     - '7.0'
-                    - '7.1'
-                    - '7.2'
-                    - '7.3'
                     - '7.4'
                     - '8.0'
-                    - '8.1'
                     - '8.2'
                 multisite: [false, true]
-                wordpress: [''] # Latest WordPress version.
-                include:
-                    # Test with the previous WP version.
-                    - php: '5.6'
-                      wordpress: ${{ needs.compute-previous-wordpress-version.outputs.previous-wordpress-version }}
-                    - php: '7.4'
-                      wordpress: ${{ needs.compute-previous-wordpress-version.outputs.previous-wordpress-version }}
-                    - php: '8.2'
-                      wordpress: ${{ needs.compute-previous-wordpress-version.outputs.previous-wordpress-version }}
 
         env:
             WP_ENV_PHP_VERSION: ${{ matrix.php }}
-            WP_ENV_CORE: ${{ matrix.wordpress == '' && 'WordPress/WordPress' || format( 'https://wordpress.org/wordpress-{0}.zip', matrix.wordpress ) }}
 
         steps:
-            - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3 # v3.5.0
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
             - name: Setup Node.js and install dependencies
               uses: ./.github/setup-node
@@ -122,15 +77,11 @@ jobs:
             # dependency versions are installed and cached.
             ##
             - name: Set up PHP
-              uses: shivammathur/setup-php@d30ad8b1843ace22e6698ab99bbafaa747b6bd0d # v2.24.0
+              uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
               with:
                   php-version: '${{ matrix.php }}'
                   ini-file: development
                   coverage: none
-
-            # Ensure that Composer installs the correct versions of packages.
-            - name: Override PHP version in composer.json
-              run: composer config platform.php ${{ matrix.php }}
 
             # The spatie/phpunit-watcher package is not compatible with PHP < 7.2.
             # It must be removed before running the tests.
@@ -141,7 +92,7 @@ jobs:
             # Since Composer dependencies are installed using `composer update` and no lock file is in version control,
             # passing a custom cache suffix ensures that the cache is flushed at least once per week.
             - name: Install Composer dependencies
-              uses: ramsey/composer-install@83af392bf5f031813d25e6fe4cd626cdba9a2df6 # v2.2.0
+              uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
               with:
                   custom-cache-suffix: $(/bin/date -u --date='last Mon' "+%F")
 
@@ -151,7 +102,6 @@ jobs:
             - name: Docker debug information
               run: |
                   docker -v
-                  docker-compose -v
 
             - name: General debug information
               run: |
@@ -159,7 +109,6 @@ jobs:
                   node --version
                   curl --version
                   git --version
-                  svn --version
                   locale -a
 
             - name: Start Docker environment
@@ -211,16 +160,16 @@ jobs:
 
     phpcs:
         name: PHP coding standards
-        runs-on: ubuntu-latest
+        runs-on: 'ubuntu-24.04'
         timeout-minutes: 20
         if: ${{ github.repository == 'WordPress/gutenberg' || github.event_name == 'pull_request' }}
 
         steps:
             - name: Checkout repository
-              uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3 # v3.5.0
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
             - name: Set up PHP
-              uses: shivammathur/setup-php@d30ad8b1843ace22e6698ab99bbafaa747b6bd0d # v2.24.0
+              uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
               with:
                   php-version: '7.4'
                   coverage: none
@@ -233,7 +182,7 @@ jobs:
               run: echo "date=$(/bin/date -u --date='last Mon' "+%F")" >> $GITHUB_OUTPUT
 
             - name: Cache PHPCS scan cache
-              uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
+              uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
               with:
                   path: .cache/phpcs.json
                   key: ${{ runner.os }}-date-${{ steps.get-date.outputs.date }}-phpcs-cache-${{ hashFiles('**/composer.json', 'phpcs.xml.dist') }}
@@ -241,7 +190,7 @@ jobs:
             # Since Composer dependencies are installed using `composer update` and no lock file is in version control,
             # passing a custom cache suffix ensures that the cache is flushed at least once per week.
             - name: Install Composer dependencies
-              uses: ramsey/composer-install@83af392bf5f031813d25e6fe4cd626cdba9a2df6 # v2.2.0
+              uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
               with:
                   custom-cache-suffix: ${{ steps.get-date.outputs.date }}
 
@@ -262,7 +211,7 @@ jobs:
     # This job is deprecated but be present for compatibility reasons.
     unit-php:
         name: PHP
-        runs-on: ubuntu-latest
+        runs-on: 'ubuntu-24.04'
         needs: [test-php, phpcs]
         if: ${{ always() }}
         steps:
@@ -277,23 +226,3 @@ jobs:
             - name: Mark the job as passed if all the checks pass
               if: ${{ needs.test-php.result == 'success' && needs.phpcs.result == 'success' }}
               run: exit 0
-
-    mobile-unit-js:
-        name: Mobile
-        runs-on: ubuntu-latest
-        if: ${{ github.repository == 'WordPress/gutenberg' || github.event_name == 'pull_request' }}
-
-        steps:
-            - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3 # v3.5.0
-
-            - name: Setup Node.js and install dependencies
-              uses: ./.github/setup-node
-
-            - name: Npm build
-              # It's not necessary to run the full build, since Jest can interpret
-              # source files with `babel-jest`. Some packages have their own custom
-              # build tasks, however. These must be run.
-              run: npx lerna run build
-
-            - name: Running the tests
-              run: npm run native test -- --ci --maxWorkers=2 --cacheDirectory="$HOME/.jest-cache"

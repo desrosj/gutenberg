@@ -8,6 +8,9 @@ const transpiledPackageNames = glob( 'packages/*/src/index.{js,ts,tsx}' ).map(
 	( fileName ) => fileName.split( '/' )[ 1 ]
 );
 
+// Avoid time-based caniuse-lite warnings tripping jest-console assertions.
+process.env.BROWSERSLIST_IGNORE_OLD_DATA = 'true';
+
 module.exports = {
 	rootDir: '../../',
 	moduleNameMapper: {
@@ -39,6 +42,10 @@ module.exports = {
 	transform: {
 		'^.+\\.[jt]sx?$': '<rootDir>/test/unit/scripts/babel-transformer.js',
 	},
+	transformIgnorePatterns: [
+		'/node_modules/(?!(docker-compose|yaml)/)',
+		'\\.pnp\\.[^\\/]+$',
+	],
 	snapshotSerializers: [
 		'@emotion/jest/serializer',
 		'snapshot-diff/serializer',
