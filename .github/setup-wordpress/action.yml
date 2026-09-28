@@ -23,16 +23,17 @@ runs:
         chmod +x "$RUNNER_TEMP/gutenberg-bin/docker-compose"
         echo "$RUNNER_TEMP/gutenberg-bin" >> "$GITHUB_PATH"
         echo 'WP_VERSION=5.1' >> "$GITHUB_ENV"
+        echo "GUTENBERG_CI_TEMP=$RUNNER_TEMP/gutenberg-ci" >> "$GITHUB_ENV"
 
     - name: Refresh the legacy CLI certificate bundle
       shell: bash
       # Retain the original WP-CLI executable and update only its trust store.
       run: |
-        ci_temp="$RUNNER_TEMP/gutenberg-ci"
+        ci_temp="$GUTENBERG_CI_TEMP"
         mkdir -p "$ci_temp"
         cp /etc/ssl/certs/ca-certificates.crt "$ci_temp/ca.pem"
         cp .github/setup-wordpress/cli-entrypoint.sh "$ci_temp/cli-entrypoint.sh"
-        docker run --rm --entrypoint sh -v "$ci_temp:/ci" \
+        docker run --rm --user "$(id -u):$(id -g)" --entrypoint sh -v "$ci_temp:/ci" \
           wordpress:cli-php7.1@sha256:61ed38e16234c372bd93a361fafbb1da6ebb1b3a21635e86057282677c4ffd79 -ec '
             cp /usr/local/bin/wp /ci/wp-cli.phar
             php -d phar.readonly=0 -r '\''
@@ -41,7 +42,6 @@ runs:
             '\''
             chmod a+rx /ci/wp-cli.phar
           '
-        echo "GUTENBERG_CI_TEMP=$ci_temp" >> "$GITHUB_ENV"
 
     - name: Start WordPress and install PHP test dependencies
       shell: bash
