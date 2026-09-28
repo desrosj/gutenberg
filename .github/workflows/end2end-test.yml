@@ -71,7 +71,7 @@ jobs:
 
     e2e-playwright:
         name: Playwright
-        runs-on: 'ubuntu-24.04'
+        runs-on: 'ubuntu-22.04'
         if: ${{ github.repository == 'WordPress/gutenberg' || github.event_name == 'pull_request' }}
         strategy:
             fail-fast: false
