@@ -90,15 +90,9 @@ jobs:
                   npm ci
                   npm run build
 
-            - name: Install Playwright browser binaries
+            - name: Install Playwright dependencies
               run: |
-                  npx playwright install chromium firefox
-
-            - name: Install system packages required by Playwright browsers
-              run: |
-                  sudo apt-get update
-                  sudo apt-get install -y --no-install-recommends \
-                      libdbus-glib-1-2
+                  npx playwright install chromium firefox webkit --with-deps
 
             - name: Install WordPress and start the server
               run: |
@@ -106,7 +100,7 @@ jobs:
 
             - name: Run the tests
               run: |
-                  xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- npm run test:e2e:playwright -- --project=chromium --project=firefox
+                  xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- npm run test:e2e:playwright
 
             - name: Archive debug artifacts (screenshots, traces)
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
