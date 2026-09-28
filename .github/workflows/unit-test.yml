@@ -1,0 +1,113 @@
+name: PHP unit tests
+
+on:
+  pull_request:
+    branches: [wp/5.1]
+  push:
+    branches: [wp/5.1]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+  cancel-in-progress: true
+
+permissions: {}
+
+env:
+  WP_VERSION: '5.1'
+
+jobs:
+  docker:
+    name: Docker PHP tests and coding standards
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js and install dependencies
+        uses: ./.github/setup-node
+      - name: Build the plugin
+        run: npm run build
+      - name: Verify the generated PHP parser
+        run: |
+          node bin/create-php-parser.js
+          git diff --exit-code -- lib/parser.php
+      - name: Set up WordPress
+        uses: ./.github/setup-wordpress
+      - name: Check parser syntax with the test PHP version
+        run: docker-compose run --rm wordpress_phpunit php lib/parser.php
+      - name: Run coding standards and single-site tests
+        run: npm run test-php
+      - name: Run multisite tests
+        run: npm run test-unit-php-multisite
+      - name: Show container logs on failure
+        if: ${{ failure() }}
+        run: docker-compose logs --no-color
+      - name: Stop containers
+        if: ${{ always() }}
+        run: docker-compose down --volumes --remove-orphans
+
+  compatibility:
+    name: PHP ${{ matrix.php }} compatibility
+    # Travis ran these additional versions only outside pull requests.
+    if: ${{ github.event_name != 'pull_request' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['5.3', '5.6']
+    services:
+      mysql:
+        image: mysql:5.7@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js and install dependencies
+        uses: ./.github/setup-node
+      - name: Build the plugin
+        run: npm run build
+      - name: Verify the generated PHP parser
+        run: |
+          node bin/create-php-parser.js
+          git diff --exit-code -- lib/parser.php
+      - name: Set up PHP and PHPUnit
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mysql, mysqli, mbstring
+          tools: phpunit:4.8.36
+          coverage: none
+      - name: Install the existing test script's system prerequisites
+        # Unlike Travis Trusty, current runners do not include Subversion.
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y subversion mysql-client
+      - name: Install the WordPress 5.1 test suite
+        run: bash bin/install-wp-tests.sh wordpress_test root '' 127.0.0.1 "$WP_VERSION"
+      - name: Report versions and check parser syntax
+        run: |
+          php --version
+          phpunit --version
+          php lib/parser.php
+      - name: Run single-site tests
+        run: phpunit
+      - name: Run multisite tests
+        run: WP_MULTISITE=1 phpunit

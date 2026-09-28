@@ -1,0 +1,33 @@
+name: Static checks and JavaScript tests
+
+on:
+  pull_request:
+    branches: [wp/5.1]
+  push:
+    branches: [wp/5.1]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  check:
+    name: Lint, licenses, JavaScript tests, and generated files
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js and install dependencies
+        uses: ./.github/setup-node
+      - name: Run the existing CI checks
+        run: npm run ci
+      - name: Build the plugin
+        run: npm run build

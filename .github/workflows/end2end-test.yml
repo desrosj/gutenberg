@@ -1,0 +1,64 @@
+name: End-to-end tests
+
+on:
+  pull_request:
+    branches: [wp/5.1]
+  push:
+    branches: [wp/5.1]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  e2e:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Administrator with popular plugins
+            role: admin
+            popular-plugins: 'true'
+          - name: Author
+            role: author
+            popular-plugins: 'false'
+    env:
+      WP_VERSION: '5.1'
+      E2E_ROLE: ${{ matrix.role }}
+      POPULAR_PLUGINS: ${{ matrix.popular-plugins }}
+      # Existing fixtures, pinned to releases from the WordPress 5.1 era.
+      ACF_VERSION: '5.7.12'
+      JETPACK_VERSION: '6.9'
+      WPFORMS_VERSION: '1.5.0.4'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js and install dependencies
+        uses: ./.github/setup-node
+      - name: Set up WordPress
+        uses: ./.github/setup-wordpress
+      - name: Run browser tests
+        # Preserve run-e2e-tests.sh's credentials and the existing pretest-e2e
+        # hook, which resets the test site and builds the production plugin.
+        run: |
+          if [ "$E2E_ROLE" = 'author' ]; then
+            WP_PASSWORD=authpass WP_USERNAME=author npm run test-e2e -- --ci --runInBand
+          else
+            npm run test-e2e -- --ci --runInBand
+          fi
+      - name: Show container logs on failure
+        if: ${{ failure() }}
+        run: docker-compose logs --no-color
+      - name: Stop containers
+        if: ${{ always() }}
+        run: docker-compose down --volumes --remove-orphans

@@ -1,0 +1,60 @@
+name: Set up WordPress 5.1
+description: Start this branch's Docker Compose environment without upgrading Node.js or npm.
+runs:
+  using: composite
+  steps:
+    - name: Configure the legacy Docker Compose command
+      shell: bash
+      # --compatibility keeps underscore-separated container names, which the
+      # existing install-wordpress.sh uses to discover the E2E container.
+      run: |
+        mkdir -p "$RUNNER_TEMP/gutenberg-bin"
+        cat > "$RUNNER_TEMP/gutenberg-bin/docker-compose" <<'SCRIPT'
+        #!/usr/bin/env bash
+        set -e
+        # bootstrap-env.sh supplies this same base file explicitly.
+        if [[ "${1:-}" == '-f' && "${2:-}" == 'docker-compose.yml' ]]; then
+          shift 2
+        fi
+        exec docker compose --compatibility \
+          -f "$GITHUB_WORKSPACE/docker-compose.yml" \
+          -f "$GITHUB_WORKSPACE/.github/setup-wordpress/docker-compose.yml" "$@"
+        SCRIPT
+        chmod +x "$RUNNER_TEMP/gutenberg-bin/docker-compose"
+        echo "$RUNNER_TEMP/gutenberg-bin" >> "$GITHUB_PATH"
+        echo 'WP_VERSION=5.1' >> "$GITHUB_ENV"
+        echo "GUTENBERG_CI_TEMP=$RUNNER_TEMP/gutenberg-ci" >> "$GITHUB_ENV"
+
+    - name: Refresh the legacy CLI certificate bundle
+      shell: bash
+      # Retain the original WP-CLI executable and update only its trust store.
+      run: |
+        ci_temp="$GUTENBERG_CI_TEMP"
+        mkdir -p "$ci_temp"
+        cp /etc/ssl/certs/ca-certificates.crt "$ci_temp/ca.pem"
+        cp .github/setup-wordpress/cli-entrypoint.sh "$ci_temp/cli-entrypoint.sh"
+        docker run --rm --user "$(id -u):$(id -g)" --entrypoint sh -v "$ci_temp:/ci" \
+          wordpress:cli-php7.1@sha256:61ed38e16234c372bd93a361fafbb1da6ebb1b3a21635e86057282677c4ffd79 -ec '
+            cp /usr/local/bin/wp /ci/wp-cli.phar
+            php -d phar.readonly=0 -r '\''
+              $phar = new Phar("/ci/wp-cli.phar");
+              $phar["vendor/rmccue/requests/library/Requests/Transport/cacert.pem"] = file_get_contents("/ci/ca.pem");
+            '\''
+            chmod a+rx /ci/wp-cli.phar
+          '
+
+    - name: Start WordPress and install PHP test dependencies
+      shell: bash
+      # Skip setup-local-env.sh: its Node setup prompts for nvm and upgrades npm.
+      run: ./bin/install-docker.sh
+
+    - name: Pin the browser-test site to WordPress 5.1
+      shell: bash
+      run: docker-compose run --rm -u 33 cli_e2e_tests core download --version=5.1 --force --skip-content --quiet
+
+    - name: Verify WordPress versions
+      shell: bash
+      run: |
+        test "$(docker-compose run -T --rm cli core version)" = '5.1'
+        test "$(docker-compose run -T --rm cli_e2e_tests core version)" = '5.1'
+        docker-compose ps
