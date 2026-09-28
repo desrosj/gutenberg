@@ -3,7 +3,19 @@ name: Static Analysis (Linting, License, Type checks...)
 on:
   pull_request:
   push:
-    branches: [master]
+    branches:
+      - trunk
+      - 'release/[0-9]+.[0-9]'
+      - 'wp/[0-9]+.[0-9]'
+      - wp/latest
+      - wp/next
+
+# Cancels all previous workflow runs for pull requests that have not completed.
+concurrency:
+    # The concurrency group contains the workflow name and the branch name for pull requests
+    # or the commit hash for any other events.
+    group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+    cancel-in-progress: true
 
 jobs:
   check:
@@ -12,10 +24,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
     - name: Cache node modules
-      uses: actions/cache@v2
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       env:
         cache-name: cache-node-modules
       with:
@@ -28,7 +40,7 @@ jobs:
           ${{ runner.os }}-
 
     - name: Use Node.js 12.x
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
       with:
         node-version: 12.x
 
