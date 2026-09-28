@@ -95,6 +95,11 @@ jobs:
           extensions: mysql, mysqli, mbstring
           tools: phpunit:4.8.36
           coverage: none
+      - name: Install the existing test script's system prerequisites
+        # Unlike Travis Trusty, current runners do not include Subversion.
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y subversion mysql-client
       - name: Install the WordPress 5.1 test suite
         run: bash bin/install-wp-tests.sh wordpress_test root '' 127.0.0.1 "$WP_VERSION"
       - name: Report versions and check parser syntax
