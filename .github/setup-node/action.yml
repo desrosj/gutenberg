@@ -1,0 +1,22 @@
+name: Set up the branch's Node.js environment
+description: Install the existing dependencies using the Node.js version in .nvmrc.
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      with:
+        node-version-file: .nvmrc
+        package-manager-cache: false
+        cache: npm
+
+    - name: Use HTTPS for legacy GitHub dependencies
+      shell: bash
+      # npm 6 resolves the existing github: dependency using the retired git:// protocol.
+      run: git config --global url.https://github.com/.insteadOf git://github.com/
+
+    - name: Install dependencies and build packages
+      shell: bash
+      # postinstall runs the existing license checks and package builds. Keep npm 6,
+      # bundled with Node 10; the old setup script's npm@latest upgrade is incompatible.
+      run: npm install --no-audit

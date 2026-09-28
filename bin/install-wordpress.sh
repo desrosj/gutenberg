@@ -48,6 +48,12 @@ if [ "$1" == '--e2e_tests' ]; then
 	docker-compose $DOCKER_COMPOSE_FILE_OPTIONS run --rm -u 33 $CLI db reset --yes --quiet
 fi
 
+# A Docker image tag can point to a later maintenance release. Honor an
+# explicitly requested version before installing or resetting the site.
+if [ "$WP_VERSION" != "latest" ]; then
+	docker-compose $DOCKER_COMPOSE_FILE_OPTIONS run --rm -u 33 $CLI core download --version="$WP_VERSION" --force --skip-content --quiet
+fi
+
 # Install WordPress.
 echo -e $(status_message "Installing WordPress...")
 # The `-u 33` flag tells Docker to run the command as a particular user and
@@ -93,9 +99,9 @@ docker-compose $DOCKER_COMPOSE_FILE_OPTIONS run --rm -u 33 $CLI plugin activate 
 
 if [ "$POPULAR_PLUGINS" == "true" ]; then
 	echo -e $(status_message "Activating popular plugins...")
-	docker-compose $DOCKER_COMPOSE_FILE_OPTIONS run --rm -u 33 $CLI plugin install advanced-custom-fields --activate --quiet
-	docker-compose $DOCKER_COMPOSE_FILE_OPTIONS run --rm -u 33 $CLI plugin install jetpack --activate --quiet
-	docker-compose $DOCKER_COMPOSE_FILE_OPTIONS run --rm -u 33 $CLI plugin install wpforms-lite --activate --quiet
+	docker-compose $DOCKER_COMPOSE_FILE_OPTIONS run --rm -u 33 $CLI plugin install advanced-custom-fields --version="${ACF_VERSION:-latest}" --activate --quiet
+	docker-compose $DOCKER_COMPOSE_FILE_OPTIONS run --rm -u 33 $CLI plugin install jetpack --version="${JETPACK_VERSION:-latest}" --activate --quiet
+	docker-compose $DOCKER_COMPOSE_FILE_OPTIONS run --rm -u 33 $CLI plugin install wpforms-lite --version="${WPFORMS_VERSION:-latest}" --activate --quiet
 fi
 
 # Install a dummy favicon to avoid 404 errors.

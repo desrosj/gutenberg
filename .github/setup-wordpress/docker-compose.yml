@@ -1,0 +1,29 @@
+version: '3.1'
+
+# Pin the CI images independently of local development defaults. The setup
+# script downloads exactly WordPress 5.1 over the web images' 5.1.1 files.
+services:
+  wordpress:
+    image: wordpress:5.1-php7.1-apache@sha256:20515c0defb6c5ba86e6c5a3ff8fe123f3fa243f60c2b8b1daf9032a23c6c2ff
+  wordpress_e2e_tests:
+    image: wordpress:5.1-php7.1-apache@sha256:20515c0defb6c5ba86e6c5a3ff8fe123f3fa243f60c2b8b1daf9032a23c6c2ff
+  cli:
+    image: wordpress:cli-php7.1@sha256:61ed38e16234c372bd93a361fafbb1da6ebb1b3a21635e86057282677c4ffd79
+    entrypoint: ['/bin/sh', '/gutenberg-ci/cli-entrypoint.sh']
+    volumes:
+      - ${GUTENBERG_CI_TEMP:?}/wp-cli.phar:/usr/local/bin/wp:ro
+      - ${GUTENBERG_CI_TEMP:?}:/gutenberg-ci:ro
+  cli_e2e_tests:
+    image: wordpress:cli-php7.1@sha256:61ed38e16234c372bd93a361fafbb1da6ebb1b3a21635e86057282677c4ffd79
+    entrypoint: ['/bin/sh', '/gutenberg-ci/cli-entrypoint.sh']
+    volumes:
+      - ${GUTENBERG_CI_TEMP:?}/wp-cli.phar:/usr/local/bin/wp:ro
+      - ${GUTENBERG_CI_TEMP:?}:/gutenberg-ci:ro
+  wordpress_phpunit:
+    # The original image contains PHP 7.1.5 and PHPUnit 6.0.13.
+    image: chriszarate/wordpress-phpunit@sha256:9ee7b3f73254e943836f8e21d89943a0af5a4db1e9ccab7482e8ab0ee1ea4343
+  composer:
+    # composer.lock requires the Composer 1 plugin API.
+    image: composer:1.8.6@sha256:08b0f299eff421f8daa48878deaf86f3f7790858c6b139935e657d7b7f1a3e1e
+  mysql:
+    image: mysql:5.7@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb
