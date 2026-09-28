@@ -1,4 +1,5 @@
-const gitRepoOwner = 'WordPress';
+// TEMPORARY (fork only): clone the repository this workflow runs in. Do not port upstream.
+const gitRepoOwner = process.env.GITHUB_REPOSITORY_OWNER || 'WordPress';
 
 /**
  * @typedef WPPluginCLIConfig
