@@ -298,6 +298,8 @@ You can customize the WordPress installation, plugins and themes that the develo
 
 _Note: the port number environment variables (`WP_ENV_PORT` and `WP_ENV_TESTS_PORT`) take precedent over the .wp-env.json values._
 
+_Note: the MariaDB version can be chosen with the `WP_ENV_MARIADB_VERSION` environment variable, such as `WP_ENV_MARIADB_VERSION=10.5`. It defaults to `latest`. MariaDB cannot start on a database written by a newer version, so run `wp-env destroy` before switching to a lower version._
+
 Several types of strings can be passed into the `core`, `plugins`, `themes`, and `mappings` fields.
 
 | Type              | Format                        | Example(s)                                               |
