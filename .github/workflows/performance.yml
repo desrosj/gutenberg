@@ -24,10 +24,10 @@ jobs:
         if: ${{ github.repository == 'WordPress/gutenberg' }}
 
         steps:
-            - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
             - name: Use desired version of NodeJS
-              uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3.6.0
+              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
               with:
                   node-version-file: '.nvmrc'
                   cache: npm
@@ -73,7 +73,7 @@ jobs:
                   WP_MAJOR="${WP_VERSION_ARRAY[0]}.${WP_VERSION_ARRAY[1]}"
                   ./bin/plugin/cli.js perf $GITHUB_SHA debd225d007f4e441ceec80fbd6fa96653f94737 --tests-branch $GITHUB_SHA --wp-version "$WP_MAJOR"
 
-            - uses: actions/github-script@d556feaca394842dc55e4734bf3bb9f685482fa0 # v6.3.3
+            - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
               if: github.event_name == 'push'
               id: commit-timestamp
               with:
