@@ -1,5 +1,6 @@
 {
 	"core": "WordPress/WordPress",
+	"mariadbVersion": "10.6",
 	"plugins": [ "./plugin" ],
 	"themes": [ "../../tests/test/emptytheme" ],
 	"env": {
