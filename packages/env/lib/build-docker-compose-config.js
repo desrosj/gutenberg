@@ -201,6 +201,19 @@ module.exports = function buildDockerComposeConfig( config ) {
 		mount.endsWith( ':/var/www/html/wp-content/uploads' )
 	);
 
+	// MySQL healthcheck using MariaDB's official healthcheck.sh script.
+	// --connect: verifies TCP connection and that entrypoint has finished
+	// --innodb_initialized: ensures InnoDB storage engine is fully initialized
+	// MARIADB_AUTO_UPGRADE env var ensures healthcheck user exists for existing installations.
+	// Timing is generous to support slow CI environments.
+	const mysqlHealthcheck = {
+		test: [ 'CMD', 'healthcheck.sh', '--connect', '--innodb_initialized' ],
+		interval: '5s',
+		timeout: '10s',
+		retries: 12,
+		start_period: '60s',
+	};
+
 	return {
 		version: '3.7',
 		services: {
@@ -214,8 +227,11 @@ module.exports = function buildDockerComposeConfig( config ) {
 					MYSQL_ROOT_PASSWORD:
 						dbEnv.credentials.WORDPRESS_DB_PASSWORD,
 					MYSQL_DATABASE: dbEnv.development.WORDPRESS_DB_NAME,
+					// Ensures healthcheck user is created for existing installations.
+					MARIADB_AUTO_UPGRADE: '1',
 				},
 				volumes: [ 'mysql:/var/lib/mysql' ],
+				healthcheck: mysqlHealthcheck,
 			},
 			'tests-mysql': {
 				image: config.env.tests.mariadbVersion
@@ -227,12 +243,19 @@ module.exports = function buildDockerComposeConfig( config ) {
 					MYSQL_ROOT_PASSWORD:
 						dbEnv.credentials.WORDPRESS_DB_PASSWORD,
 					MYSQL_DATABASE: dbEnv.tests.WORDPRESS_DB_NAME,
+					// Ensures healthcheck user is created for existing installations.
+					MARIADB_AUTO_UPGRADE: '1',
 				},
 				volumes: [ 'mysql-test:/var/lib/mysql' ],
+				healthcheck: mysqlHealthcheck,
 			},
 			wordpress: {
 				build: '.',
-				depends_on: [ 'mysql' ],
+				depends_on: {
+					mysql: {
+						condition: 'service_healthy',
+					},
+				},
 				image: developmentWpImage,
 				ports: [ developmentPorts ],
 				environment: {
@@ -243,7 +266,11 @@ module.exports = function buildDockerComposeConfig( config ) {
 				volumes: developmentMounts,
 			},
 			'tests-wordpress': {
-				depends_on: [ 'tests-mysql' ],
+				depends_on: {
+					'tests-mysql': {
+						condition: 'service_healthy',
+					},
+				},
 				image: testsWpImage,
 				ports: [ testsPorts ],
 				environment: {
