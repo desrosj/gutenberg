@@ -61,6 +61,19 @@ module.exports = function buildDockerComposeConfig( config ) {
 	// https://github.com/docker-library/wordpress/issues/256
 	const cliUser = '33:33';
 
+	// MySQL healthcheck using MariaDB's official healthcheck.sh script.
+	// --connect: verifies TCP connection and that entrypoint has finished
+	// --innodb_initialized: ensures InnoDB storage engine is fully initialized
+	// MARIADB_AUTO_UPGRADE env var ensures healthcheck user exists for existing installations.
+	// Timing is generous to support slow CI environments.
+	const mysqlHealthcheck = {
+		test: [ 'CMD', 'healthcheck.sh', '--connect', '--innodb_initialized' ],
+		interval: '5s',
+		timeout: '10s',
+		retries: 12,
+		start_period: '60s',
+	};
+
 	return {
 		version: '3.7',
 		services: {
@@ -68,10 +81,17 @@ module.exports = function buildDockerComposeConfig( config ) {
 				image: 'mariadb:${WP_ENV_MARIADB_VERSION:-latest}',
 				environment: {
 					MYSQL_ALLOW_EMPTY_PASSWORD: 'yes',
+					// Ensures healthcheck user is created for existing installations.
+					MARIADB_AUTO_UPGRADE: '1',
 				},
+				healthcheck: mysqlHealthcheck,
 			},
 			wordpress: {
-				depends_on: [ 'mysql' ],
+				depends_on: {
+					mysql: {
+						condition: 'service_healthy',
+					},
+				},
 				image: 'wordpress',
 				ports: [ developmentPorts ],
 				environment: {
@@ -82,7 +102,11 @@ module.exports = function buildDockerComposeConfig( config ) {
 				volumes: developmentMounts,
 			},
 			'tests-wordpress': {
-				depends_on: [ 'mysql' ],
+				depends_on: {
+					mysql: {
+						condition: 'service_healthy',
+					},
+				},
 				image: 'wordpress',
 				ports: [ testsPorts ],
 				environment: {
