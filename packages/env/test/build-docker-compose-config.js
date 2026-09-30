@@ -83,4 +83,41 @@ describe( 'buildDockerComposeConfig', () => {
 			'mariadb:${WP_ENV_MARIADB_VERSION:-latest}'
 		);
 	} );
+
+	it( 'should add healthcheck to the mysql service', () => {
+		const config = buildDockerComposeConfig( {
+			env: { development: CONFIG, tests: CONFIG },
+		} );
+
+		expect( config.services.mysql.healthcheck ).toEqual( {
+			test: [
+				'CMD',
+				'healthcheck.sh',
+				'--connect',
+				'--innodb_initialized',
+			],
+			interval: '5s',
+			timeout: '10s',
+			retries: 12,
+			start_period: '60s',
+		} );
+
+		// Verify MARIADB_AUTO_UPGRADE is set for existing installations
+		expect( config.services.mysql.environment.MARIADB_AUTO_UPGRADE ).toBe(
+			'1'
+		);
+	} );
+
+	it( 'should use service_healthy condition for WordPress depends_on', () => {
+		const config = buildDockerComposeConfig( {
+			env: { development: CONFIG, tests: CONFIG },
+		} );
+
+		expect( config.services.wordpress.depends_on ).toEqual( {
+			mysql: { condition: 'service_healthy' },
+		} );
+		expect( config.services[ 'tests-wordpress' ].depends_on ).toEqual( {
+			mysql: { condition: 'service_healthy' },
+		} );
+	} );
 } );
