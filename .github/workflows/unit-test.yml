@@ -112,6 +112,23 @@ jobs:
         chmod -R 767 ./ # TODO: Possibly integrate in wp-env
         npm run wp-env start
 
+    # `phpunit/phpunit` 8.5 requires PHP 7.2 or newer, so on older PHP versions
+    # the tests run with the PHPUnit bundled in `wp-env`'s per-version `phpunit`
+    # container instead. `wp-env`'s `composer` service always installs Composer
+    # dependencies against its own fixed, modern PHP version (not `matrix.php`),
+    # and leaving the package installed would let PHPUnit's own PHP 7.2+ classes
+    # get autoloaded by the older per-version PHPUnit container and fatal.
+    #
+    # `--no-update` is deliberately NOT used here: it only edits
+    # composer.json, without touching composer.lock or the installed
+    # vendor/ directory, so the `composer install` that follows would
+    # just reinstall the exact same (still-locked) packages regardless of
+    # this edit. Letting `composer remove` actually update the lock file
+    # is what makes the removal take effect.
+    - name: Remove incompatible Composer packages
+      if: ${{ matrix.php < '7.2' }}
+      run: npm run wp-env run composer "remove phpunit/phpunit --dev"
+
     - name: Running lint check
       run: npm run lint-php
 
