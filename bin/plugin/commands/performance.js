@@ -192,7 +192,10 @@ function curateResults( testSuite, results ) {
 async function runTestSuite( testSuite, performanceTestDirectory ) {
 	await runShellScript(
 		`npm run test:performance -- packages/e2e-tests/specs/performance/${ testSuite }.test.js`,
-		performanceTestDirectory
+		performanceTestDirectory,
+		{
+			...process.env,
+		}
 	);
 	const rawResults = await readJSONFile(
 		path.join(
