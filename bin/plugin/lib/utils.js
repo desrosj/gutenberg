@@ -17,16 +17,20 @@ const { log, formats } = require( './logger' );
 /**
  * Utility to run a child script
  *
- * @param {string} script Script to run.
- * @param {string=} cwd   Working directory.
+ * @typedef {NodeJS.ProcessEnv} Env
+ *
+ * @param {string}  script Script to run.
+ * @param {string=} cwd    Working directory.
+ * @param {Env=}    env    Additional environment variables to pass to the script.
  */
-function runShellScript( script, cwd ) {
+function runShellScript( script, cwd, env = {} ) {
 	childProcess.execSync( script, {
 		cwd,
 		env: {
 			NO_CHECKS: 'true',
 			PATH: process.env.PATH,
 			HOME: process.env.HOME,
+			...env,
 		},
 		stdio: [ 'inherit', 'ignore', 'inherit' ],
 	} );
