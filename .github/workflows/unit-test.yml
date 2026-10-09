@@ -81,6 +81,10 @@ jobs:
 
     env:
       WP_ENV_PHP_VERSION: ${{ matrix.php }}
+      # The WordPress 5.6 test library refuses PHPUnit 8 and newer, which
+      # the `wordpressdevelop/phpunit` images ship for PHP 7.2 and newer.
+      # Those versions run the Composer-installed PHPUnit 7.5 instead.
+      PHPUNIT: ${{ matrix.php < '7.2' && 'phpunit' || 'php /var/www/html/wp-content/plugins/gutenberg/vendor/bin/phpunit' }}
 
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -113,7 +117,7 @@ jobs:
         chmod -R 767 ./ # TODO: Possibly integrate in wp-env
         npm run wp-env start
 
-    # PHPUnit 8.5 requires PHP 7.2+, so older versions use the PHPUnit in their `phpunit` image.
+    # PHP 7.2+ uses Composer's PHPUnit 7.5, so older versions use the PHPUnit in their `phpunit` image.
     # `--no-update` isn't used because it would leave the locked package installed.
     - name: Remove incompatible Composer packages
       if: ${{ matrix.php < '7.2' }}
@@ -124,11 +128,11 @@ jobs:
       run: npm run wp-env run composer "install --no-interaction"
 
     - name: Running single site unit tests
-      run: npm run test-unit-php
+      run: npm run wp-env run phpunit "$PHPUNIT -c /var/www/html/wp-content/plugins/gutenberg/phpunit.xml.dist --verbose"
       if: ${{ ! matrix.multisite }}
 
     - name: Running multisite unit tests
-      run: npm run test-unit-php-multisite
+      run: npm run wp-env run phpunit "WP_MULTISITE=1 $PHPUNIT -c /var/www/html/wp-content/plugins/gutenberg/phpunit/multisite.xml --verbose"
       if: ${{ matrix.multisite }}
 
   phpcs:
