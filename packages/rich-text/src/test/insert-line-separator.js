@@ -46,7 +46,7 @@ describe( 'insertLineSeparator', () => {
 		};
 		const expected = {
 			formats: [ , , ],
-			replacements: new Array ( 2 ),
+			replacements: new Array( 2 ),
 			text: `${ LINE_SEPARATOR }1`,
 			start: 1,
 			end: 1,
