@@ -152,7 +152,7 @@ describe( 'split', () => {
 		const expected = [
 			{
 				formats: [ , , , ],
-				replacements: new Array(3 ),
+				replacements: new Array( 3 ),
 				text: 'one',
 			},
 			{
