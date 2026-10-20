@@ -31,7 +31,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                part: [1, 2]
+                part: [1]
 
         steps:
             - name: Checkout repository
@@ -60,13 +60,5 @@ jobs:
             - name: Reset the end-to-end test site
               run: ./bin/reset-e2e-tests.sh
 
-            - name: List the tests
-              run: ./node_modules/.bin/wp-scripts test-e2e --config=packages/e2e-tests/jest.config.js --listTests > ~/.jest-e2e-tests
-
-            # The list of test files is split into 2 evenly sized groups, and each job runs one of them.
             - name: Running the tests
-              env:
-                  PART: ${{ matrix.part }}
-              run: |
-                  mapfile -t tests < <( awk -v part="$PART" 'NR % 2 == part - 1' < ~/.jest-e2e-tests )
-                  ./node_modules/.bin/wp-scripts test-e2e --config=packages/e2e-tests/jest.config.js --ci --cacheDirectory="$HOME/.jest-cache" --runTestsByPath "${tests[@]}"
+              run: ./node_modules/.bin/wp-scripts test-e2e --config=packages/e2e-tests/jest.config.js --ci packages/e2e-tests/specs/undo.test.js

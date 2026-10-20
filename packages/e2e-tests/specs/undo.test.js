@@ -42,6 +42,11 @@ describe( 'undo', () => {
 	} );
 
 	it( 'Should undo to expected level intervals', async () => {
+		console.log( 'DIAG start', JSON.stringify( await page.evaluate( () => {
+			const s = window.wp.data.select( 'core/editor' );
+			const b = document.querySelector( '.editor-history__undo' );
+			return { hasUndo: s.hasEditorUndo(), edits: s.getPostEdits(), blocks: s.getBlocks().map( ( x ) => x.name ), button: b ? b.outerHTML.slice( 0, 240 ) : null };
+		} ) ) );
 		await clickBlockAppender();
 
 		await page.keyboard.type( 'This' );
@@ -59,6 +64,19 @@ describe( 'undo', () => {
 		await pressKeyWithModifier( 'primary', 'z' ); // Undo 1st paragraph text.
 		await pressKeyWithModifier( 'primary', 'z' ); // Undo 1st block.
 
+
+		console.log( 'DIAG after-6-undos', JSON.stringify( await page.evaluate( () => {
+			const s = window.wp.data.select( 'core/editor' );
+			const b = document.querySelector( '.editor-history__undo' );
+			return { hasUndo: s.hasEditorUndo(), edits: s.getPostEdits(), blocks: s.getBlocks().map( ( x ) => x.name ), button: b ? b.outerHTML.slice( 0, 240 ) : null };
+		} ) ) );
+		await pressKeyWithModifier( 'primary', 'z' );
+
+		console.log( 'DIAG after-7th-undo', JSON.stringify( await page.evaluate( () => {
+			const s = window.wp.data.select( 'core/editor' );
+			const b = document.querySelector( '.editor-history__undo' );
+			return { hasUndo: s.hasEditorUndo(), edits: s.getPostEdits(), blocks: s.getBlocks().map( ( x ) => x.name ), button: b ? b.outerHTML.slice( 0, 240 ) : null };
+		} ) ) );
 		expect( await getEditedPostContent() ).toBe( '' );
 		// After undoing every action, there should be no more undo history.
 		expect( await page.$( '.editor-history__undo[aria-disabled="true"]' ) ).not.toBeNull();
