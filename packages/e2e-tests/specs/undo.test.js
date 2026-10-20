@@ -44,6 +44,12 @@ describe( 'undo', () => {
 	it( 'Should undo to expected level intervals', async () => {
 		await clickBlockAppender();
 
+		console.log( 'DIAG after-appender', JSON.stringify( await page.evaluate( () => {
+			const s = window.wp.data.select( 'core/editor' );
+			const b = document.querySelector( '.editor-history__undo' );
+			return { hasUndo: s.hasEditorUndo(), hasRedo: s.hasEditorRedo(), dirty: s.isEditedPostDirty(), edits: s.getPostEdits(), title: s.getEditedPostAttribute( 'title' ), status: s.getEditedPostAttribute( 'status' ), blocks: s.getBlocks().map( ( x ) => x.name + ':' + JSON.stringify( x.attributes ) ), disabled: b ? b.getAttribute( 'aria-disabled' ) : null };
+		} ) ) );
+
 		await page.keyboard.type( 'This' );
 		await page.keyboard.press( 'Enter' );
 		await page.keyboard.type( 'is' );
@@ -59,8 +65,28 @@ describe( 'undo', () => {
 		await pressKeyWithModifier( 'primary', 'z' ); // Undo 1st paragraph text.
 		await pressKeyWithModifier( 'primary', 'z' ); // Undo 1st block.
 
+
+		console.log( 'DIAG after-6', JSON.stringify( await page.evaluate( () => {
+			const s = window.wp.data.select( 'core/editor' );
+			const b = document.querySelector( '.editor-history__undo' );
+			return { hasUndo: s.hasEditorUndo(), hasRedo: s.hasEditorRedo(), dirty: s.isEditedPostDirty(), edits: s.getPostEdits(), title: s.getEditedPostAttribute( 'title' ), status: s.getEditedPostAttribute( 'status' ), blocks: s.getBlocks().map( ( x ) => x.name + ':' + JSON.stringify( x.attributes ) ), disabled: b ? b.getAttribute( 'aria-disabled' ) : null };
+		} ) ) );
+		await pressKeyWithModifier( 'primary', 'z' );
+
+		console.log( 'DIAG after-7', JSON.stringify( await page.evaluate( () => {
+			const s = window.wp.data.select( 'core/editor' );
+			const b = document.querySelector( '.editor-history__undo' );
+			return { hasUndo: s.hasEditorUndo(), hasRedo: s.hasEditorRedo(), dirty: s.isEditedPostDirty(), edits: s.getPostEdits(), title: s.getEditedPostAttribute( 'title' ), status: s.getEditedPostAttribute( 'status' ), blocks: s.getBlocks().map( ( x ) => x.name + ':' + JSON.stringify( x.attributes ) ), disabled: b ? b.getAttribute( 'aria-disabled' ) : null };
+		} ) ) );
+		await pressKeyWithModifier( 'primary', 'z' );
+
+		console.log( 'DIAG after-8', JSON.stringify( await page.evaluate( () => {
+			const s = window.wp.data.select( 'core/editor' );
+			const b = document.querySelector( '.editor-history__undo' );
+			return { hasUndo: s.hasEditorUndo(), hasRedo: s.hasEditorRedo(), dirty: s.isEditedPostDirty(), edits: s.getPostEdits(), title: s.getEditedPostAttribute( 'title' ), status: s.getEditedPostAttribute( 'status' ), blocks: s.getBlocks().map( ( x ) => x.name + ':' + JSON.stringify( x.attributes ) ), disabled: b ? b.getAttribute( 'aria-disabled' ) : null };
+		} ) ) );
 		expect( await getEditedPostContent() ).toBe( '' );
 		// After undoing every action, there should be no more undo history.
-		expect( await page.waitForSelector( '.editor-history__undo[aria-disabled="true"]' ) ).not.toBeNull();
+		expect( await page.$( '.editor-history__undo[aria-disabled="true"]' ) ).not.toBeNull();
 	} );
 } );
