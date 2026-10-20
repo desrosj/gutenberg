@@ -23,11 +23,16 @@ permissions: {}
 
 jobs:
     admin:
-        name: Admin
+        name: TinyMCE flake (${{ matrix.variant }})
         runs-on: 'ubuntu-24.04'
         permissions:
             contents: read
+        timeout-minutes: 60
         if: ${{ github.repository == 'WordPress/gutenberg' || github.event_name == 'pull_request' }}
+        strategy:
+            fail-fast: false
+            matrix:
+                variant: [ 'baseline', 'fixed', 'provoke' ]
 
         steps:
             - name: Checkout repository
@@ -56,5 +61,27 @@ jobs:
             - name: Reset the end-to-end test site
               run: ./bin/reset-e2e-tests.sh
 
-            - name: Running the tests
-              run: ./node_modules/.bin/wp-scripts test-e2e --config=test/e2e/jest.config.json --ci --cacheDirectory="$HOME/.jest-cache"
+            # DIAGNOSTIC: swap in the variant of the spec under test.
+            - name: Use the ${{ matrix.variant }} variant of the writing flow spec
+              if: ${{ matrix.variant != 'baseline' }}
+              env:
+                  VARIANT: ${{ matrix.variant }}
+              run: cp ".github/diag/writing-flow.${VARIANT}.test.js" test/e2e/specs/writing-flow.test.js
+
+            # DIAGNOSTIC: run only the flaky test, many times, and count failures.
+            - name: Run the TinyMCE content test repeatedly
+              env:
+                  VARIANT: ${{ matrix.variant }}
+                  RUNS: ${{ matrix.variant == 'provoke' && '10' || '40' }}
+              run: |
+                  failures=0
+                  for i in $(seq 1 "$RUNS"); do
+                      if ./node_modules/.bin/wp-scripts test-e2e --config=test/e2e/jest.config.json --ci --cacheDirectory="$HOME/.jest-cache" test/e2e/specs/writing-flow.test.js -t 'should clean TinyMCE content'; then
+                          echo "::notice::Run $i passed"
+                      else
+                          failures=$((failures + 1))
+                          echo "::warning::Run $i failed"
+                      fi
+                  done
+                  echo "$VARIANT: $failures of $RUNS runs failed" | tee -a "$GITHUB_STEP_SUMMARY"
+                  test "$failures" -eq 0
