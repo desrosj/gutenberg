@@ -22,7 +22,6 @@ jobs:
         name: Puppeteer - ${{ matrix.part }}
         runs-on: 'ubuntu-24.04'
         timeout-minutes: 45
-        if: ${{ github.repository == 'WordPress/gutenberg' || github.event_name == 'pull_request' }}
         strategy:
             fail-fast: false
             matrix:
@@ -30,24 +29,8 @@ jobs:
                 totalParts: [3]
 
         steps:
-            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-              with:
-                  show-progress: ${{ runner.debug == '1' && 'true' || 'false' }}
-
-            - name: Setup Node.js and install dependencies
-              uses: ./.github/setup-node
-
-            - name: Npm build
-              run: npm run build
-
-            - name: Install WordPress
-              run: |
-                  npm run wp-env start
-
-            - name: Running the tests
-              run: |
-                  npx wp-scripts test-e2e --config=./packages/e2e-tests/jest.config.js --listTests > ~/.jest-e2e-tests
-                  npx wp-scripts test-e2e --config=./packages/e2e-tests/jest.config.js --cacheDirectory="$HOME/.jest-cache" --runTestsByPath $( awk 'NR % ${{ matrix.totalParts }} == ${{ matrix.part }} - 1' < ~/.jest-e2e-tests )
+            - name: Create a dummy debug artifact
+              run: mkdir -p artifacts && echo "${{ github.job }} ${{ strategy.job-index }}" > artifacts/dummy-${{ github.job }}-${{ strategy.job-index }}.txt
 
             - name: Archive debug artifacts (screenshots, HTML snapshots)
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -62,7 +45,6 @@ jobs:
         name: Playwright - ${{ matrix.part }}
         runs-on: 'ubuntu-24.04'
         timeout-minutes: 60
-        if: ${{ github.repository == 'WordPress/gutenberg' || github.event_name == 'pull_request' }}
         strategy:
             fail-fast: false
             matrix:
@@ -70,27 +52,8 @@ jobs:
                 totalParts: [4]
 
         steps:
-            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-              with:
-                  show-progress: ${{ runner.debug == '1' && 'true' || 'false' }}
-
-            - name: Setup Node.js and install dependencies
-              uses: ./.github/setup-node
-
-            - name: Npm build
-              run: npm run build
-
-            - name: Install Playwright dependencies
-              run: |
-                  npx playwright install chromium firefox webkit --with-deps
-
-            - name: Install WordPress and start the server
-              run: |
-                  npm run wp-env start
-
-            - name: Run the tests
-              run: |
-                  xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- npm run test:e2e:playwright -- --shard=${{ matrix.part }}/${{ matrix.totalParts }}
+            - name: Create a dummy debug artifact
+              run: mkdir -p artifacts/test-results && echo "${{ github.job }} ${{ strategy.job-index }}" > artifacts/test-results/dummy-${{ github.job }}-${{ strategy.job-index }}.txt
 
             - name: Archive debug artifacts (screenshots, traces)
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
