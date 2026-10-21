@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Bug Fixes
+
+-   PHP 7.3 and 7.4 must use PHPUnit 9.
+
+### Enhancements
+
+-   It's now possible to run PHPUnit tests on PHP 8.1 and 8.2.
+
 ### New Features
 
 -   Add a `mariadbVersion` option and `WP_ENV_MARIADB_VERSION` environment variable to choose the MariaDB version used by the Docker runtime ([#83751](https://github.com/WordPress/gutenberg/pull/83751)).
