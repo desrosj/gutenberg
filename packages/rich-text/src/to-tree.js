@@ -32,15 +32,15 @@ function fromFormat( { type, attributes, unregisteredAttributes, object, isEdita
 	const formatType = getFormatType( type );
 
 	if ( ! formatType ) {
- 		return {
- 			type,
- 			attributes: restoreOnAttributes(
- 				attributes,
- 				isEditableTree
- 			),
- 			object,
- 		};
- 	}
+		return {
+			type,
+			attributes: restoreOnAttributes(
+				attributes,
+				isEditableTree
+			),
+			object,
+		};
+	}
 
 	const elementAttributes = { ...unregisteredAttributes };
 
