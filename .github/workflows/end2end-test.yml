@@ -72,6 +72,9 @@ jobs:
                       grep -E '^(PASS|FAIL) |^Tests:' "${RUNNER_TEMP}/run-$i.log" || true
                       if grep -q '^Tests:' "${RUNNER_TEMP}/run-$i.log"; then
                           completed=$((completed + 1))
+                      else
+                          echo "::warning::Run $i did not finish"
+                          tail -40 "${RUNNER_TEMP}/run-$i.log"
                       fi
                       if grep -q '● Comment Query Loop › Pagination links are working as expected' "${RUNNER_TEMP}/run-$i.log"; then
                           failed=$((failed + 1))
