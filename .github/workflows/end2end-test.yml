@@ -24,14 +24,15 @@ env:
 
 jobs:
     admin:
-        name: Admin - ${{ matrix.part }}
+        name: Admin (${{ matrix.variant }} ${{ matrix.shard }})
         runs-on: 'ubuntu-24.04'
-        timeout-minutes: 45
+        timeout-minutes: 120
         if: ${{ github.repository == 'WordPress/gutenberg' || github.event_name == 'pull_request' }}
         strategy:
             fail-fast: false
             matrix:
-                part: [1, 2, 3, 4]
+                variant: [ 'baseline', 'fixed' ]
+                shard: [ 1, 2 ]
 
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -42,6 +43,11 @@ jobs:
                   node-version-file: .nvmrc
                   cache: npm
 
+            # DIAGNOSTIC: use the unfixed spec for the baseline variant.
+            - name: Restore the unfixed spec
+              if: ${{ matrix.variant == 'baseline' }}
+              run: cp .github/diag/comments-query.baseline.js packages/e2e-tests/specs/experiments/blocks/comments-query.test.js
+
             - name: Npm install and build
               run: |
                   npm ci
@@ -51,10 +57,32 @@ jobs:
               run: |
                   npm run wp-env start
 
-            - name: Running the tests
+            # DIAGNOSTIC: run the Comment Query Loop spec 30 times.
+            - name: Run the Comment Query Loop spec repeatedly
+              env:
+                  VARIANT: ${{ matrix.variant }}
               run: |
-                  $( npm bin )/wp-scripts test-e2e --config=./packages/e2e-tests/jest.config.js --listTests > ~/.jest-e2e-tests
-                  $( npm bin )/wp-scripts test-e2e --config=./packages/e2e-tests/jest.config.js --cacheDirectory="$HOME/.jest-cache" --runTestsByPath $( awk 'NR % 4 == ${{ matrix.part }} - 1' < ~/.jest-e2e-tests )
+                  runs=0
+                  completed=0
+                  failed=0
+                  other=0
+                  for i in $(seq 1 30); do
+                      runs=$((runs + 1))
+                      $( npm bin )/wp-scripts test-e2e --config=./packages/e2e-tests/jest.config.js --cacheDirectory="${RUNNER_TEMP}/jest-cache-$i" --runTestsByPath packages/e2e-tests/specs/experiments/blocks/comments-query.test.js > "${RUNNER_TEMP}/run-$i.log" 2>&1 || true
+                      grep -E '^(PASS|FAIL) |^Tests:' "${RUNNER_TEMP}/run-$i.log" || true
+                      if grep -q '^Tests:' "${RUNNER_TEMP}/run-$i.log"; then
+                          completed=$((completed + 1))
+                      fi
+                      if grep -q '● Comment Query Loop › Pagination links are working as expected' "${RUNNER_TEMP}/run-$i.log"; then
+                          failed=$((failed + 1))
+                          echo "::warning::Run $i: pagination links test failed"
+                          grep -A12 '● Comment Query Loop › Pagination links are working as expected' "${RUNNER_TEMP}/run-$i.log" | head -14
+                      elif grep -q '^FAIL ' "${RUNNER_TEMP}/run-$i.log"; then
+                          other=$((other + 1))
+                          grep -A20 '●' "${RUNNER_TEMP}/run-$i.log" | head -40
+                      fi
+                  done
+                  echo "$VARIANT: pagination links test failed in $failed of $runs runs ($completed completed, $other with other failures only)" | tee -a "$GITHUB_STEP_SUMMARY"
 
             - name: Archive debug artifacts (screenshots, HTML snapshots)
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
