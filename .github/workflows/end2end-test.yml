@@ -68,6 +68,8 @@ jobs:
                   other=0
                   for i in $(seq 1 30); do
                       runs=$((runs + 1))
+                      # The flaky test reporter fails if this directory exists from an earlier run.
+                      rm -rf flaky-tests
                       $( npm bin )/wp-scripts test-e2e --config=./packages/e2e-tests/jest.config.js --cacheDirectory="${RUNNER_TEMP}/jest-cache-$i" --runTestsByPath packages/e2e-tests/specs/experiments/blocks/comments-query.test.js > "${RUNNER_TEMP}/run-$i.log" 2>&1 || true
                       grep -E '^(PASS|FAIL) |^Tests:' "${RUNNER_TEMP}/run-$i.log" || true
                       if grep -q '^Tests:' "${RUNNER_TEMP}/run-$i.log"; then
