@@ -39,19 +39,6 @@ test.describe( 'WP Editor Meta Boxes', () => {
 			await metaBoxesToggle.click( { position: { x: 0, y: 0 } } );
 		}
 
-		/*
-		 * The editor moves the meta box form with `appendChild`, which reloads
-		 * TinyMCE's iframe and can leave the editor uninitialized when it
-		 * happens while TinyMCE is still starting. Re-create the editor with
-		 * its original settings now that the form is in place.
-		 */
-		await page.evaluate( () => {
-			window.tinymce.get( 'test_tinymce_id' )?.remove();
-			window.tinymce.init(
-				window.tinyMCEPreInit.mceInit.test_tinymce_id
-			);
-		} );
-
 		// Switch to Visual mode and wait for TinyMCE to fully initialize.
 		// This ensures getSelection() won't return null when TinyMCE tries
 		// to restore cursor position during subsequent mode switches.
