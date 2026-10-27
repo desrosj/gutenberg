@@ -4,8 +4,8 @@
  *
  * A single `tsc --build` of every project keeps the parsed sources of all
  * projects in memory, which can exceed the memory available on runners with
- * fewer resources. Building in dependency order across separate processes
- * caps the peak at the size of the largest batch: each process reads the
+ * fewer resources. Building in the same order across separate processes caps
+ * the peak at the size of the largest batch: each process reads the
  * declaration files emitted by earlier batches instead of their sources.
  */
 
@@ -91,48 +91,42 @@ function readReferences( configPath ) {
 }
 
 /**
- * Groups every project reachable from the root tsconfig into batches.
+ * Splits every project reachable from the root tsconfig into batches.
  *
- * Projects are grouped by dependency depth, so each batch only depends on
- * projects in earlier batches. Each depth level is then split into batches of
- * at most `batchSize` projects.
+ * Projects are listed in the order a single `tsc --build` builds them: depth
+ * first through the references, in the order they are listed, with each
+ * project after its references. Some projects (such as `storybook`) import
+ * packages without referencing them and rely on this order, so the batches
+ * are consecutive runs of it.
  *
  * @param {string} rootDir   Repository root.
  * @param {number} batchSize Maximum number of projects per batch.
  * @return {string[][]} Batches of tsconfig paths, relative to `rootDir`.
  */
 export function getTypeScriptBuildBatches( rootDir, batchSize ) {
-	const depths = new Map();
+	const order = [];
+	const visited = new Set();
 	const visiting = new Set();
 
-	function getDepth( configPath ) {
-		if ( depths.has( configPath ) ) {
-			return depths.get( configPath );
+	function visit( configPath ) {
+		if ( visited.has( configPath ) ) {
+			return;
 		}
 		if ( visiting.has( configPath ) ) {
 			throw new Error( `Circular project reference: ${ configPath }` );
 		}
 		visiting.add( configPath );
-		const depth =
-			Math.max( -1, ...readReferences( configPath ).map( getDepth ) ) + 1;
+		readReferences( configPath ).forEach( visit );
 		visiting.delete( configPath );
-		depths.set( configPath, depth );
-		return depth;
+		visited.add( configPath );
+		order.push( path.relative( rootDir, configPath ) );
 	}
 
-	readReferences( path.join( rootDir, 'tsconfig.json' ) ).forEach( getDepth );
-
-	const levels = [];
-	for ( const [ configPath, depth ] of depths ) {
-		( levels[ depth ] ??= [] ).push( path.relative( rootDir, configPath ) );
-	}
+	readReferences( path.join( rootDir, 'tsconfig.json' ) ).forEach( visit );
 
 	const batches = [];
-	for ( const level of levels.filter( Boolean ) ) {
-		level.sort();
-		for ( let i = 0; i < level.length; i += batchSize ) {
-			batches.push( level.slice( i, i + batchSize ) );
-		}
+	for ( let i = 0; i < order.length; i += batchSize ) {
+		batches.push( order.slice( i, i + batchSize ) );
 	}
 	return batches;
 }
