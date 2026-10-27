@@ -1,0 +1,123 @@
+name: Build memory experiment
+
+# Measures the memory, swap and process count used by the E2E build
+# (`npm run build -- --skip-types`) under the limits of the standard
+# GitHub-hosted runners for private repositories (2 vCPU, 8 GB RAM). Public
+# repositories get larger runners, so each leg runs inside a cgroup that caps
+# memory and CPUs to match.
+
+on:
+    pull_request:
+        paths:
+            - '.github/workflows/build-memory-experiment.yml'
+    workflow_dispatch:
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+    cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+    measure:
+        name: ${{ matrix.name }}
+        runs-on: ubuntu-24.04
+        timeout-minutes: 60
+        permissions:
+            contents: read
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - name: 'No swap'
+                      swap_max: '0'
+                      add_swap: false
+                    - name: 'Image swap (3 GB)'
+                      swap_max: '3G'
+                      add_swap: false
+                    - name: 'Image swap + 4 GB swap file'
+                      swap_max: '7G'
+                      add_swap: true
+        env:
+            # The private runners have 8 GB in total. Leave about 1 GB for the
+            # OS and the runner agent.
+            MEMORY_MAX: '7G'
+            SWAP_MAX: ${{ matrix.swap_max }}
+
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  show-progress: ${{ runner.debug == '1' && 'true' || 'false' }}
+                  persist-credentials: false
+
+            - name: Setup Node.js and install dependencies
+              uses: ./.github/setup-node
+
+            - name: Add swap space
+              if: ${{ matrix.add_swap }}
+              run: |
+                  sudo fallocate -l 4G /mnt/swapfile-build
+                  sudo chmod 600 /mnt/swapfile-build
+                  sudo mkswap /mnt/swapfile-build
+                  sudo swapon /mnt/swapfile-build
+
+            - name: Runner resources
+              run: |
+                  echo "CPUs: $(nproc)"
+                  free -m
+                  swapon --show || true
+                  df -h / /mnt
+                  sysctl vm.overcommit_memory vm.overcommit_ratio
+                  grep -E 'CommitLimit|Committed_AS' /proc/meminfo
+
+            - name: Create the constrained runner
+              run: |
+                  # Runs a command inside a transient systemd scope that caps
+                  # memory, swap and CPUs, then reports the scope's peak
+                  # memory, swap and process count.
+                  cat > "$RUNNER_TEMP/constrained" <<'EOF'
+                  #!/bin/bash
+                  exec sudo systemd-run --scope --quiet --collect \
+                      -p MemoryMax="$MEMORY_MAX" -p MemorySwapMax="$SWAP_MAX" -p CPUQuota=200% \
+                      --uid="$(id -u)" --gid="$(id -g)" \
+                      -- /usr/bin/env PATH="$PATH" HOME="$HOME" CI=true GOMAXPROCS=2 \
+                      GITHUB_STEP_SUMMARY="$GITHUB_STEP_SUMMARY" \
+                      LABEL="${LABEL-}" \
+                      taskset -c 0,1 bash -c '
+                          cgroup="/sys/fs/cgroup$(cut -d: -f3 /proc/self/cgroup)"
+                          start=$(date +%s)
+                          "$@"
+                          status=$?
+                          peak=$(( $(cat "$cgroup/memory.peak") / 1048576 ))
+                          swap=$(( $(cat "$cgroup/memory.swap.peak" 2>/dev/null || echo 0) / 1048576 ))
+                          pids=$(cat "$cgroup/pids.peak" 2>/dev/null || echo n/a)
+                          oom=$(awk "/^oom_kill /{print \$2}" "$cgroup/memory.events")
+                          echo "Exit status $status, peak ${peak} MiB, swap peak ${swap} MiB, peak processes ${pids}, OOM kills ${oom}, $(( $(date +%s) - start ))s"
+                          if [ -n "$LABEL" ]; then
+                              echo "| $LABEL | $status | ${peak} MiB | ${swap} MiB | ${pids} | ${oom} | $(( $(date +%s) - start ))s |" >> "$GITHUB_STEP_SUMMARY"
+                          fi
+                          exit $status
+                      ' _ "$@"
+                  EOF
+                  chmod +x "$RUNNER_TEMP/constrained"
+
+            - name: Check that the limits are enforced
+              run: |
+                  "$RUNNER_TEMP/constrained" bash -c 'echo "CPUs visible: $(nproc)"; cat "/sys/fs/cgroup$(cut -d: -f3 /proc/self/cgroup)/memory.max"'
+                  # Allocating more than MemoryMax plus MemorySwapMax must be killed.
+                  if "$RUNNER_TEMP/constrained" python3 -c 'b = bytearray( 15 * 1024 ** 3 ); b[ ::4096 ] = b"x" * len( b[ ::4096 ] )'; then
+                      echo '::error::The memory limit was not enforced.'
+                      exit 1
+                  fi
+
+            - name: npm run build -- --skip-types (constrained)
+              env:
+                  LABEL: ${{ matrix.name }}
+              run: |
+                  {
+                      echo "Limits: MemoryMax=$MEMORY_MAX, MemorySwapMax=$SWAP_MAX, 2 CPUs"
+                      echo
+                      echo '| Leg | Exit status | Peak memory | Peak swap | Peak processes | OOM kills | Duration |'
+                      echo '|---|---|---|---|---|---|---|'
+                  } >> "$GITHUB_STEP_SUMMARY"
+                  "$RUNNER_TEMP/constrained" npm run build -- --skip-types
