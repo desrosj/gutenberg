@@ -6,7 +6,14 @@
 import spawn from 'cross-spawn';
 import { fileURLToPath } from 'url';
 import { parseArgs } from 'util';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'fs';
+import { tmpdir } from 'os';
 import path from 'path';
+
+/**
+ * Internal dependencies
+ */
+import { getTypeScriptBuildBatches } from './packages/typescript-build-batches.mjs';
 
 const __dirname = path.dirname( fileURLToPath( import.meta.url ) );
 const ROOT_DIR = path.resolve( __dirname, '../..' );
@@ -76,6 +83,75 @@ function exec( command, args = [], options = {} ) {
 }
 
 /**
+ * Builds the TypeScript project graph.
+ *
+ * By default, projects are built in dependency order by separate `tsc --build`
+ * processes of at most `GUTENBERG_TSC_BATCH_SIZE` projects each, which keeps
+ * peak memory low on runners with fewer resources. Setting the batch size to
+ * 0 builds every project in a single process.
+ *
+ * Setting `GUTENBERG_TSC_MEASURE` logs the peak memory of each process. It
+ * requires GNU time at `/usr/bin/time`.
+ */
+async function buildTypes() {
+	const batchSize = process.env.GUTENBERG_TSC_BATCH_SIZE
+		? Number( process.env.GUTENBERG_TSC_BATCH_SIZE )
+		: 5;
+	const extraArgs = ( process.env.GUTENBERG_TSC_EXTRA_ARGS || '' )
+		.split( ' ' )
+		.filter( Boolean );
+	const measure =
+		!! process.env.GUTENBERG_TSC_MEASURE && existsSync( '/usr/bin/time' );
+	const batches =
+		batchSize > 0
+			? getTypeScriptBuildBatches( ROOT_DIR, batchSize )
+			: [ [] ];
+	const tempDir = measure ? mkdtempSync( path.join( tmpdir(), 'tsc-' ) ) : '';
+	const results = [];
+
+	for ( const [ index, batch ] of batches.entries() ) {
+		const args = [ '--build', ...batch, ...extraArgs ];
+		const label = batch.length
+			? batch.map( ( p ) => path.dirname( p ) ).join( ' ' )
+			: 'all projects';
+		const startTime = Date.now();
+		if ( measure ) {
+			const statsFile = path.join( tempDir, `${ index }.txt` );
+			await exec( '/usr/bin/time', [
+				'-f',
+				'%M',
+				'-o',
+				statsFile,
+				'tsc',
+				...args,
+			] );
+			const peak = Math.round(
+				Number( readFileSync( statsFile, 'utf8' ).trim() ) / 1024
+			);
+			results.push( { label, peak, time: Date.now() - startTime } );
+			console.log(
+				`   [${ index + 1 }/${ batches.length }] ${ peak } MiB, ${
+					Date.now() - startTime
+				}ms: ${ label }`
+			);
+		} else {
+			await exec( 'tsc', args );
+		}
+	}
+
+	if ( measure ) {
+		rmSync( tempDir, { recursive: true, force: true } );
+		const top = [ ...results ]
+			.sort( ( a, b ) => b.peak - a.peak )
+			.slice( 0, 5 );
+		console.log( '\n   Largest TypeScript processes (peak RSS):' );
+		for ( const { label, peak, time } of top ) {
+			console.log( `     ${ peak } MiB, ${ time }ms: ${ label }` );
+		}
+	}
+}
+
+/**
  * Main build orchestration function.
  */
 async function build() {
@@ -141,7 +217,7 @@ async function build() {
 		if ( ! skipTypes ) {
 			console.log( '\n📘 Building TypeScript types...\n' );
 			const tsStartTime = Date.now();
-			await exec( 'tsc', [ '--build' ] ).catch( () => {
+			await buildTypes().catch( () => {
 				console.error(
 					'\n❌ TypeScript compilation failed. Try cleaning up first: `npm run clean:package-types`'
 				);
