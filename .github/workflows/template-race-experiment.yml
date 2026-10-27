@@ -1,0 +1,88 @@
+name: Template registration race experiment
+
+# Reproduces the race in "user-customized templates cannot be overridden by
+# plugins" deterministically by delaying the authors query, then runs the test
+# repeatedly with and without the fix.
+
+on:
+    pull_request:
+        paths:
+            - '.github/workflows/template-race-experiment.yml'
+            - 'test/e2e/specs/site-editor/template-registration.spec.js'
+    workflow_dispatch:
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+    cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+    race:
+        name: ${{ matrix.fix && 'With the fix' || 'Without the fix' }}
+        runs-on: ubuntu-24.04
+        timeout-minutes: 60
+        permissions:
+            contents: read
+        # The run without the fix is expected to fail.
+        continue-on-error: ${{ ! matrix.fix }}
+        strategy:
+            fail-fast: false
+            matrix:
+                fix: [ true, false ]
+
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  show-progress: ${{ runner.debug == '1' && 'true' || 'false' }}
+                  persist-credentials: false
+                  fetch-depth: 2
+
+            - name: Restore the spec from the base branch
+              if: ${{ ! matrix.fix }}
+              run: git checkout HEAD^1 -- test/e2e/specs/site-editor/template-registration.spec.js
+
+            - name: Delay the authors query
+              run: |
+                  cat > packages/e2e-tests/mu-plugins/slow-authors-query.php <<'EOF'
+                  <?php
+                  // Delays the "has authors" query of the Add template modal so
+                  // the test always clicks before it resolves, unless it waits.
+                  add_filter(
+                  	'rest_pre_dispatch',
+                  	function ( $result, $server, $request ) {
+                  		if ( '/wp/v2/users' === $request->get_route() && 'authors' === $request->get_param( 'who' ) && 1 === (int) $request->get_param( 'per_page' ) ) {
+                  			usleep( 1500000 );
+                  		}
+                  		return $result;
+                  	},
+                  	10,
+                  	3
+                  );
+                  EOF
+
+            - name: Setup Node.js and install dependencies
+              uses: ./.github/setup-node
+
+            - name: Npm build
+              run: npm run build -- --skip-types
+
+            - name: Install Playwright dependencies
+              uses: ./.github/setup-playwright
+              with:
+                  workspace: '@wordpress/e2e-tests-playwright'
+                  browsers: chromium
+
+            - name: Install WordPress and start the server
+              run: npm run wp-env-test start
+
+            - name: Run the test 10 times
+              env:
+                  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+                  WP_BASE_URL: http://localhost:8889
+              run: |
+                  xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- \
+                      npm run --workspace @wordpress/e2e-tests-playwright test:e2e -- \
+                      site-editor/template-registration.spec.js \
+                      --grep 'user-customized templates cannot be overridden by plugins' \
+                      --project chromium --repeat-each 10 --retries 0
