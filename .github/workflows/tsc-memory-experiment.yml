@@ -42,15 +42,18 @@ jobs:
                     - name: 'Single process, 1 builder, 1 checker'
                       batch_size: '0'
                       extra_args: '--builders 1 --checkers 1'
-                    - name: 'Batches of 1'
+                    - name: 'Batches of 1, 1 checker'
                       batch_size: '1'
-                      extra_args: ''
-                    - name: 'Batches of 5 (default)'
+                      extra_args: '--checkers 1'
+                    - name: 'Batches of 5, 1 checker'
                       batch_size: '5'
-                      extra_args: ''
-                    - name: 'Batches of 15'
+                      extra_args: '--checkers 1'
+                    - name: 'Batches of 15, 1 checker'
                       batch_size: '15'
-                      extra_args: ''
+                      extra_args: '--checkers 1'
+                    - name: 'Batches of 5, 2 checkers'
+                      batch_size: '5'
+                      extra_args: '--checkers 2'
         env:
             # The private runners have 8 GB in total. Leave about 1 GB for the
             # OS and the runner agent.
@@ -94,6 +97,7 @@ jobs:
                   #!/bin/bash
                   exec sudo systemd-run --scope --quiet --collect \
                       -p MemoryMax="$MEMORY_MAX" -p MemorySwapMax="$SWAP_MAX" -p CPUQuota=200% \
+                      -p OOMPolicy=continue \
                       --uid="$(id -u)" --gid="$(id -g)" \
                       -- /usr/bin/env PATH="$PATH" HOME="$HOME" CI=true GOMAXPROCS=2 \
                       NODE_OPTIONS="$NODE_OPTIONS" \
