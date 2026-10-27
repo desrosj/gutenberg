@@ -300,7 +300,20 @@ test.describe( 'Block template registration', () => {
 		await admin.visitSiteEditor( {
 			postType: 'wp_template',
 		} );
+		// "Author Archives" only offers "For a specific item" once the query
+		// checking for authors has resolved. Clicking it earlier creates the
+		// general author template instead.
+		const authorsLoaded = page.waitForResponse( ( response ) => {
+			const url = decodeURIComponent( response.url() );
+			return (
+				url.includes( '/wp/v2/users' ) &&
+				url.includes( 'who=authors' ) &&
+				url.includes( 'per_page=1' ) &&
+				response.ok()
+			);
+		} );
 		await page.getByLabel( 'Add template' ).click();
+		await authorsLoaded;
 		await page.getByRole( 'button', { name: 'Author Archives' } ).click();
 		await page
 			.getByRole( 'button', { name: 'Author For a specific item' } )
