@@ -1,0 +1,89 @@
+name: Template registration race experiment
+
+# Runs "user-customized templates cannot be overridden by plugins" repeatedly on
+# a slowed-down WordPress and browser, closer to runners with fewer resources,
+# and keeps a trace of every failure to see which requests lead to it.
+
+on:
+    pull_request:
+        paths:
+            - '.github/workflows/template-race-experiment.yml'
+            - 'test/e2e/specs/site-editor/template-registration.spec.js'
+    workflow_dispatch:
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+    cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+    race:
+        name: ${{ matrix.fix && 'With the fix' || 'Without the fix' }}, WordPress on ${{ matrix.wp_cpus }} CPU
+        runs-on: ubuntu-24.04
+        timeout-minutes: 90
+        permissions:
+            contents: read
+        # Failures are what this experiment looks for.
+        continue-on-error: true
+        strategy:
+            fail-fast: false
+            matrix:
+                fix: [ false, true ]
+                wp_cpus: [ '0.5', '1' ]
+        env:
+            WP_ARTIFACTS_PATH: ${{ github.workspace }}/artifacts
+
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  show-progress: ${{ runner.debug == '1' && 'true' || 'false' }}
+                  persist-credentials: false
+                  fetch-depth: 2
+
+            - name: Restore the spec from the base branch
+              if: ${{ ! matrix.fix }}
+              run: git checkout HEAD^1 -- test/e2e/specs/site-editor/template-registration.spec.js
+
+            - name: Setup Node.js and install dependencies
+              uses: ./.github/setup-node
+
+            - name: Npm build
+              run: npm run build -- --skip-types
+
+            - name: Install Playwright dependencies
+              uses: ./.github/setup-playwright
+              with:
+                  workspace: '@wordpress/e2e-tests-playwright'
+                  browsers: chromium
+
+            - name: Install WordPress and start the server
+              run: npm run wp-env-test start
+
+            - name: Slow down WordPress
+              run: |
+                  docker ps --format '{{.Names}}'
+                  docker update --cpus "${{ matrix.wp_cpus }}" $( docker ps -q )
+
+            - name: Run the test 25 times
+              env:
+                  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+                  WP_BASE_URL: http://localhost:8889
+              run: |
+                  # The browser and test runner get 2 CPUs, like the runners
+                  # for private repositories.
+                  taskset -c 0,1 xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- \
+                      npm run --workspace @wordpress/e2e-tests-playwright test:e2e -- \
+                      site-editor/template-registration.spec.js \
+                      --grep 'user-customized templates cannot be overridden by plugins' \
+                      --project chromium --repeat-each 25 --retries 0 \
+                      --trace retain-on-failure
+
+            - name: Upload traces of failures
+              if: ${{ !cancelled() }}
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              with:
+                  name: traces--${{ matrix.fix && 'fix' || 'no-fix' }}--${{ matrix.wp_cpus }}cpu
+                  path: ${{ github.workspace }}/artifacts/test-results
+                  if-no-files-found: ignore
+                  retention-days: 7
