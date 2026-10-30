@@ -15,6 +15,20 @@ on:
             wp_version:
                 description: 'WordPress major version (`wp` only)'
                 type: string
+            wp_publish_mode:
+                description: 'How to choose the packages to publish (`wp` only)'
+                type: choice
+                default: 'changed'
+                options:
+                    - changed
+                    - from-package
+            ignore_changes:
+                description: 'Extra space-separated globs to ignore when detecting changed packages (`wp` with `changed` only)'
+                type: string
+            dry_run:
+                description: 'List the packages that would be published without publishing them (`wp` only)'
+                type: boolean
+                default: false
 
 # Cancels all previous workflow runs for pull requests that have not completed.
 concurrency:
@@ -56,8 +70,18 @@ jobs:
                   # We need to ensure that Lerna can read the commit created during the previous npm publishing.
                   # Lerna assumes that all packages need publishing if it can't access the necessary information.
                   fetch-depth: 999
-                  token: ${{ secrets.GUTENBERG_TOKEN }}
+                  # A dry run never pushes, so it does not need the release token.
+                  token: ${{ github.event.inputs.dry_run == 'true' && github.token || secrets.GUTENBERG_TOKEN }}
                   show-progress: ${{ runner.debug == '1' && 'true' || 'false' }}
+
+            # The checkout above always fetches with `--no-tags`. Lerna finds the previous release through its tags,
+            # and assumes that every package changed without them. A plain fetch brings in the tags on this history
+            # (`fetch-tags: true` would fetch every tag in the repository instead).
+            - name: Fetch release tags (for publishing WP major version)
+              if: ${{ github.event.inputs.release_type == 'wp' && github.event.inputs.wp_version }}
+              run: git -C publish fetch --depth=999 origin "refs/heads/wp/${WP_VERSION}"
+              env:
+                  WP_VERSION: ${{ github.event.inputs.wp_version }}
 
             - name: Configure git user name and email (for publishing)
               run: |
@@ -99,11 +123,43 @@ jobs:
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-            - name: Publish packages to npm for WP major version ("wp/${{ github.event.inputs.wp_version || 'X.Y' }}" dist-tag)
+            - name: Publish packages to npm for WP major version ("wp-${{ github.event.inputs.wp_version || 'X.Y' }}" dist-tag)
               if: ${{ github.event.inputs.release_type == 'wp' && github.event.inputs.wp_version }}
               run: |
                   cd publish
                   npm ci
-                  npx lerna publish patch --dist-tag wp-${{ github.event.inputs.wp_version }} --no-private --yes --no-verify-access
+
+                  if [ "${PUBLISH_MODE}" = 'from-package' ]; then
+                      if [ "${DRY_RUN}" = 'true' ]; then
+                          # Lists the same packages `lerna publish from-package` checks: public versions missing from npm.
+                          npm exec --no -- lerna ls --json --loglevel=silent |
+                              node -e 'for ( const { name, version } of JSON.parse( require( "fs" ).readFileSync( 0, "utf8" ) ) ) console.log( name, version )' |
+                              while read -r name version; do
+                                  if [ "$( npm view "${name}@${version}" version 2> /dev/null )" != "${version}" ]; then
+                                      echo "Would publish ${name}@${version}"
+                                  fi
+                              done
+                          exit 0
+                      fi
+
+                      npm exec --no -- lerna publish from-package --dist-tag "wp-${WP_VERSION}" --yes --no-verify-access
+                      exit 0
+                  fi
+
+                  # Passing --ignore-changes replaces the list in lerna.json, so repeat it before adding the extra globs.
+                  ignore=( '**/benchmark/*.js' '**/CHANGELOG.md' '**/{__mocks__,__tests__,test}/**' '**/{storybook,stories}/**' )
+                  read -ra extra <<< "${IGNORE_CHANGES}"
+                  ignore+=( "${extra[@]}" )
+
+                  if [ "${DRY_RUN}" = 'true' ]; then
+                      npm exec --no -- lerna changed --long --ignore-changes "${ignore[@]}"
+                      exit 0
+                  fi
+
+                  npm exec --no -- lerna publish patch --dist-tag "wp-${WP_VERSION}" --no-private --yes --no-verify-access --ignore-changes "${ignore[@]}"
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+                  WP_VERSION: ${{ github.event.inputs.wp_version }}
+                  PUBLISH_MODE: ${{ github.event.inputs.wp_publish_mode }}
+                  IGNORE_CHANGES: ${{ github.event.inputs.ignore_changes }}
+                  DRY_RUN: ${{ github.event.inputs.dry_run }}
