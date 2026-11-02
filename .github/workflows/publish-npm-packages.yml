@@ -39,6 +39,14 @@ jobs:
                   show-progress: ${{ runner.debug == '1' && 'true' || 'false' }}
                   persist-credentials: true
 
+            # The checkout above always fetches with `--no-tags`. Lerna finds the previous release through its tags,
+            # and assumes that every package changed without them. A plain fetch brings in the tags on this history
+            # (`fetch-tags: true` would fetch every tag in the repository instead).
+            - name: Fetch release tags (for publishing WP major version)
+              run: git -C publish fetch --depth=999 origin "refs/heads/wp/${WP_VERSION}"
+              env:
+                  WP_VERSION: ${{ github.event.inputs.wp_version }}
+
             - name: Configure git user name and email (for publishing)
               run: |
                   cd publish
