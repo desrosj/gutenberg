@@ -57,6 +57,6 @@ jobs:
               run: |
                   cd publish
                   npm ci
-                  npx lerna publish patch --dist-tag wp-${{ github.event.inputs.wp_version }} --no-private --yes --no-verify-access
+                  npm exec --no -- lerna publish patch --dist-tag wp-${{ github.event.inputs.wp_version }} --no-private --yes --no-verify-access
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
