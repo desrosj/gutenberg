@@ -3,17 +3,9 @@ name: Publish npm packages
 on:
     workflow_dispatch:
         inputs:
-            release_type:
-                description: 'Release type'
-                required: true
-                type: choice
-                default: 'development'
-                options:
-                    - development
-                    - bugfix
-                    - wp
             wp_version:
-                description: 'WordPress major version (`wp` only)'
+                description: 'WordPress major version'
+                required: true
                 type: string
 
 # Cancels all previous workflow runs for pull requests that have not completed.
@@ -25,30 +17,11 @@ concurrency:
 
 jobs:
     release:
-        name: Release - ${{ github.event.inputs.release_type }}
+        name: Release - wp-${{ github.event.inputs.wp_version }}
         runs-on: 'ubuntu-24.04'
         environment: WordPress packages
         steps:
-            - name: Checkout (for CLI)
-              if: ${{ github.event.inputs.release_type != 'wp' }}
-              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-              with:
-                  path: cli
-                  ref: trunk
-                  show-progress: ${{ runner.debug == '1' && 'true' || 'false' }}
-
-            - name: Checkout (for publishing)
-              if: ${{ github.event.inputs.release_type != 'wp' }}
-              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-              with:
-                  path: publish
-                  # Later, we switch this branch in the script that publishes packages.
-                  ref: trunk
-                  token: ${{ secrets.GUTENBERG_TOKEN }}
-                  show-progress: ${{ runner.debug == '1' && 'true' || 'false' }}
-
             - name: Checkout (for publishing WP major version)
-              if: ${{ github.event.inputs.release_type == 'wp' && github.event.inputs.wp_version }}
               uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
               with:
                   path: publish
@@ -65,42 +38,14 @@ jobs:
                   git config user.name "Gutenberg Repository Automation"
                   git config user.email gutenberg@wordpress.org
 
-            - name: Setup Node.js
-              if: ${{ github.event.inputs.release_type != 'wp' }}
-              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-              with:
-                  node-version-file: 'cli/.nvmrc'
-                  registry-url: 'https://registry.npmjs.org'
-                  package-manager-cache: false
-
             - name: Setup Node.js (for WP major version)
-              if: ${{ github.event.inputs.release_type == 'wp' && github.event.inputs.wp_version }}
               uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
               with:
                   node-version-file: 'publish/.nvmrc'
                   registry-url: 'https://registry.npmjs.org'
                   package-manager-cache: false
 
-            - name: Publish development packages to npm ("next" dist-tag)
-              if: ${{ github.event.inputs.release_type == 'development' }}
-              run: |
-                  cd cli
-                  npm ci
-                  ./bin/plugin/cli.js npm-next --ci --repository-path ../publish
-              env:
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-            - name: Publish packages to npm with bug fixes ("latest" dist-tag)
-              if: ${{ github.event.inputs.release_type == 'bugfix' }}
-              run: |
-                  cd cli
-                  npm ci
-                  ./bin/plugin/cli.js npm-bugfix --ci --repository-path ../publish
-              env:
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
             - name: Publish packages to npm for WP major version ("wp/${{ github.event.inputs.wp_version || 'X.Y' }}" dist-tag)
-              if: ${{ github.event.inputs.release_type == 'wp' && github.event.inputs.wp_version }}
               run: |
                   cd publish
                   npm ci
