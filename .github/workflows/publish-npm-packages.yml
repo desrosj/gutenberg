@@ -7,6 +7,13 @@ on:
                 description: 'WordPress major version'
                 required: true
                 type: string
+            ignore_changes:
+                description: 'Extra space-separated globs to ignore when detecting changed packages'
+                type: string
+            dry_run:
+                description: 'List the packages that would be published without publishing them'
+                type: boolean
+                default: false
 
 # Cancels all previous workflow runs for pull requests that have not completed.
 concurrency:
@@ -64,7 +71,28 @@ jobs:
               run: |
                   cd publish
                   npm ci
-                  npm exec --no -- lerna publish patch --dist-tag "wp-$WP_VERSION" --no-private --yes --no-verify-access
+
+                  # Passing --ignore-changes replaces the list in lerna.json, so repeat it before adding the extra globs.
+                  ignore=( '**/benchmark/*.js' '**/CHANGELOG.md' '**/{__mocks__,__tests__,test}/**' '**/{storybook,stories}/**' )
+                  read -ra extra <<< "${IGNORE_CHANGES}"
+                  ignore+=( "${extra[@]}" )
+
+                  if [ "${DRY_RUN}" = 'true' ]; then
+                      # `lerna changed` exits with 1 when no package changed, which is a valid dry run result.
+                      set +e
+                      output=$( npm exec --no -- lerna changed --long --ignore-changes "${ignore[@]}" 2>&1 )
+                      status=$?
+                      set -e
+                      echo "${output}"
+                      if [ "${status}" -ne 0 ] && ! grep -q 'No changed packages found' <<< "${output}"; then
+                          exit "${status}"
+                      fi
+                      exit 0
+                  fi
+
+                  npm exec --no -- lerna publish patch --dist-tag "wp-$WP_VERSION" --no-private --yes --no-verify-access --ignore-changes "${ignore[@]}"
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+                  IGNORE_CHANGES: ${{ github.event.inputs.ignore_changes }}
+                  DRY_RUN: ${{ github.event.inputs.dry_run }}
                   WP_VERSION: ${{ github.event.inputs.wp_version }}
