@@ -15,12 +15,11 @@ on:
                 type: boolean
                 default: false
 
-# Cancels all previous workflow runs for pull requests that have not completed.
+# Prevents overlapping package releases without canceling an in-progress release.
 concurrency:
-    # The concurrency group contains the workflow name and the branch name for pull requests
-    # or the commit hash for any other events.
-    group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
-    cancel-in-progress: true
+    # Scope package release dispatches by target npm release branch.
+    group: npm-publish-wp-${{ github.event.inputs.wp_version }}
+    cancel-in-progress: false
 
 # Disable permissions for all available scopes by default.
 # Any needed permissions should be configured at the job level.
